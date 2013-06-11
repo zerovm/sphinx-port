@@ -18,6 +18,8 @@ SCRIPT=$(readlink -f "$0")
 SCRIPT_PATH=`dirname "$SCRIPT"`
 ABS_PATH=$SCRIPT_PATH
 
+mkdir manifest
+
 #удаляем старые манифесты
 rm -f manifest/*.manifest
 
