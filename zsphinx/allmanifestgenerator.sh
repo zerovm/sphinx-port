@@ -19,6 +19,7 @@ SCRIPT_PATH=`dirname "$SCRIPT"`
 ABS_PATH=$SCRIPT_PATH
 
 mkdir manifest
+mkdir data/out
 
 #удаляем старые манифесты
 rm -f manifest/*.manifest
