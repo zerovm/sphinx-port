@@ -1,0 +1,14 @@
+installing zsphinx
+$ export PREFIX="$ZVM_PREFIX/x86_64-nacl"
+$ export PATH="$PATH:$ZVM_PREFIX/bin"
+$ export ac_cv_func_malloc_0_nonnull=yes
+
+
+$ ./configure --host=x86_64-nacl --without-mysql --without-pgsql --without-unixodbc --without-libexpat
+$ make
+
+run indexing, and then run search "channel" from txt files on tar archive doc.tar
+
+$ cd zsphinx
+$ ./runindexing.sh
+
