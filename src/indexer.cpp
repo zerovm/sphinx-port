@@ -1531,6 +1531,7 @@ bool SendRotate ( const CSphConfig & hConf, bool bForce )
 
 
 #include <dirent.h>
+
 void mylistdir (char *path)
 {
   	DIR *dir;
@@ -1561,14 +1562,16 @@ void mylistdir (char *path)
 				strcat (newpath, entry->d_name);
 				mylistdir (newpath);
 			}
-
 		}
+
 	}
 	closedir(dir);
 }
 
+
 int main ( int argc, char ** argv )
 {
+
 	sphSetLogger ( Logger );
 
 	const char * sOptConfig = NULL;
@@ -1583,7 +1586,11 @@ int main ( int argc, char ** argv )
 
 	int i;
 
+	printf ("before unpack\n");
 	mylistdir ("/");
+	unpackindex();
+	mylistdir ("/");
+	printf ("after unpack\n");
 
 	FILE *f1;
 	f1 = fopen (argv[2], "r");
@@ -1850,6 +1857,10 @@ int main ( int argc, char ** argv )
 	}
 	printf ("*** ZVM indexing is OK!\n");
 
+	mylistdir ("/");
+
+//	if (!bIndexedOk)
+
 	sphShutdownWordforms ();
 
 	const CSphIOStats & tStats = sphStopIOStats ();
@@ -1871,6 +1882,8 @@ int main ( int argc, char ** argv )
 #if SPH_DEBUG_LEAKS
 	sphAllocsStats ();
 #endif
+	if (bIndexedOk)
+		packindex();
 
 	return bIndexedOk ? 0 : 1;
 }

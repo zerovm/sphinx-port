@@ -3,13 +3,14 @@ Channel = {ABS_PATH}data/search_stdin.data, 	/dev/stdin, 0, 999999, 999999, 0, 0
 ==Channel = /dev/stdout,	/dev/stdout, 0, 0, 0, 999999, 999999
 Channel = {ABS_PATH}data/out/search_stdout.data,	/dev/stdout, 0, 0, 0, 999999, 999999
 Channel = {ABS_PATH}data/out/search_stderr.data, 	/dev/stderr, 0, 0, 0, 9999999, 9999999
+Channel = {ABS_PATH}data/rwindex, 	/dev/input, 3, 9999999, 9999999, 0, 0
 ==Channel = {ABS_PATH}data/out/search_debug.log, 		/dev/debug, 0, 0, 0, 99999999, 99999999
 =====================================================================
 
 =====================================================================
 Channel = {ABS_PATH}data/search_fstab.conf, 	/dev/nvram, 0, 999999, 999999, 0, 0
 Channel = {ABS_PATH}data/config.tar, 		/dev/mount/config, 1, 9999999, 9999999, 0, 0
-Channel = {ABS_PATH}data/index.tar, 		/dev/mount/index, 1, 9999999, 9999999, 0, 0
+==Channel = {ABS_PATH}data/index.tar, 		/dev/mount/index, 1, 9999999, 9999999, 0, 0
 =====================================================================
 
 Version = 09082012

@@ -850,6 +850,146 @@ bool CSphConfigParser::Parse ( const char * sFileName, const char * pBuffer )
 
 /////////////////////////////////////////////////////////////////////////////
 
+/////////////////////////////////////////////////////////////////////////////
+// ZVM
+/*
+ZVM Function for unpacking all index files from /dev/input device in a ZeroVM FS to spcefied by Zsphinx.conf directory
+*/
+void unpackindex (void)
+{
+	//
+	printf ("*** ZVM start unpack\n");
+	FILE *infile;
+	//char devname []  = "/dev/input"; ZVM
+	char devname []  = "/dev/input";
+	int MAXREAD = 1024;
+	char indexfilename[MAXREAD];
+	char readbuf [MAXREAD];
+	int letcount;
+	letcount = 0;
+	infile = fopen (devname, "r");
+
+	if (!infile)
+	{
+		printf ("*** ZVM error input indexpack file\n");
+		return;
+	}
+	int c;
+	int filelen;
+	filelen = 0;
+	while (!feof (infile))
+	{
+		// получение количества байт сохраненном файле в файле
+		letcount = 0;
+		c=getc (infile);
+		if (c == EOF)
+		{
+			printf ("***ZVM unpack index completed successfully!\n");
+			return;
+		}
+
+		if (c != '{')
+		{
+			printf("*** ZVM Error format packfile\n");
+			return;
+		}
+		while (!isspace(c=getc(infile))) {
+			readbuf[letcount++] = c;
+		}
+		readbuf [letcount] = '\0';
+		filelen = atoi (readbuf);
+		//получение имени файла
+		letcount =0;
+		while ((c=getc(infile)) != '\n')
+		{
+			readbuf [letcount++] = c;
+		}
+		readbuf [--letcount] = '\0';
+		FILE *efile;
+		efile = fopen (readbuf, "w");
+		if (!efile)
+		{
+			printf ("*** ZVM Error open %s file for write\n", readbuf);
+			return;
+		}
+		char *buff = (char *) malloc (filelen);
+		int readb = fread(buff,sizeof (char),filelen,infile);
+		int writeb = fwrite(buff,sizeof (char),filelen,efile);
+		fflush (efile);
+		fclose (efile);
+		while ((c=getc (infile))!= '\n')
+			;
+	}
+}
+
+/*
+ ZVM Function for packing all index files from directory in ZeroVM FS, specified in Zsphinx.conf to /fdev/output device
+  */
+void packindex (void)
+{
+	printf("*** ZVM start pack index\n");
+	FILE *packfile;
+	char packfilename[]= "/dev/output"; // ZVM
+	//char packfilename[]= "/dev/input";
+	packfile = fopen (packfilename, "w");
+
+	if (!packfile)
+	{
+		printf ("*** ZVM Error open packfile (write)%s\n", packfilename);
+		return;
+	}
+
+	char indexpath[]="index";
+  	DIR *dir;
+	struct dirent *entry;
+	dir = opendir(indexpath);
+	char *newpath;
+
+	if (!dir)
+		printf ("*** ZVM Error open DIR %s\n", indexpath);
+	int bytecount;
+	bytecount = 0;
+	while(entry = readdir(dir))
+	{
+		//printf ("%s/%s\n",path, entry->d_name);
+		if(entry->d_type != DT_DIR)
+		{
+			newpath = (char *) malloc (strlen (entry->d_name) + strlen(indexpath) + 2);
+			sprintf(newpath, "%s/%s", indexpath, entry->d_name);
+
+			int c;
+			FILE *f;
+			f = fopen(newpath, "rb");
+			long size;
+			fseek(f, 0, SEEK_END);
+			size = ftell(f);
+			rewind (f);
+
+			fprintf (packfile, "{%d %s}\n", size, newpath);
+			while (!feof (f))
+			{
+				c = getc (f);
+				if (c != EOF)
+					putc (c, packfile);
+			}
+			fprintf (packfile, "{%s}\n", newpath, size);
+			fclose (f);
+		}
+	}
+	fflush (packfile);
+	fclose (packfile);
+	printf ("*** ZVM End pack index\n");
+}
+/////////////////////////////////////////////////////////////////////////////
+// ZVM
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+
 bool sphConfTokenizer ( const CSphConfigSection & hIndex, CSphTokenizerSettings & tSettings, CSphString & sError )
 {
 	tSettings.m_iNgramLen = Max ( hIndex.GetInt ( "ngram_len" ), 0 );

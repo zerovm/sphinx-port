@@ -31,6 +31,17 @@ inline int sphIsAlpha ( int c )
 }
 
 
+/////////////////////////////////////////////////////////////////////////////
+//
+//ZVM Function for unpacking all index files from /dev/input device in a ZeroVM FS to spcefied by Zsphinx.conf directory
+//ZVM Function for packing all index files from directory in ZeroVM FS, specified in Zsphinx.conf to /fdev/output device
+//
+/////////////////////////////////////////////////////////////////////////////
+void unpackindex (void);
+void packindex (void);
+/////////////////////////////////////////////////////////////////////////////
+
+
 /// my own isspace
 inline bool sphIsSpace ( int iCode )
 {

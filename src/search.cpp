@@ -40,9 +40,9 @@ const char * myctime ( DWORD uStamp )
 	return sBuf;
 }
 
-
 int main ( int argc, char ** argv )
 {
+	unpackindex();
 	fprintf ( stdout, SPHINX_BANNER );
 	if ( argc<=1 )
 	{
@@ -153,6 +153,8 @@ int main ( int argc, char ** argv )
 			strcat ( sQuery, " " ); // NOLINT
 		}
 	}
+	// start unpackindex
+
 	iStart = Max ( iStart, 0 );
 	iLimit = Max ( iLimit, 0 );
 
