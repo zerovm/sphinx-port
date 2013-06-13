@@ -855,15 +855,21 @@ bool CSphConfigParser::Parse ( const char * sFileName, const char * pBuffer )
 /*
 ZVM Function for unpacking all index files from /dev/input device in a ZeroVM FS to spcefied by Zsphinx.conf directory
 */
-void unpackindex (void)
+void unpackindex (char * devname)
 {
 	//
+
+
 	printf ("*** ZVM start unpack\n");
 	FILE *infile;
+	char dirName[] = "index";
+	int result=mkdir(dirName, 0755);
+	if (result != 0)
+		printf ("*** ZVM Error can`t create directory %s\n", dirName);
 	//char devname []  = "/dev/input"; ZVM
-	char devname []  = "/dev/input";
+	//char devname []  = "/dev/input";
 	int MAXREAD = 1024;
-	char indexfilename[MAXREAD];
+	//char indexfilename[MAXREAD];
 	char readbuf [MAXREAD];
 	int letcount;
 	letcount = 0;
@@ -885,6 +891,7 @@ void unpackindex (void)
 		if (c == EOF)
 		{
 			printf ("***ZVM unpack index completed successfully!\n");
+			fclose (infile);
 			return;
 		}
 
@@ -915,27 +922,31 @@ void unpackindex (void)
 		char *buff = (char *) malloc (filelen);
 		int readb = fread(buff,sizeof (char),filelen,infile);
 		int writeb = fwrite(buff,sizeof (char),filelen,efile);
+		if (readb != writeb)
+			printf ("*** Warning while packing index file\n");
 		fflush (efile);
 		fclose (efile);
 		while ((c=getc (infile))!= '\n')
 			;
 	}
+	fclose (infile);
 }
 
 /*
  ZVM Function for packing all index files from directory in ZeroVM FS, specified in Zsphinx.conf to /fdev/output device
   */
-void packindex (void)
+void packindex (char * devname)
 {
 	printf("*** ZVM start pack index\n");
 	FILE *packfile;
-	char packfilename[]= "/dev/output"; // ZVM
+
+	//char packfilename[]= "/dev/output"; // ZVM
 	//char packfilename[]= "/dev/input";
-	packfile = fopen (packfilename, "w");
+	packfile = fopen (devname, "w");
 
 	if (!packfile)
 	{
-		printf ("*** ZVM Error open packfile (write)%s\n", packfilename);
+		printf ("*** ZVM Error open packfile (write)%s\n", devname);
 		return;
 	}
 
@@ -965,14 +976,15 @@ void packindex (void)
 			size = ftell(f);
 			rewind (f);
 
-			fprintf (packfile, "{%d %s}\n", size, newpath);
+			fprintf (packfile, "{%d %s}\n", (int) size, newpath);
+			printf ("file %s packed - OK!\n", newpath);
 			while (!feof (f))
 			{
 				c = getc (f);
 				if (c != EOF)
 					putc (c, packfile);
 			}
-			fprintf (packfile, "{%s}\n", newpath, size);
+			fprintf (packfile, "{%s}\n", newpath);
 			fclose (f);
 		}
 	}

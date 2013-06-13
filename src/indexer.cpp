@@ -1537,12 +1537,12 @@ void mylistdir (char *path)
   	DIR *dir;
 	struct dirent *entry;
 	//struct stat sb;
-	char statcheck [1024];
+	//char statcheck [1024];
 	char newpath[1024];
-	char newpathf[1024];
-	char extfile [1024];
+	//char newpathf[1024];
+	//char extfile [1024];
 	dir = opendir(path);
-	int len, lennew, lennewlast;
+	int len;//, lennew, lennewlast;
 	if(dir == 0)
 	{
 		return;
@@ -1586,17 +1586,27 @@ int main ( int argc, char ** argv )
 
 	int i;
 
-	printf ("before unpack\n");
-	mylistdir ("/");
-	unpackindex();
-	mylistdir ("/");
-	printf ("after unpack\n");
+//	printf ("before unpack\n");
+//	mylistdir ("/");
+//	unpackindex("/dev/output");
+//	printf ("after unpack\n");
+//	mylistdir ("/");
+
+	FILE *test;
+
+	test = fopen ("index/zsphinx.conf", "r");
+	if (!test)
+		printf ("Error open conf file\n");
+	char c;
+	while ( (c = getc (test)) != EOF)
+		putc (c, test);
+	fclose (test);
 
 	FILE *f1;
 	f1 = fopen (argv[2], "r");
 	
 	if (!f1)
-		printf ("Config file %s not found\n", argv[2]);
+		printf ("**Config file %s not found\n", argv[2]);
 	
 	for ( i=1; i<argc; i++ )
 	{
@@ -1855,9 +1865,6 @@ int main ( int argc, char ** argv )
 			}
 		}
 	}
-	printf ("*** ZVM indexing is OK!\n");
-
-	mylistdir ("/");
 
 //	if (!bIndexedOk)
 
@@ -1882,8 +1889,13 @@ int main ( int argc, char ** argv )
 #if SPH_DEBUG_LEAKS
 	sphAllocsStats ();
 #endif
+	printf ("*** ZVM indexing is OK!\n");
+	//mylistdir ("/");
+
 	if (bIndexedOk)
-		packindex();
+		packindex("/dev/output");
+
+	printf ("*** ZVM indexer works OK!\n");
 
 	return bIndexedOk ? 0 : 1;
 }
