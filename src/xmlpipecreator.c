@@ -15,7 +15,7 @@
 #define ZVMDEBUG
 #undef ZVMDEBUG
 
-void getworsfromfile ( char * );
+//void getworsfromfile ( char * );
 char * getext (char * );
 void myxmlpipe (char *);
 void myxmlpipe2 (char *);
@@ -250,8 +250,8 @@ void myxmlpipe (char *filename)
 
 	while ((c=getc(f)) != EOF )
 	{
-		if ((c != '<') && (c != '>') && (c != '&') && (c != '\\') && ( c != '/') || (c >='0' && c <='9') || (c>='A' && c<='z')|| (c>='А' && c<='я') || (c == ' '))
-//		if (isalpha(c) || isalnum (c) || isspace(c) )
+		//if ((c != '<') && (c != '>') && (c != '&') && (c != '\\') && ( c != '/') || (c >='0' && c <='9') || (c>='A' && c<='z')|| (c>='А' && c<='я') || (c == ' '))
+		if (isalpha(c) || isalnum (c) || isspace(c) )
 			fprintf (myout, "%c", c);
 	}
 	strcpy (text, "\n</body>\n");

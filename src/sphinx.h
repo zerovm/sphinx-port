@@ -204,6 +204,8 @@ inline const	DWORD *	STATIC2DOCINFO ( const DWORD * pAttrs )	{ return STATIC2DOC
 #define SPH_MAX_FILENAME_LEN	512
 #define SPH_MAX_FIELDS			256
 
+
+
 /////////////////////////////////////////////////////////////////////////////
 
 /// microsecond precision timestamp

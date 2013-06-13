@@ -9,9 +9,9 @@ Channel = {ABS_PATH}data/rwindex, 	/dev/output, 3, 9999999, 9999999, 9999999, 99
 =====================================================================
 
 =====================================================================
-Channel = {ABS_PATH}data/indexer_fstab.conf, 	/dev/nvram, 0, 9999999, 9999999, 0, 0
-Channel = {ABS_PATH}data/config.tar, 		/dev/mount/config, 1, 9999999, 9999999, 0, 0
-Channel = {ABS_PATH}data/index.tar, 		/dev/mount/index, 2, 0, 0, 9999999, 9999999
+==Channel = {ABS_PATH}data/indexer_fstab.conf, 	/dev/nvram, 0, 9999999, 9999999, 0, 0
+==Channel = {ABS_PATH}data/config.tar, 		/dev/mount/config, 1, 9999999, 9999999, 0, 0
+==Channel = {ABS_PATH}data/index.tar, 		/dev/mount/index, 2, 0, 0, 9999999, 9999999
 =====================================================================
 
 Version = 09082012
@@ -21,5 +21,5 @@ MemMax = 838860800
 NodeName = indexer, 2
 NameServer = udp:127.0.0.1:54321
 Timeout = 50
-CommandLine = --config zsphinx.conf --all
+CommandLine = --config index/zsphinx.conf --all
 Environment=VERBOSITY, 0

@@ -735,10 +735,10 @@ DWORD sphRand ()
 #if !USE_WINDOWS
 CSphProcessSharedMutex::CSphProcessSharedMutex ( int iExtraSize )
 {
+//#ifdef X86_64_ZEROVM
 	m_pMutex = NULL;
-
-	pthread_mutexattr_t tAttr;
-	int iRes;// = pthread_mutexattr_init ( &tAttr );
+	//pthread_mutexattr_t tAttr;
+	int iRes = 0;// = pthread_mutexattr_init ( &tAttr );
 	if ( iRes )
 	{
 		m_sError.SetSprintf ( "pthread_mutexattr_init, errno=%d", iRes );
@@ -767,6 +767,7 @@ CSphProcessSharedMutex::CSphProcessSharedMutex ( int iExtraSize )
 		m_pStorage.Reset ();
 		return;
 	}
+//#endif
 }
 #else
 CSphProcessSharedMutex::CSphProcessSharedMutex ( int )
@@ -940,6 +941,7 @@ void * sphThreadInit ( bool )
 //		sphDie ( "FATAL: pthread_attr_setstacksize( detached ) failed" );
 
 //	return bDetached ? &tDetachedAttr : &tJoinableAttr;
+	return NULL;
 #else
 	return NULL;
 #endif
@@ -975,8 +977,8 @@ bool sphThreadCreate ( SphThread_t * pThread, void (*fnThread)(void*), void * pA
 	if ( *pThread )
 		return true;
 #else
-	void * pAttr = sphThreadInit ( bDetached );
-//	errno = pthread_create ( pThread, (pthread_attr_t*) pAttr, sphThreadProcWrapper, pCall );
+//	void * pAttr = sphThreadInit ( bDetached );
+	errno = 0;//pthread_create ( pThread, (pthread_attr_t*) pAttr, sphThreadProcWrapper, pCall );
 	if ( !errno )
 		return true;
 #endif
@@ -1037,6 +1039,7 @@ void * sphThreadGet ( SphThreadKey_t tKey )
 	return TlsGetValue ( tKey );
 #else
 //	return pthread_getspecific ( tKey );
+	return NULL;
 #endif
 }
 
@@ -1078,6 +1081,7 @@ bool sphThreadSet ( SphThreadKey_t tKey, void * pValue )
 	return TlsSetValue ( tKey, pValue )!=FALSE;
 #else
 //	return pthread_setspecific ( tKey, pValue )==0;
+	return NULL;
 #endif
 }
 

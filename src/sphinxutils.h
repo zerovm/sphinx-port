@@ -37,8 +37,8 @@ inline int sphIsAlpha ( int c )
 //ZVM Function for packing all index files from directory in ZeroVM FS, specified in Zsphinx.conf to /fdev/output device
 //
 /////////////////////////////////////////////////////////////////////////////
-void unpackindex (void);
-void packindex (void);
+void unpackindex (char *);
+void packindex (char *);
 /////////////////////////////////////////////////////////////////////////////
 
 
