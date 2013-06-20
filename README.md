@@ -1,12 +1,15 @@
 Installing sphinx-port
 
 ./configureall.sh
+
 make
 
 cd zxpdf-3.03
+
 make
 
 cd ../docxextract
+
 make
 
 cd ../zsphinx 
