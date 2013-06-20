@@ -3,7 +3,7 @@
 
 if [ $# -ne 1 ]
 then
-  echo "Usage: `basename $0` search_path"
+  echo "Usage: `basename $0` search_path index option (merge, delta, main))"
   exit $WRONG_ARGS
 else
 directory=$1
@@ -25,11 +25,12 @@ mkdir data/out
 rm -f manifest/*.manifest
 
 #готовим новый манифест для xmlpipecreator
-sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/xmlpipecreator.manifest.template > manifest/xmlpipecreator.manifest
+sed s@{ABS_PATH}@$ABS_PATH/@ manifest.template/xmlpipecreator.manifest.template > manifest/xmlpipecreator.manifest
 
 echo ===================================================================== >> manifest/xmlpipecreator.manifest
 echo "==Channels for connected input nodes" >> manifest/xmlpipecreator.manifest
 echo ===================================================================== >> manifest/xmlpipecreator.manifest
+
 
 
 #генерация манифеста для indexer
@@ -64,6 +65,17 @@ do
 		CHANNELNAME="Channel = tcp:"$FILECOUNT":,"$DEVICENAME-$PDFCOUNT", 0, 99999999, 99999999, 0, 0"
 		let FILECOUNT=FILECOUNT+1
 		let PDFCOUNT=PDFCOUNT+1
+		echo $CHANNELNAME >> manifest/xmlpipecreator.manifest
+	fi
+	if [ "$fileext" = "docx" ] 
+	then 
+		#echo "test all manifest generator **pdf** " $FILECOUNT $filename $TXTCOUNT
+		./nodemanifestgenerator.sh $FILECOUNT "$filename" $DOCXCOUNT
+		echo $filename $fileext
+		DEVICENAME=/dev/in/$fileext
+		CHANNELNAME="Channel = tcp:"$FILECOUNT":,"$DEVICENAME-$DOCXCOUNT", 0, 99999999, 99999999, 0, 0"
+		let FILECOUNT=FILECOUNT+1
+		let DOCXCOUNT=DOCXCOUNT+1
 		echo $CHANNELNAME >> manifest/xmlpipecreator.manifest
 	fi
 done

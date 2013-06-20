@@ -1571,10 +1571,12 @@ void mylistdir (char *path)
 
 int main ( int argc, char ** argv )
 {
+	printf ("*** start indexer\n");
 
 	sphSetLogger ( Logger );
 
 	const char * sOptConfig = NULL;
+
 	bool bMerge = false;
 	CSphVector<CSphFilterSettings> dMergeDstFilters;
 
@@ -1585,18 +1587,20 @@ int main ( int argc, char ** argv )
 	CSphString sDumpRows;
 
 	int i;
-
-//	printf ("before unpack\n");
-//	mylistdir ("/");
-//	unpackindex("/dev/output");
-//	printf ("after unpack\n");
-//	mylistdir ("/");
-
+/*
+	printf ("before unpack\n");
+	mylistdir ("/");
+*/
+	unpackindex("/dev/output");
+/*
+	printf ("after unpack\n");
+	mylistdir ("/");
+*/
 	FILE *test;
 
 	test = fopen ("index/zsphinx.conf", "r");
 	if (!test)
-		printf ("Error open conf file\n");
+		printf ("Error open sphinx config file\n");
 	char c;
 	while ( (c = getc (test)) != EOF)
 		putc (c, test);
@@ -1633,6 +1637,7 @@ int main ( int argc, char ** argv )
 			bMerge = true;
 			dIndexes.Add ( argv[i+1] );
 			dIndexes.Add ( argv[i+2] );
+
 			i += 2;
 
 		} else if ( bMerge && strcasecmp ( argv[i], "--merge-dst-range" )==0 && (i+3)<argc )

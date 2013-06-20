@@ -4,7 +4,9 @@
 ==Channel = /dev/stdout, 	/dev/stdout, 0, 0, 0, 99999999, 99999999
 Channel = {ABS_PATH}data/out/xml_stdout.data, 	/dev/stdout, 0, 0, 0, 99999999, 99999999
 Channel = {ABS_PATH}data/out/xml_stderr.data, 	/dev/stderr, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/xml_debug.data, 	/dev/debug, 0, 0, 0, 99999999, 99999999
 Channel = /dev/null, 	/dev/stdin, 0, 99999999, 99999999, 0, 0
+Channel = {ABS_PATH}data/xml_maxindex.data, 	/dev/input, 3, 99999999, 99999999, 99999999, 999999999
 =====================================================================
 
 =====================================================================
@@ -12,14 +14,15 @@ Channel = tcp:2:, /dev/out/indexer, 0, 0, 0, 99999999, 99999999
 =====================================================================
 
 =====================================================================
-Channel = {ABS_PATH}data/xml_fstab.conf, 	/dev/nvram, 0, 99999999, 99999999, 0, 0
+==Channel = {ABS_PATH}data/xml_fstab.conf, 	/dev/nvram, 0, 99999999, 99999999, 0, 0
 =====================================================================
 
 Version = 09082012
 Nexe = {ABS_PATH}xmlpipecreator.nexe
-
+CommandLine = --duplicate
 MemMax = 419430400
 NodeName = xmlpipecreator, 1
 NameServer = udp:127.0.0.1:54321
-Timeout = 50
+Timeout = 500
 Environment=VERBOSITY, 0
+

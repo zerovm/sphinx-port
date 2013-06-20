@@ -859,8 +859,7 @@ void unpackindex (char * devname)
 {
 	//
 
-
-	printf ("*** ZVM start unpack\n");
+	printf ("*** ZVM start unpack from %s\n", devname);
 	FILE *infile;
 	char dirName[] = "index";
 	int result=mkdir(dirName, 0755);
@@ -890,7 +889,7 @@ void unpackindex (char * devname)
 		c=getc (infile);
 		if (c == EOF)
 		{
-			printf ("***ZVM unpack index completed successfully!\n");
+			printf ("*** ZVM unpack index completed successfully!\n");
 			fclose (infile);
 			return;
 		}
@@ -898,6 +897,7 @@ void unpackindex (char * devname)
 		if (c != '{')
 		{
 			printf("*** ZVM Error format packfile\n");
+			fclose (infile);
 			return;
 		}
 		while (!isspace(c=getc(infile))) {
@@ -917,15 +917,19 @@ void unpackindex (char * devname)
 		if (!efile)
 		{
 			printf ("*** ZVM Error open %s file for write\n", readbuf);
+			fclose (infile);
 			return;
 		}
 		char *buff = (char *) malloc (filelen);
 		int readb = fread(buff,sizeof (char),filelen,infile);
 		int writeb = fwrite(buff,sizeof (char),filelen,efile);
-		if (readb != writeb)
-			printf ("*** Warning while packing index file\n");
 		fflush (efile);
 		fclose (efile);
+		if (readb != writeb)
+			printf ("*** Warning while packing index file\n");
+		else
+			printf ("*** ZVM unpack file %s (%d bytes)  - OK!\n", readbuf, writeb);
+
 		while ((c=getc (infile))!= '\n')
 			;
 	}
@@ -937,7 +941,7 @@ void unpackindex (char * devname)
   */
 void packindex (char * devname)
 {
-	printf("*** ZVM start pack index\n");
+	printf("*** ZVM start pack index to %s \n", devname);
 	FILE *packfile;
 
 	//char packfilename[]= "/dev/output"; // ZVM
@@ -977,7 +981,7 @@ void packindex (char * devname)
 			rewind (f);
 
 			fprintf (packfile, "{%d %s}\n", (int) size, newpath);
-			printf ("file %s packed - OK!\n", newpath);
+			printf ("file %s (%d bytes) packed - OK!\n", newpath, (int) size);
 			while (!feof (f))
 			{
 				c = getc (f);

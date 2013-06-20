@@ -11,14 +11,16 @@
 #define fout(st) fprintf (myout, "%s", st);
 #define foutc(st) fprintf (myout, "%c", st);
 #define USE_XMLPIPE2 0
+#define MAXID_DEV_NAME "/dev/input"
+#define DEV_OUTPUT_NAME "/dev/out/indexer"
+
+#define pritnf printf // дурацкий макрос
+
 
 #define ZVMDEBUG
 #undef ZVMDEBUG
 
-//void getworsfromfile ( char * );
-char * getext (char * );
-void myxmlpipe (char *);
-void myxmlpipe2 (char *);
+int getworsfromfile ( char * );
 void mylistdir (char *);
 
 FILE *outf;
@@ -46,9 +48,9 @@ void mylistdir (char *path)
 	while(entry = readdir(dir))
 	{	
 		printf ("%s/%s\n",path, entry->d_name);
-		if(entry->d_type == DT_DIR)
+		if(entry->d_type == DT_DIR && (strcmp (entry->d_name, "input")) != 0)
 		{
-			if (strcmp (entry->d_name, ".") != 0 && strcmp (entry->d_name, "..") != 0) 
+			if (strcmp (entry->d_name, ".") != 0 && strcmp (entry->d_name, "..") != 0)
 			{
 				strcpy (newpath, path);
 				len = strlen (newpath);
@@ -69,6 +71,8 @@ void mylistdir (char *path)
 			lennewlast = lennew;
 			extfile[0] = '\n';
 			int extcountsymb=0;
+			int readscount;
+			readscount = 0;
 			
 			while ((newpathf [lennew] != '.') && (newpathf [lennew] != '/') )
 				lennew--;
@@ -82,32 +86,80 @@ void mylistdir (char *path)
 			}
 			// print to stdout content of file newpathf
 			fprintf (myout, "<sphinx:document id=\"%d\">\n", docID); // doc id
-			
-			getwordsfromfile (newpathf);
+
+			readscount = getwordsfromfile (newpathf);
+			if (readscount == 0)
+			{
+				fprintf (myout, "<filename>empty_file</filename>\n");
+				fprintf (myout, "<content>empty\n");
+				fprintf (myout, "</content>\n");
+				fprintf (myout, "</sphinx:document>\n\n");
+			}
 			docID++;
-
-//			fprintf(myout,"%s\n", extfile);
-			/*
-			 * old version of xmlpipecreator
-			 *
-			if ((strcmp (extfile ,".txt") == 0) //|| (strcmp (extfile ,".conf") ==0))
-				#ifdef USE_LIBEXPAT
-					myxmlpipe2 (newpathf);
-				#else
-					myxmlpipe (newpathf);
-				#endif
-			*/
-
 		}
-
 	}
 	closedir(dir);
 }
 
-void getwordsfromfile (char *filename)
+void setmaxid (char *fname, int maxid)
 {
 	FILE *f;
-/*	char *rulocale = "ru_RU.UTF-8";
+	printf ("*** ZVM (setmaxid) set MaxID = %d, device = %s\n", maxid, fname);
+	f = fopen (fname, "w");
+	if (!f)
+	{
+		printf ("*** ZVM Error save maxID for document.\n");
+		return;
+	}
+	fprintf (f, "%d", maxid);
+	fclose (f);
+	return;
+}
+
+int getmaxid (char *fname)
+{
+
+	FILE *f;
+	f = fopen (fname, "r");
+	//printf ("*** ZVM Try to open %s device.\n", fname);
+	if (!f)
+	{
+		printf ("*** ZVM Warning. Error open file %s with maxID document. MaxID set to 1.\n", fname);
+		setmaxid(MAXID_DEV_NAME, 1);
+		return 1;
+	}
+	char maxidchar[20];
+	int maxid;
+	maxid = 0;
+	int i;
+	i = 0;
+	int c;
+	while ((c=(char)getc (f)) != EOF)
+	{
+		printf (" *** %c\n", c);
+		if (isdigit(c))
+			maxidchar[i++] = c;
+	}
+	maxidchar [i] = '\0';
+	//printf ("*** ZVM 1. maxID  = %s\n", maxidchar);
+	maxid = atoi (maxidchar);
+	fclose (f);
+	//pritnf ("*** ZVM 2. maxID =  %d\n", maxid);
+	if (maxid <= 0)
+	{
+		maxid = 1;
+		printf ("*** ZVM Wrong readed MaxID form %s. maxID set to 1.\n", fname);
+		setmaxid (MAXID_DEV_NAME ,1);
+	}
+	printf ("*** ZVM maxid = %d\n", maxid);
+	return maxid;
+}
+
+int getwordsfromfile (char *filename)
+{
+	FILE *f;
+/*
+ 	char *rulocale = "ru_RU.UTF-8";
 	char *oldlocale = setlocale (LC_ALL, rulocale);
 
 	if (!oldlocale)
@@ -117,34 +169,30 @@ void getwordsfromfile (char *filename)
 */
 	int c;
 	int pos;
+	int readcount;
+	readcount =0;
 	f = fopen (filename, "r");
 	if (!f)
-		return;
+	{
+		printf("*** ZVM Error open %s file\n");
+		return 0;
+	}
 
 	while ( !feof (f) )
 	{
+		readcount++;
 		c= (char) getc(f);
 		if (c != EOF)
 			putc(c, myout);
 	}
 	fclose (f);
+	return readcount;
 }
 
 
 // заголовок XML потока
 void createxmlpipe (void)
 {
-	//
-	//char *xmldochead = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\
-<sphinx:docset>\n\
-<sphinx:schema>\n\
-<sphinx:field name=\"content\"/> \n\
-<sphinx:attr name=\"filename\" type=\"string\"/> \n\
-<sphinx:attr name=\"lastmodified\" type=\"timestamp\"/> \n\
-<sphinx:attr name=\"lastaccess\" type=\"timestamp\"/> \n \
-</sphinx:schema>\n\
-\n";
-
 	char *xmldochead = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\
 <sphinx:docset>\n\
 <sphinx:schema>\n\
@@ -153,10 +201,9 @@ void createxmlpipe (void)
 </sphinx:schema>\n\
 \n";
 
-//<sphinx:attr name=\"lastmodified\" type=\"timestamp\"/> \n\
-
 	fout (xmldochead);
 }
+
 // footer of sphinx document in XML stream
 void closexmlpipe (void)
 {
@@ -164,127 +211,84 @@ void closexmlpipe (void)
 	fout (xmldocend);
 }	
 
-// не используется в варинате решения "один зеровм на один файл"
-void myxmlpipe2 (char *filename)
+void mylistdirtest (char *path)
 {
-	FILE *f;
-	struct stat sb;
-	char c;
-
-	stat (filename, &sb);
-	f = fopen (filename, "r");
-	if (!f)
-		return;
-	
-	char *text = malloc (strlen(filename) + 1024);// [1024];
-	char docnum [1024];
-	strcpy (text, "<sphinx:document id=\"");
-	sprintf(docnum, "%d", doccount);
-	strcat (text, docnum);
-	strcat (text, "\">\n");
-	fout (text); // doc id
-//		<sphinx:attr name=\"filename\" type=\"string\"/> \n\
-
-	strcpy (text, "<filename>");
-	strcat (text, filename);
-	strcat (text, "</filename>\n");
-	fout (text); // filename
-	sprintf (docnum, "%d", sb.st_mtime);
-	strcpy (text, "<lastmodified>");
-	strcat (text, docnum);
-	strcat (text, "</lastmodified>\n");
-	fout (text); // lastmodified
-
-	sprintf (docnum, "%d", sb.st_atime);
-	strcpy (text, "<lastaccess>");
-	strcat (text, docnum);
-	strcat (text, "</lastaccess>\n");
-	fout (text); // lastmodified
-
-	strcpy (text, "<content>\n ![CDATA[");
-	fout (text);
-	while ((c=getc(f)) != EOF )
+	DIR *dir;
+	struct dirent *entry;
+	char newpath[1024];
+	dir = opendir(path);
+	int len;
+	if(dir == 0)
 	{
-//		if ((c != '<') && (c != '>') && (c != '&') && (c != '\') && ( c != '/') || (c >='0' && c <='9') || (c>='A' && c<='z') 				|| (c>='А' && c<='я') || (c == ' ')) 
-		if (isalpha(c) || isalnum (c) || isspace(c) || (c== '\n'))
-			fprintf (myout, "%c", c);	
-	}
-	strcpy (text, "\n]]</content>\n");
-	fout (text);
-	strcpy (text, "</sphinx:document>\n \n");
-	fout (text);
-	doccount++;
-}
-
-void myxmlpipe (char *filename)
-{
-	FILE *f;
-	struct stat sb;
-	int c;
-
-	stat (filename, &sb);
-	f = fopen (filename, "r");
-	if (!f)
 		return;
-
-	char text [1024];
-	char docnum [1024];
-	strcpy (text, "<document>\n");
-	fout (text); //
-
-	sprintf(text, "<id>%d</id> \n", doccount);
-	fout (text); // doc id
-
-	sprintf(text, "<group>%d</group> \n", doccount);
-	fout (text); // doc id
-
-
-	sprintf (text, "<timestamp>%d</timestamp>\n", sb.st_mtime);
-	fout (text); // lastmodified
-
-	sprintf (text, "<title>%s</title>\n", filename);
-	fout (text); // doc id
-
-	strcpy (text, "<body>\n \n");
-	fout (text);
-
-	while ((c=getc(f)) != EOF )
-	{
-		//if ((c != '<') && (c != '>') && (c != '&') && (c != '\\') && ( c != '/') || (c >='0' && c <='9') || (c>='A' && c<='z')|| (c>='А' && c<='я') || (c == ' '))
-		if (isalpha(c) || isalnum (c) || isspace(c) )
-			fprintf (myout, "%c", c);
 	}
-	strcpy (text, "\n</body>\n");
-	fout (text);
-	strcpy (text, "</document>\n \n");
-	fout (text);
-	doccount++;
+	while(entry = readdir(dir))
+	{
+		printf ("%s/%s\n",path, entry->d_name);
+		if(entry->d_type == DT_DIR)
+		{
+			if (strcmp (entry->d_name, ".") != 0 && strcmp (entry->d_name, "..") != 0)
+			{
+				strcpy (newpath, path);
+				len = strlen (newpath);
+				if (newpath [len-1] != '/')
+					strcat (newpath, "/");
+				strcat (newpath, entry->d_name);
+				mylistdirtest (newpath);
+			}
+		}
+
+	}
+	closedir(dir);
 }
 
 int main(int argc, char **argv)
 {
-	if (argc == 2)
+
+	if (argc == 2 && (strcmp (argv[1], "--onlystdout") == 0))
 		outf = stdout;
 	else
-		outf = fopen ("/dev/out/indexer","w");
+		outf = fopen (DEV_OUTPUT_NAME ,"w");
 	char c = '0';
-
-	char p[] = "/dev/in";//malloc (strlen(argv[1]) + 2);
-	//#ifndef USE_LIBEXPAT
-	//	mylistdir (p);
-	//#else
+	char p[] = "/dev/in";
 #ifdef ZVMDEBUG
 	printf ("*** output device is %d \n", outf);
 	printf ("*** start transfer to indexer\n");
 #endif
+	docID = getmaxid (MAXID_DEV_NAME);
+	printf ("*** ZVM start search incoming devices\n");
 	createxmlpipe ();
 	mylistdir (p);
 	closexmlpipe ();
+	setmaxid (MAXID_DEV_NAME, docID);
 #ifdef ZVMDEBUG
 	printf ("*** transfer to indexer Complete!\n");
 #endif
 	//#endif
 	fflush (outf);
 	fclose (outf);
+	/*if (argc == 2)
+		if (strcmp (argv[1],"--duplicate") == 0)
+		{
+			printf ("*** ZVM duplicate\n");
+			//fflush (stdout);
+			FILE *f;
+			FILE *df;
+			df = stdout;
+			char buff[1024];
+			char c;
+			int bread;
+			int bwrite;
+			f = fopen (DEV_OUTPUT_NAME, "r");
+			while (!feof (f))
+			{
+				//bread = fread (buff,1,1024,f);
+				//bwrite = fwrite (buff,1,bread,df);
+				c=getc (f);
+				putc (c, df);
+			}
+			fclose (f);
+		}*/
+	printf ("*** ZVM xmlpipe - OK\n");
 	return 0;
 }

@@ -3,6 +3,7 @@
 #include <wctype.h>
 #include <wchar.h>
 #include <dirent.h>
+#include <string.h>
 
 
 void wprintheader (FILE *f)

@@ -8,8 +8,8 @@ Channel = {ABS_PATH}data/rwindex, 	/dev/input, 3, 9999999, 9999999, 0, 0
 =====================================================================
 
 =====================================================================
-Channel = {ABS_PATH}data/search_fstab.conf, 	/dev/nvram, 0, 999999, 999999, 0, 0
-Channel = {ABS_PATH}data/config.tar, 		/dev/mount/config, 1, 9999999, 9999999, 0, 0
+==Channel = {ABS_PATH}data/search_fstab.conf, 	/dev/nvram, 0, 999999, 999999, 0, 0
+==Channel = {ABS_PATH}data/config.tar, 		/dev/mount/config, 1, 9999999, 9999999, 0, 0
 ==Channel = {ABS_PATH}data/index.tar, 		/dev/mount/index, 1, 9999999, 9999999, 0, 0
 =====================================================================
 
@@ -18,5 +18,6 @@ Nexe = {ABS_PATH}search.nexe
 MemMax = 4294967296
 NodeName = search, 1
 Timeout = 50
-CommandLine = --config zsphinx.conf --stdin
+CommandLine = --config index/zsphinx.conf --stdin
+=={COMMANDLINE}
 Environment=VERBOSITY, 0

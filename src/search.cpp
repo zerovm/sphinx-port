@@ -81,9 +81,9 @@ void mylistdir (char *path)
 
 int main ( int argc, char ** argv )
 {
-	//mylistdir("/");
-	//unpackindex("/dev/input");
-	//mylistdir("/");
+	mylistdir("/");
+	unpackindex("/dev/input");
+	mylistdir("/");
 	fprintf ( stdout, SPHINX_BANNER );
 	if ( argc<=1 )
 	{
