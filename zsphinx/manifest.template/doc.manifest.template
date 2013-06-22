@@ -1,0 +1,26 @@
+=====================================================================
+Channel = {FILE_NAME}, /dev/stdin, 0, 9999999999, 999999999, 0, 0
+=====================================================================
+
+=====================================================================
+Channel = {ABS_PATH}data/out/doc{DOCNUMBER}_debug.txt, 	/dev/debug, 0, 0, 0, 999999999, 9999999999
+Channel = {ABS_PATH}data/out/doc{DOCNUMBER}_stdout.txt, /dev/stdout, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/doc{DOCNUMBER}_stderr.txt, /dev/stderr, 0, 0, 0, 99999999, 999999
+Channel = tcp:1:, 										/dev/out/xmlpipecreator,0, 0, 0, 99999999, 99999999
+=====================================================================
+
+=====================================================================
+Channel = {ABS_PATH}data/doc_fstab.conf, /dev/nvram,	0, 999999999,9999999999, 0,0
+Channel = {ABS_PATH}data/antiword.tar, 	/dev/mount/import, 3, 999999999,9999999999, 9999999,9999999
+=====================================================================
+
+=====================================================================
+Version = 09082012
+Nexe = {ABS_PATH}doc.nexe
+NexeMax = 10000000
+NameServer = udp:127.0.0.1:54321
+MemMax=534217728
+Timeout=500
+CommandLine = temp.doc
+NodeName = doc-{TYPENUMBER}, {DOCNUMBER}
+Environment=VERBOSITY, 0

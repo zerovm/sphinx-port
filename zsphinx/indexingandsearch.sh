@@ -23,6 +23,7 @@ cp ../src/indexer 		indexer.nexe
 cp ../src/search 		search.nexe
 cp ../zxpdf-3.03/xpdf/pdftotext pdftotext.nexe
 cp ../docxextract/docxtotext docx.nexe
+cp ../antiword-0.37/antiword doc.nexe
 
 echo generate manifest
 #генерируем манифесты для всех нодов а также для search

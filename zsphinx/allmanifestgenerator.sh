@@ -41,8 +41,11 @@ sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/search.manifest.template > manif
 
 for file in $directory/*
 do
-	filename=${file%.*c}
-	fileext="${filename##*.}"
+	filename=${file%.}
+	fileext="${file##*.}"
+	echo $file
+	echo $filename
+	echo $fileext
 	
 	if [ "$fileext" = "txt" ]
 	then
@@ -55,7 +58,6 @@ do
 		let TXTCOUNT=TXTCOUNT+1
 		echo $CHANNELNAME >> manifest/xmlpipecreator.manifest
 	fi
-	
 	if [ "$fileext" = "pdf" ] 
 	then 
 		#echo "test all manifest generator **pdf** " $FILECOUNT $filename $TXTCOUNT
@@ -67,9 +69,20 @@ do
 		let PDFCOUNT=PDFCOUNT+1
 		echo $CHANNELNAME >> manifest/xmlpipecreator.manifest
 	fi
+	if [ "$fileext" = "doc" ] 
+	then 
+		#echo "test all manifest generator **doc** " $FILECOUNT $filename $TXTCOUNT
+		./nodemanifestgenerator.sh $FILECOUNT "$filename" $DOCCOUNT
+		echo $filename $fileext
+		DEVICENAME=/dev/in/$fileext
+		CHANNELNAME="Channel = tcp:"$FILECOUNT":,"$DEVICENAME-$DOCCOUNT", 0, 99999999, 99999999, 0, 0"
+		let FILECOUNT=FILECOUNT+1
+		let DOCCOUNT=DOCCOUNT+1
+		echo $CHANNELNAME >> manifest/xmlpipecreator.manifest
+	fi
 	if [ "$fileext" = "docx" ] 
 	then 
-		#echo "test all manifest generator **pdf** " $FILECOUNT $filename $TXTCOUNT
+		#echo "test all manifest generator **docx** " $FILECOUNT $filename $TXTCOUNT
 		./nodemanifestgenerator.sh $FILECOUNT "$filename" $DOCXCOUNT
 		echo $filename $fileext
 		DEVICENAME=/dev/in/$fileext
