@@ -8,6 +8,10 @@ cd zxpdf-3.03
 
 make
 
+cd ../docxextract
+
+make
+
 cd ../zsphinx 
 
 ./indexingandsearch.sh {Путь к документам для поиска}
