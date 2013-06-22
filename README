@@ -12,6 +12,9 @@ make
 cd ../docxextract
 make
 
+cd ../antiword-0.37
+make
+
 run indexing, and then run search "channel" from txt files on tar archive doc.tar
 $ cd ../zsphinx
 
