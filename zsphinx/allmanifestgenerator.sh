@@ -14,6 +14,7 @@ PDFCOUNT=1
 TXTCOUNT=1
 DOCCOUNT=1
 DOCXCOUNT=1
+ODTCOUNT=1
 SCRIPT=$(readlink -f "$0")
 SCRIPT_PATH=`dirname "$SCRIPT"`
 ABS_PATH=$SCRIPT_PATH
@@ -89,6 +90,17 @@ do
 		CHANNELNAME="Channel = tcp:"$FILECOUNT":,"$DEVICENAME-$DOCXCOUNT", 0, 99999999, 99999999, 0, 0"
 		let FILECOUNT=FILECOUNT+1
 		let DOCXCOUNT=DOCXCOUNT+1
+		echo $CHANNELNAME >> manifest/xmlpipecreator.manifest
+	fi
+	if [ "$fileext" = "odt" ] 
+	then 
+		#echo "test all manifest generator **docx** " $FILECOUNT $filename $TXTCOUNT
+		./nodemanifestgenerator.sh $FILECOUNT "$filename" $ODTCOUNT
+		echo $filename $fileext
+		DEVICENAME=/dev/in/$fileext
+		CHANNELNAME="Channel = tcp:"$FILECOUNT":,"$DEVICENAME-$ODTCOUNT", 0, 99999999, 99999999, 0, 0"
+		let FILECOUNT=FILECOUNT+1
+		let ODTCOUNT=ODTCOUNT+1
 		echo $CHANNELNAME >> manifest/xmlpipecreator.manifest
 	fi
 done

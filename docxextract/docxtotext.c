@@ -70,6 +70,13 @@
 #define USEWIN32IOAPI
 #include "iowin32.h"
 #endif
+
+/*
+ *  ZVM
+ * */
+
+int dt; //dt - type of document
+
 /*
   mini unzip, demo of unzip package
 
@@ -334,8 +341,10 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
 
     //printf ("filename=%s \n", filename_inzip);
 
-    if (strcmp (filename_inzip, "word/document.xml") != 0)
-    	return UNZ_OK;
+   	if ((strcmp (filename_inzip, "word/document.xml") != 0) && dt == 1)
+   		return UNZ_OK;
+   	if ((strcmp (filename_inzip, "content.xml") != 0) && dt == 2)
+   		return UNZ_OK;
 
     if (err!=UNZ_OK)
     {
@@ -573,7 +582,6 @@ void printfooter (FILE *f)
 	  fprintf (f, "</sphinx:document>\n \n");
 }
 
-
 void gettextfromxml (void)
 {
 	//
@@ -597,8 +605,6 @@ void gettextfromxml (void)
 		printf ("error open document.xml file \n");
 		return;
 	}
-
-
 	fseek(fin, 0, SEEK_END);
 	int fsize = ftell(fin);
 	fseek(fin, 0, SEEK_SET);
@@ -610,7 +616,6 @@ void gettextfromxml (void)
 	int ei; //счетчик извлеченный текст
 	ei = 0;
 	char c;
-
 	for (i = 0; i < fsize - 8; i++){
 		if (strncmp(opentag1,buff + i, 5) == 0)
 		{
@@ -660,6 +665,98 @@ void gettextfromxml (void)
 	return;
 }
 
+void gettextfromxmlodt (void)
+{
+	//
+	FILE *fin;
+	FILE *ftext;
+	//char *finname = "/home/volodymyr/git/zlib/zlib/contrib/minizip/word/document.xml";
+	char *finname = "content.xml";
+	//char *ftextname = "/home/volodymyr/git/zlib/zlib/contrib/minizip/etext.txt";
+	char *ftextname = DEVOUTNAME;
+	fin = fopen (finname, "r");
+	ftext = fopen (ftextname, "w");
+	char *opentag1 = "<text:p";
+	char *closetag2 = "</text:p>";
+	char *buff;
+	char *textbuff;
+
+	if (!fin)
+	{
+		printf ("error open document.xml file \n");
+		return;
+	}
+
+	fseek(fin, 0, SEEK_END);
+	int fsize = ftell(fin);
+	fseek(fin, 0, SEEK_SET);
+	buff = (char*)  malloc (fsize + 10);
+	textbuff = (char*)  malloc (fsize + 10);
+	int bread = fread (buff, sizeof (char), fsize, fin);
+	printf ("bread=%d\n", bread);
+	int i;
+	int ei; //счетчик извлеченный текст
+	ei = 0;
+	char c;
+	char lastc;
+	for (i = 0; i < fsize - 8; i++){
+/*		if (strncmp(opentag1,buff + i, 5) == 0)
+		{
+			i = i + 5;
+			while (strncmp(closetag2,buff + i, 6)) // пока не закрывается тег <\\w:t>
+			{
+				textbuff [ei++] = buff [i++];
+			}
+			textbuff[ei++] = ' ';
+		}
+		else
+*/
+		if ((strncmp(opentag1, buff + i, 5) == 0))
+		{
+			// перематываем до начала текста
+			while ((buff[i] != '>'))
+				i++;
+			if (buff [i-1] != '/')
+			{
+				while (strncmp(closetag2,buff + i, 6))// пока не закрывается тег <\\w:t>
+				{
+					textbuff [ei++] = buff [i++];
+				}
+				textbuff[ei++] = ' ';
+			}
+			else
+			{
+				continue;
+			}
+		}
+
+	}
+	fclose (fin);
+
+	int bwrite;
+	bwrite = 0;
+
+//	bwrite = fwrite (textbuff, sizeof (char), ei, ftext);
+	printheader (ftext);
+	for (i = 0;i < ei; i++ )
+	{
+		if (isalnum(textbuff [i]) || isspace (textbuff [i]))
+		{
+			putc (textbuff[i], ftext);
+			bwrite++;
+		}
+	}
+	printfooter (ftext);
+	fclose (ftext);
+
+//	if (bwrite == ei)
+	printf ("*** ZVM extracted %d bytes OK!\n", ei);
+	free(buff);
+	free(textbuff);
+	return;
+}
+
+
 int savefromstdin (void)
 {
 	FILE *f;
@@ -683,11 +780,24 @@ int savefromstdin (void)
 	return 0;
 }
 
+int getdoctype (char *nodename)
+{
+	if (strncmp (nodename, "docx", 4) == 0)
+		return 1;
+	if (strncmp (nodename, "odt", 3) == 0)
+		return 2;
+	return 0;
+}
+
 
 int main(argc,argv)
     int argc;
     char *argv[];
 {
+
+    dt = getdoctype(argv[0]);
+
+    printf ("%d\n", dt);
 
     const char *zipfilename=FILENAME;
 //    const char *zipfilename="/home/volodymyr/git/zlib/zlib/contrib/minizip/1.docx";
@@ -816,8 +926,6 @@ int main(argc,argv)
             ret_value = do_extract_onefile(uf, filename_to_extract, opt_do_extract_withoutpath, opt_overwrite, password);
     }
 
-
-
     unzClose(uf);
 
     if (ret_value != 0)
@@ -826,7 +934,11 @@ int main(argc,argv)
     	return ret_value;
     }
 
-    gettextfromxml ();
+    if (dt == 1)
+    	gettextfromxml ();
+    else if (dt == 2)
+    	gettextfromxmlodt ();
+
 /*
     FILE *f;
     f = fopen ("etext.txt", "r");
