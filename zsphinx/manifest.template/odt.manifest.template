@@ -1,27 +1,23 @@
 =====================================================================
-Channel = {FILE_NAME}, /dev/stdin, 0, 9999999999, 999999999, 0, 0
+Channel = {FILE_NAME}, /dev/stdin, 0, 0, 9999999999, 999999999, 0, 0
 =====================================================================
 
 =====================================================================
-==Channel = {ABS_PATH}data/out/odt{DOCNUMBER}_debug.txt, 	/dev/debug, 0, 0, 0, 999999999, 9999999999
-==Channel = /dev/stdout, /dev/stdout, 0, 0, 0, 99999999, 99999999
-Channel = {ABS_PATH}data/out/odt{DOCNUMBER}_stdout.txt, /dev/stdout, 0, 0, 0, 99999999, 99999999
-Channel = {ABS_PATH}data/out/odt{DOCNUMBER}_stderr.txt, /dev/stderr, 0, 0, 0, 999999, 999999
-Channel = tcp:1:, 										/dev/out/xmlpipecreator,0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/odt{DOCNUMBER}_stdout.txt, /dev/stdout, 0, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/odt{DOCNUMBER}_stderr.txt, /dev/stderr, 0, 0, 0, 0, 999999, 999999
+Channel = tcp:1:, 										/dev/out/xmlpipecreator, 0, 0, 0, 0, 99999999, 99999999
 =====================================================================
 
 =====================================================================
-==Channel = {ABS_PATH}data/ru_RU.UTF-8.tar, /dev/mount/lib, 0, 999999,9999999999, 0,0
-==Channel = {ABS_PATH}data/docx_fstab.conf, 	/dev/nvram,	0, 999999,9999999999, 0,0
-==Channel = {ABS_PATH}data/confpdf.tar, 	/dev/mount/import, 	0, 999999,9999999999, 0,0
+Channel = {ABS_PATH}nvram/odt{DOCNUMBER}.nvram, 	/dev/nvram,	0, 0, 999999,9999999999, 0,0
 =====================================================================
 
 =====================================================================
-Version = 09082012
-Nexe = {ABS_PATH}odt.nexe
-NexeMax = 10000000
+Version = 20130611
+Program = {ABS_PATH}odt.nexe
 NameServer = udp:127.0.0.1:54321
-MemMax=534217728
-Timeout=500
-NodeName = odt-{TYPENUMBER}, {DOCNUMBER}
+Memory=419430400, 0
+Timeout=15
+==NodeName = odt-{TYPENUMBER}, {DOCNUMBER}
+Node={DOCNUMBER}
 Environment=VERBOSITY, 0

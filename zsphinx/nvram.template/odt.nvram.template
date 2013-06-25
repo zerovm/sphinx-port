@@ -1,11 +1,8 @@
 ###########################################################
 # ZRT fstab file, injects tar images contents into ZRT FS #
 ###########################################################
+[env]
+name=fname, value={FILE_NAME}
 
-[fstab] 
-#inject files into FS
-channel=/dev/mount/import, mountpoint=/, access=ro
-
-
-#[env]
-#name=fname, value="testpdffile.pdf"
+[args]
+args=odt-{TYPENUMBER}

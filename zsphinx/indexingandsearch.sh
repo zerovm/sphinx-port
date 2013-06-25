@@ -9,10 +9,12 @@ else
 directory=$1
 fi
 
-echo remove old nexe and manifest
+echo remove old nexes, outs, manifests and nvrams configuration
 rm -f *.nexe
 rm -f manifest/*.manifest
 rm -f *data/out/*
+rm -f nvram/*.nvram
+
 
 echo generate zsphinx.conf from template
 ./rwgenerator.sh

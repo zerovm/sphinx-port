@@ -6,20 +6,20 @@
 #include <string.h>
 
 
-void wprintheader (FILE *f)
+void printheader (FILE *f)
 {
 	char *externalfilename = getenv("fname");
 	//printf ("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"); // заголовок XML файла, генерируется в xmlpipecreator
 	//printf ("<sphinx:document id=\"%d\">\n", docID); // заголовок документа в потоке, генерируется в xmlpipecreator
-	fwprintf (f, L"<filename>%s</filename>\n", (wchar_t) externalfilename); //
-	fwprintf (f, L"<content>\n");
+	fprintf (f, "<filename>%s</filename>\n", (char) externalfilename); //
+	fprintf (f, "<content>\n");
 
 }
 
-void wprintfooter (FILE *f)
+void printfooter (FILE *f)
 {
-	  fwprintf (f, L"</content>\n");
-	  fwprintf (f, L"</sphinx:document>\n \n");
+	  fprintf (f, "</content>\n");
+	  fprintf (f, "</sphinx:document>\n \n");
 }
 
 void mylistdir (char *path)
@@ -40,7 +40,7 @@ void mylistdir (char *path)
 //	printf ("* %s", path);
 	while(entry = readdir(dir))
 	{
-		wprintf (L"%s/%s\n",path, entry->d_name);
+		printf ("%s/%s\n",path, entry->d_name);
 		if(entry->d_type == DT_DIR)
 		{
 			if (strcmp (entry->d_name, ".") != 0 && strcmp (entry->d_name, "..") != 0)
@@ -60,11 +60,13 @@ void mylistdir (char *path)
 
 #undef ZVMDEBUG
 
+
+
 int main (int argc, char *argv[]) 
 {
-	wchar_t *oldlocale;
-	oldlocale = setlocale (LC_ALL, "ru_RU.UTF-8");
-	wprintf (L"set locale %s\n", oldlocale);
+//	char *oldlocale;
+//	oldlocale = setlocale (LC_ALL, "ru_RU.UTF-8");
+//	printf ("set locale %s\n", oldlocale);
 	
 	FILE *fin = argc == 2 ? fopen (argv[1], "r"): stdin;
 	FILE *fout = argc == 2 ? stdout : fopen ("/dev/out/xmlpipecreator", "w");
@@ -74,22 +76,22 @@ int main (int argc, char *argv[])
 	else
 		mylistdir ("/");
 #endif
-	wchar_t wc;
+	char wc;
 	int charcount = 0;
 	int totalcharcount = 0;
-	wprintheader (fout);
-	while ((wc = (wchar_t)fgetwc(fin)) != WEOF) {
+	printheader (fout);
+	while ((wc = (char)fgetc(fin)) != EOF) {
 		totalcharcount++;
-		if (iswalnum (wc) || iswspace(wc)) {
+		if (isalnum (wc) || isspace(wc)) {
 			//wprintf (L"size of wc %d\n", sizeof(wc));
 			charcount++;
-			fwprintf (fout, L"%C", wc);
+			fprintf (fout, "%c", wc);
 		}
 		else
-			fwprintf (fout, L"%C", ' ');
+			fprintf (fout, "%c", ' ');
 	}
-	wprintfooter (fout);
-	wprintf (L"\n*** extracted symbols %d filtered %d  \n",charcount, totalcharcount);//, getenv["fname"]);
+	printfooter (fout);
+	printf ("\n*** extracted symbols %d filtered %d  \n",charcount, totalcharcount);//, getenv["fname"]);
 	fflush (NULL);
 	if (fout != stdout)
 		fclose (fout);

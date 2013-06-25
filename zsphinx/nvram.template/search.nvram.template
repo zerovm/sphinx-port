@@ -4,11 +4,9 @@
 
 [fstab] 
 #inject files into FS
-#channel=/dev/mount/import, mountpoint=/, access=ro
-channel=/dev/mount/lib, mountpoint=/, access=ro
-#channel=/dev/mount/share, mountpoint=/share, access=ro
+channel=/dev/mount/index,  mountpoint=/, access=ro
+channel=/dev/mount/config,  mountpoint=/, access=ro
 
+[args]
+args=search --config index/zsphinx.conf --stdin
 
-
-[env]
-name=fname, value="testpdffile.pdf"
