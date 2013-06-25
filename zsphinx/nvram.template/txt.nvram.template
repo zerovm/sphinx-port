@@ -9,4 +9,4 @@ channel=/dev/mount/lib, mountpoint=/, access=ro
 name=fname, value={FILE_NAME}
 
 [args]
-args=txt-{TYPENUMBER} temp.doc
+args=txt-{TYPENUMBER}
