@@ -436,12 +436,17 @@ main(int argc, char **argv)
 
 	DBG_DEC(iGoodCount);
 
-	//fflush (NULL);
+	if (iGoodCount <= 0)
+		return 1;
+
+	fflush (NULL);
 
 	FILE *f;
 	FILE *fout;
 	f = fopen ("temp.txt", "r");
 	fout = fopen ("/dev/out/xmlpipecreator", "w");
+
+
 	if (!f)
 	{
 		printf ("*** ZVM Error open temp.txt file\n");
@@ -454,18 +459,21 @@ main(int argc, char **argv)
 		printf ("*** ZVM Error open output device (xmlpipeceator)\n");
 		return 1;
 	}
-	char c;
+	int c;
+	int lastc;
 	printheader (fout);
 	printheader (stdout);
-
 	while (!feof (f))
 	{
-		c = getc (f);
-		if ((c != EOF) && (isalnum(c) || isspace (c)))
+		c = (char)getc (f);
+		if ((c != EOF) && (isalnum(c) || (isspace (c)&& !isspace(lastc))))
 		{
 			putc (c, fout);
 			putc (c, stdout);
 		}
+		else
+			putc(' ', fout);
+		lastc = c;
 	}
 	printfooter (fout);
 	printfooter (stdout);

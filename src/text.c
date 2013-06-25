@@ -77,18 +77,20 @@ int main (int argc, char *argv[])
 		mylistdir ("/");
 #endif
 	char wc;
+	char lastwc;
 	int charcount = 0;
 	int totalcharcount = 0;
 	printheader (fout, externalfilename);
 	while ((wc = (char)fgetc(fin)) != EOF) {
 		totalcharcount++;
-		if (isalnum (wc) || isspace(wc)) {
+		if (isalnum (wc) || ((isspace(wc) && !isspace(lastwc)))) {
 			//wprintf (L"size of wc %d\n", sizeof(wc));
 			charcount++;
 			fprintf (fout, "%c", wc);
 		}
 		else
 			fprintf (fout, "%c", ' ');
+		lastwc = wc;
 	}
 	printfooter (fout);
 	printf ("\n*** extracted symbols %d filtered %d  \n",charcount, totalcharcount);//, getenv["fname"]);

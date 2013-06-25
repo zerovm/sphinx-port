@@ -183,7 +183,10 @@ int getwordsfromfile (char *filename)
 		readcount++;
 		c= (char) getc(f);
 		if (c != EOF)
+		{
 			putc(c, myout);
+			putc(c, stdout);
+		}
 	}
 	fclose (f);
 	return readcount;
@@ -202,6 +205,7 @@ void createxmlpipe (void)
 \n";
 
 	fout (xmldochead);
+	printf("%s", xmldochead);
 }
 
 // footer of sphinx document in XML stream
@@ -209,6 +213,7 @@ void closexmlpipe (void)
 {
 	char *xmldocend = "</sphinx:docset>\n";
 	fout (xmldocend);
+	printf ("%s", xmldocend);
 }	
 
 void mylistdirtest (char *path)

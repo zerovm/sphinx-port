@@ -645,15 +645,29 @@ void gettextfromxml (void)
 	int bwrite;
 	bwrite = 0;
 
+	// remove &quot;&apos;
+	char *q= "&quot;";
+	char *ap="&apos;";
+	int cq;
+	for (i = 0; i < ei; i++)
+	{
+		if ((strncmp(q,textbuff + i,6) == 0) || (strncmp(ap,textbuff + i,6) == 0))
+			for (cq = 0; cq < 6; cq++)
+				textbuff[i+cq] = ' ';
+	}
+
+
 //	bwrite = fwrite (textbuff, sizeof (char), ei, ftext);
 	printheader (ftext);
 	for (i = 0;i < ei; i++ )
 	{
-		if (isalnum(textbuff [i]) || isspace (textbuff [i]))
+		if (isalnum(textbuff [i]) || isspace (textbuff [i]) && !isspace(textbuff[i-1]))
 		{
 			putc (textbuff[i], ftext);
 			bwrite++;
 		}
+		else
+			putc(' ', ftext);
 	}
 	printfooter (ftext);
 	fclose (ftext);
@@ -711,14 +725,14 @@ void gettextfromxmlodt (void)
 		}
 		else
 */
-		if ((strncmp(opentag1, buff + i, 5) == 0))
+		if ((strncmp(opentag1, buff + i, 7) == 0))
 		{
 			// перематываем до начала текста
 			while ((buff[i] != '>'))
 				i++;
 			if (buff [i-1] != '/')
 			{
-				while (strncmp(closetag2,buff + i, 6))// пока не закрывается тег <\\w:t>
+				while (strncmp(closetag2,buff + i, 6))// пока не закрывается тег </text:p>
 				{
 					textbuff [ei++] = buff [i++];
 				}
@@ -736,15 +750,30 @@ void gettextfromxmlodt (void)
 	int bwrite;
 	bwrite = 0;
 
+	char *h = "&#x0d;";
+	char *q = "&quot;";
+	char *a = "&apos;";
+
+	int cq;
+	for (i = 0; i < ei; i++)
+	{
+		if ((strncmp(q,textbuff + i,6) == 0) || (strncmp(a,textbuff + i,6) == 0) || (strncmp(h,textbuff + i,6) == 0))
+			for (cq = 0; cq < 6; cq++)
+				textbuff[i+cq] = ' ';
+	}
+
 //	bwrite = fwrite (textbuff, sizeof (char), ei, ftext);
 	printheader (ftext);
+
 	for (i = 0;i < ei; i++ )
 	{
-		if (isalnum(textbuff [i]) || isspace (textbuff [i]))
+		if (isalnum(textbuff [i]) || (isspace (textbuff [i]) && !isspace(textbuff[i-1])))
 		{
 			putc (textbuff[i], ftext);
 			bwrite++;
 		}
+		else
+			putc (' ',ftext);
 	}
 	printfooter (ftext);
 	fclose (ftext);
