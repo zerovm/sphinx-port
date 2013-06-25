@@ -6,12 +6,12 @@
 #include <string.h>
 
 
-void printheader (FILE *f)
+void printheader (FILE *f, char*externalfilename)
 {
-	char *externalfilename = getenv("fname");
+	//char *externalfilename = getenv("fname");
 	//printf ("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"); // заголовок XML файла, генерируется в xmlpipecreator
 	//printf ("<sphinx:document id=\"%d\">\n", docID); // заголовок документа в потоке, генерируется в xmlpipecreator
-	fprintf (f, "<filename>%s</filename>\n", (char) externalfilename); //
+	fprintf (f, "<filename>%s</filename>\n", externalfilename); //
 	fprintf (f, "<content>\n");
 
 }
@@ -67,7 +67,7 @@ int main (int argc, char *argv[])
 //	char *oldlocale;
 //	oldlocale = setlocale (LC_ALL, "ru_RU.UTF-8");
 //	printf ("set locale %s\n", oldlocale);
-	
+	char *externalfilename = getenv ("fname");
 	FILE *fin = argc == 2 ? fopen (argv[1], "r"): stdin;
 	FILE *fout = argc == 2 ? stdout : fopen ("/dev/out/xmlpipecreator", "w");
 #ifdef ZVMDEBUG
@@ -79,7 +79,7 @@ int main (int argc, char *argv[])
 	char wc;
 	int charcount = 0;
 	int totalcharcount = 0;
-	printheader (fout);
+	printheader (fout, externalfilename);
 	while ((wc = (char)fgetc(fin)) != EOF) {
 		totalcharcount++;
 		if (isalnum (wc) || isspace(wc)) {
