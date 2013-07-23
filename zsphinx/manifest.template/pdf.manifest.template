@@ -1,23 +1,24 @@
 =====================================================================
-Channel = {FILE_NAME}, 					/dev/stdin, 0, 0, 9999999, 9999999, 0, 0
+Channel = /dev/null, 					/dev/stdin, 0, 0, 9999999, 9999999, 0, 0
 =====================================================================
 
 =====================================================================
-Channel = {ABS_PATH}data/out/pdf{DOCNUMBER}_stdout.txt, 	/dev/stdout, 			0, 0, 0, 0, 99999999, 99999999
-Channel = {ABS_PATH}data/out/pdf{DOCNUMBER}_stderr.txt, 	/dev/stderr, 			0, 0, 0, 0, 999999, 999999
-Channel = tcp:1:, 											/dev/out/xmlpipecreator,0, 0, 0, 0, 99999999, 999999999
+Channel = {ABS_PATH}data/out/pdf_stdout.txt, 	/dev/stdout, 			0, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/pdf_stderr.txt, 	/dev/stderr, 			0, 0, 0, 0, 999999, 999999
+Channel = tcp:1:, 							/dev/out/xmlpipecreator,0, 0, 0, 0, 99999999, 999999999
 =====================================================================
 
 =====================================================================
-Channel = {ABS_PATH}nvram/pdf{DOCNUMBER}.nvram, 	/dev/nvram,				0, 0, 999999,9999999999, 0,0
+Channel = {ABS_PATH}nvram/pdf.nvram, 	/dev/nvram,				0, 0, 999999,9999999999, 0,0
 Channel = {ABS_PATH}data/confpdf.tar, 	/dev/mount/import, 		0, 0, 999999,9999999999, 0,0
 =====================================================================
 
 Version = 20130611
-Program = {ABS_PATH}pdftotext.nexe
+Program = {ABS_PATH}pdf.nexe
 NameServer = udp:127.0.0.1:54321
 Memory=419430400, 0
-Timeout=15
-Node={DOCNUMBER}
-==NodeName = pdftotext-{TYPENUMBER}, {DOCNUMBER}
-==Environment=VERBOSITY, 0
+Timeout = 500
+Node = 3
+=====================================================================
+== incoming nodes with *.pdf files
+=====================================================================

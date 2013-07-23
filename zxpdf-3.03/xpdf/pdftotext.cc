@@ -16,6 +16,10 @@
 #include <locale.h>
 #include <wctype.h>
 #include <wchar.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include "parseargs.h"
 #include "GString.h"
 #include "gmem.h"
@@ -33,6 +37,9 @@
 #include "UnicodeMap.h"
 #include "Error.h"
 #include "config.h"
+#include "../../src/zvmfileutil.h"
+
+#define DEVOUTNAME "/dev/out/xmlpipecreator"
 
 static void printInfoString(FILE *f, Dict *infoDict, const char *key,
 			    const char *text1, const char *text2,
@@ -96,6 +103,8 @@ static ArgDesc argDesc[] = {
   {NULL}
 };
 
+
+
 void mylistdir (char *path)
 {
   	DIR *dir;
@@ -114,7 +123,7 @@ void mylistdir (char *path)
 //	printf ("* %s", path);
 	while(entry = readdir(dir))
 	{
-		printf ("%s/%s\n",path, entry->d_name);
+		//printf ("%s/%s\n",path, entry->d_name);
 		if(entry->d_type == DT_DIR)
 		{
 			if (strcmp (entry->d_name, ".") != 0 && strcmp (entry->d_name, "..") != 0)
@@ -126,8 +135,12 @@ void mylistdir (char *path)
 				strcat (newpath, entry->d_name);
 				mylistdir (newpath);
 			}
+		}
+		else
+		{
 
 		}
+
 	}
 	closedir(dir);
 }
@@ -166,7 +179,7 @@ void wprintfooter (FILE *f)
 
 #undef ZVMDEBUG
 
-int main(int argc, char *argv[]) {
+int wmain(int argc, char *argv[]) {
   PDFDoc *doc;
   GString *fileName;
   GString *textFileName;
@@ -194,15 +207,15 @@ int main(int argc, char *argv[]) {
     goto err0;
   }
 */
-#ifdef ZVMDEBUG
-  mylistdir ("/");
-#endif
+//#ifdef ZVMDEBUG
+  mylistdir ("/dev/in");
+//#endif
   // copy from stdin incoming pdf file to temp file
   fileName = new GString("temp.pdf");
   if (fixedPitch) {
     physLayout = gTrue;
   }
-
+/*
 #ifndef ZVMSTDIN
   FILE *tempPDF;
   printf ("*** start saving PDF from stdin to temp PDF file \n");
@@ -212,7 +225,7 @@ int main(int argc, char *argv[]) {
   fclose (tempPDF);
   printf ("*** save PDF from stdin to temp PDF file complete \n");
 #endif
-
+*/
   // read config file
   globalParams = new GlobalParams(cfgFileName);
   if (textEncName[0]) {
@@ -387,6 +400,7 @@ int main(int argc, char *argv[]) {
 #ifdef ZVMDEBUG
   printf ("*** set locale to %s\n", oldlocale);
 #endif
+/*
   FILE *devfile;
   FILE *tempfile;
   devfile = fopen ("/dev/out/xmlpipecreator", "w");
@@ -416,7 +430,9 @@ int main(int argc, char *argv[]) {
   //fflush (stdout);
   fclose (devfile);
   fclose (tempfile);
+
   printf ("***extracting %d symbols filtering %d symbols\n", cc1, cc);//, getenv ["fname"]);
+*/
 #ifdef ZVMDEBUG
   mylistdir ("/");
 #endif
@@ -435,6 +451,144 @@ int main(int argc, char *argv[]) {
   gMemReport(stderr);
 
   return exitCode;
+}
+
+int main (int argc, char *argv[])
+{
+    struct filemap fmap;
+
+    char *filename;
+    char *chname; //
+    int fdout;
+
+    char *path = "/dev/in";
+    //char *path = "/home/volodymyr/git/sphinx-port/docxextract/1";
+    char *prefix = "";
+    //char *prefix = "/home/volodymyr/temp";
+    long totalbyteswrite2text, byteswrite2text;
+
+  	DIR *dir;
+	struct dirent *entry;
+
+
+    byteswrite2text = 0;
+    totalbyteswrite2text = 0;
+//    fdout = open ("/home/volodymyr/temp/xmlpipe", O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+
+    fdout = open (DEVOUTNAME, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+    if (fdout < 0 )
+    {
+    	printf ("*** ZVM Error open % output device\n", DEVOUTNAME);
+    	return 1;
+    }
+
+    /* create temp.doc file in "/" directory
+	if (mkdir (prefix, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR) != 0)
+	{
+		printf ("*** ZVM Error create dir %s\n", prefix);
+		return 1;
+	}
+	*/
+	dir = opendir(path);
+	if (dir ==0)
+	{
+		printf ("*** ZVM Error read dir %s, %d\n", path, dir);
+		return 1;
+	}
+	while(entry = readdir(dir))
+	{
+		int temp;
+		int filteredbufflen;
+		filteredbufflen =0;
+		if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
+		{
+			char *filteredbuff; // buffer for filtered text extracted from file of any format
+			char *buff; // temp buffer fot readed data trom txt file.
+			long txtbufflen;
+			long filteredbufflen;
+			char *tmpdocfilename = "temp.pdf";
+			char *tmptxtfilename = "temp.txt";//TEMP_FILE_FOR_EXTRACTED_TEXT; // tempextracted.txt
+			int fdin;
+			chname = (char *) malloc (strlen(path) + strlen (entry->d_name) + 2);
+			sprintf (chname, "%s/%s", path, entry->d_name);
+			printf ("start chname = %s\n", chname);
+			fmap = getfilefromchannel(chname, prefix);
+			/*
+			 *
+			 * extract text from PDF
+			 *
+			 */
+			int tmpsize, ftmp;
+			ftmp = open (fmap.tempfilename, O_RDONLY);
+
+			tmpsize = getfilesize_fd(ftmp, NULL, 0);
+			printf ("tmp file name = %s, size = %d, detected size = %d\n", fmap.tempfilename, fmap.realfilesize, tmpsize);
+			close (ftmp);
+			if (fmap.realfilesize <= 0)
+			{
+				printf ("*** Error fmap.realfilesize = %d\n", fmap.realfilesize);
+				continue;
+			}
+			if (rename (fmap.tempfilename, tmpdocfilename))
+			{
+				printf ("*** Error rename %s to %s \n", fmap.tempfilename, tmpdocfilename);
+				continue;
+			}
+
+			ftmp = open (tmpdocfilename, O_RDONLY);
+			tmpsize = getfilesize_fd(ftmp, NULL, 0);
+			printf ("tmp file name after rename = %s, size = %d, detected size = %d\n", tmpdocfilename, fmap.realfilesize, tmpsize);
+			close (ftmp);
+
+			if (wmain (argc, argv) != 0)
+			{
+				printf ("*** Error extract %s \n", tmpdocfilename);
+				continue;
+			}
+			fdin = open (tmptxtfilename, O_RDONLY);
+			if (fdin <=0 )
+			{
+				printf ("*** Error fdin = %d \n", fdin);
+				continue;
+			}
+
+			txtbufflen = getfilesize_fd(fdin,NULL,0);
+			printf ("txtbufflen = %d, (%s)\n", txtbufflen, tmptxtfilename);
+
+
+			if (txtbufflen <0 )
+			{
+				printf ("*** Error txtbufflen = %d \n", txtbufflen);
+				continue;
+			}
+			buff = (char *) malloc (txtbufflen);
+			filteredbuff = (char *) malloc (txtbufflen);
+			int bread;
+			bread = read (fdin, buff, txtbufflen);
+			close (fdin);
+
+			printf ("*** Error txtbufflen = %d \n", bread);
+
+			filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
+
+			int tempwritebytes2channel;
+			if (filteredbufflen > 0)
+			{
+				//printf ("*****filteredbufflen %d\n", filteredbufflen);
+				//for (temp = 0; temp < filteredbufflen; temp++)
+				//	putchar (filteredbuff[temp]);
+				tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fdout);
+			}
+			else
+				continue;
+
+		}
+	}
+
+	close (fdout);
+	printf ("doc - all OK!\n");
+
+	return 0;
 }
 
 static void printInfoString(FILE *f, Dict *infoDict, const char *key,

@@ -4,6 +4,8 @@
 #include <wchar.h>
 #include <dirent.h>
 #include <string.h>
+#define INUT_FILE_PREFIX "/dev/in"
+#define TEMP_FILE_PREFIX "temp"
 
 
 void printheader (FILE *f, char*externalfilename)
@@ -70,6 +72,11 @@ int main (int argc, char *argv[])
 	char *externalfilename = getenv ("fname");
 	FILE *fin = argc == 2 ? fopen (argv[1], "r"): stdin;
 	FILE *fout = argc == 2 ? stdout : fopen ("/dev/out/xmlpipecreator", "w");
+/*
+	if (TEMP_FILE_PREFIX)
+		if (mkdir (TEMP_FILE_PREFIX) != 0)
+*/
+
 #ifdef ZVMDEBUG
 	if (argc == 2)
 		mylistdir ("/home/volodymyr/tf");

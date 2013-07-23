@@ -1,8 +1,12 @@
 ###########################################################
 # ZRT fstab file, injects tar images contents into ZRT FS #
 ###########################################################
+
 [env]
 name=fname, value={FILE_NAME}
 
 [args]
-args=docx-{TYPENUMBER}
+args=filesender-{DOCNUMBER}
+
+[debug]
+verbosity=4

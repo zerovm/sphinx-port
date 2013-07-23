@@ -4,3 +4,6 @@
 
 [args]
 args=xmlpipecreator --duplicate
+
+#[debug]
+#verbosity=4

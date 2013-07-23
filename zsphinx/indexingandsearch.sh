@@ -15,17 +15,17 @@ rm -f manifest/*.manifest
 rm -f *data/out/*
 rm -f nvram/*.nvram
 
-
-echo generate zsphinx.conf from template
-./rwgenerator.sh
-echo copy nexe
+#echo generate zsphinx.conf from template
+#./rwgenerator.sh
+echo copy nexes
 cp ../src/xmlpipecreator 	xmlpipecreator.nexe
-cp ../src/text 	text.nexe
+#cp ../src/text 			txt.nexe
 cp ../src/indexer 		indexer.nexe
+cp ../src/filesender 		filesender.nexe
 cp ../src/search 		search.nexe
-cp ../zxpdf-3.03/xpdf/pdftotext pdftotext.nexe
-cp ../docxextract/docxtotext docx.nexe
-cp ../docxextract/docxtotext odt.nexe
+cp ../zxpdf-3.03/xpdf/pdftotext pdf.nexe
+cp ../docxextract/docxtotext txt.nexe
+#cp ../docxextract/docxtotext odt.nexe
 cp ../antiword-0.37/antiword doc.nexe
 
 echo generate manifest
@@ -49,26 +49,28 @@ TEMPNODECOUNT=0
 for file in manifest/*.manifest
 do
 	#if [ $file != manifest/xmlpipecreator.manifest ] && [ $file != manifest/indexer.manifest ] && 
-	if [ $file != manifest/search.manifest ] && [ $file != manifest/indexer_merge.manifest ] && [ $file != manifest/indexer_delta.manifest ]
+	if [ $file != manifest/search.manifest ] && [ $file != manifest/indexer_merge.manifest ] && [ $file != manifest/indexer_delta.manifest ]&& [ $file != manifest/indexer.manifest ]
 	then
-		let TEMPNODECOUNT=TEMPNODECOUNT+1
-		echo nodecount $NODECOUNT
-		echo tempnodecount $TEMPNODECOUNT
-		if [ $NODECOUNT -eq $TEMPNODECOUNT ]
-		then
-			echo nodecount $NODECOUNT tempnodecount $TEMPNODECOUNT 
-			echo run $file
-			${ZVM_PREFIX}/zerovm -M$file
-			echo OK
-		else
-			echo nodecount $NODECOUNT tempnodecount $TEMPNODECOUNT q
+#		let TEMPNODECOUNT=TEMPNODECOUNT+1
+#		echo nodecount $NODECOUNT
+#		echo tempnodecount $TEMPNODECOUNT
+#		if [ $NODECOUNT -eq $TEMPNODECOUNT ]
+#		if [ "$file" = "m/" ] 
+#		then
+#			echo nodecount $NODECOUNT tempnodecount $TEMPNODECOUNT 
 			echo run $file
 			${ZVM_PREFIX}/zerovm -M$file &
-			echo OK
-		fi
+#			echo OK
+#		else
+#			echo nodecount $NODECOUNT tempnodecount $TEMPNODECOUNT q
+#			echo run $file
+#			${ZVM_PREFIX}/zerovm -M$file &
+#			echo OK
+#		fi
 	fi
 done
-
+echo run manifest/indexer.manifest
+time ${ZVM_PREFIX}/zerovm -Mmanifest/indexer.manifest
 #${ZVM_PREFIX}/zerovm -Mmanifest/xmlpipecreator.manifest &
 #echo run manifest/xmlpipecreator.manifest
 #echo run manifest/indexer.manifest
@@ -80,5 +82,7 @@ sleep 1
 
 cat data/out/indexer_stdout.data
 
-${ZVM_PREFIX}/zerovm -Mmanifest/search.manifest 
+sleep 1
+time ${ZVM_PREFIX}/zerovm -Mmanifest/search.manifest 
+
 cat data/out/search_stdout.data

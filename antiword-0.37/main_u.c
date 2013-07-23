@@ -25,6 +25,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
 #if defined(__dos)
 #include <fcntl.h>
 #include <io.h>
@@ -46,6 +50,10 @@
 #endif /* N_PLAT_NLM */
 #include "version.h"
 #include "antiword.h"
+#include "../src/zvmfileutil.h"
+
+#define FILENAME "file.doc"
+#define DEVOUTNAME "/dev/out/xmlpipecreator"
 
 
 /* The name of this program */
@@ -102,10 +110,10 @@ pStdin2TmpFile(long *lFilesize)
 	fail(lFilesize == NULL);
 
 	/* Open the temporary file */
-	// FIXME if file type not of doc format (.rtf ... or other)
-	//char *tmpfilename = "temp.doc";
+	/* FIXME if file type not of doc format (.rtf ... or other)*/
+	/*char *tmpfilename = "temp.doc";*/
 
-	//pTmpFile = fopen (tmpfilename, "w");
+	/*pTmpFile = fopen (tmpfilename, "w");*/
 
 	pTmpFile = tmpfile();
 	if (pTmpFile == NULL) {
@@ -333,7 +341,7 @@ void printfooter (FILE *f)
 
 
 int
-main(int argc, char **argv)
+wmain(int argc, char **argv)
 {
 	options_type	tOptions;
 	const char	*szWordfile;
@@ -341,7 +349,7 @@ main(int argc, char **argv)
 	BOOL	bUsage, bMultiple, bUseTXT, bUseXML;
 
 
-	fromstdintofile ();
+	//fromstdintofile ();
 	//frominputtofile ();
 
 	if (argc <= 0) {
@@ -440,7 +448,7 @@ main(int argc, char **argv)
 		return 1;
 
 	fflush (NULL);
-
+/*
 	FILE *f;
 	FILE *fout;
 	f = fopen ("temp.txt", "r");
@@ -479,6 +487,145 @@ main(int argc, char **argv)
 	printfooter (stdout);
 	fclose (fout);
 	fclose (f);
-
+*/
 	return iGoodCount <= 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 } /* end of main */
+
+int main (int argc, char *argv[])
+{
+
+    struct filemap fmap;
+
+    char *filename;
+    char *chname; //
+    int fdout;
+
+    char *path = "/dev/in";
+    //char *path = "/home/volodymyr/git/sphinx-port/docxextract/1";
+    char *prefix = "";
+    //char *prefix = "/home/volodymyr/temp";
+    long totalbyteswrite2text, byteswrite2text;
+
+  	DIR *dir;
+	struct dirent *entry;
+
+
+    byteswrite2text = 0;
+    totalbyteswrite2text = 0;
+//    fdout = open ("/home/volodymyr/temp/xmlpipe", O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+
+    fdout = open (DEVOUTNAME, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+    if (fdout < 0 )
+    {
+    	printf ("*** ZVM Error open % output device\n", DEVOUTNAME);
+    	return 1;
+    }
+
+    /* create temp.doc file in "/" directory
+	if (mkdir (prefix, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR) != 0)
+	{
+		printf ("*** ZVM Error create dir %s\n", prefix);
+		return 1;
+	}
+	*/
+	dir = opendir(path);
+	if (dir ==0)
+	{
+		printf ("*** ZVM Error read dir %s, %d\n", path, dir);
+		return 1;
+	}
+	while(entry = readdir(dir))
+	{
+		int temp;
+		int filteredbufflen;
+		filteredbufflen =0;
+		if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
+		{
+			char *filteredbuff; // buffer for filtered text extracted from file of any format
+			char *buff; // temp buffer fot readed data trom txt file.
+			long txtbufflen;
+			long filteredbufflen;
+			char *tmpdocfilename = "temp.doc";
+			char *tmptxtfilename = TEMP_FILE_FOR_EXTRACTED_TEXT; // tempextracted.txt
+			int fdin;
+			chname = malloc (strlen(path) + strlen (entry->d_name) + 2);
+			sprintf (chname, "%s/%s", path, entry->d_name);
+			printf ("start chname = %s\n", chname);
+			fmap = getfilefromchannel(chname, prefix);
+			/*
+			 *
+			 * extract text from DOC
+			 *
+			 */
+			int tmpsize, ftmp;
+			ftmp = open (fmap.tempfilename, O_RDONLY);
+
+			tmpsize = getfilesize_fd(ftmp, NULL, 0);
+			printf ("tmp file name = %s, size = %d, detected size = %d\n", fmap.tempfilename, fmap.realfilesize, tmpsize);
+			close (ftmp);
+			if (fmap.realfilesize <= 0)
+			{
+				printf ("*** Error fmap.realfilesize = %d\n", fmap.realfilesize);
+				continue;
+			}
+			if (rename (fmap.tempfilename, tmpdocfilename))
+			{
+				printf ("*** Error rename %s to %s \n", fmap.tempfilename, tmpdocfilename);
+				continue;
+			}
+
+			ftmp = open (tmpdocfilename, O_RDONLY);
+			tmpsize = getfilesize_fd(ftmp, NULL, 0);
+			printf ("tmp file name after rename = %s, size = %d, detected size = %d\n", tmpdocfilename, fmap.realfilesize, tmpsize);
+			close (ftmp);
+
+			if (wmain (argc, argv) != 0)
+			{
+				printf ("*** Error extract %s \n", tmpdocfilename);
+				continue;
+			}
+			fdin = open (tmptxtfilename, O_RDONLY);
+			if (fdin <=0 )
+			{
+				printf ("*** Error fdin = %d \n", fdin);
+				continue;
+			}
+
+			txtbufflen = getfilesize_fd(fdin,NULL,0);
+			printf ("txtbufflen = %d, (%s)\n", txtbufflen, tmptxtfilename);
+
+
+			if (txtbufflen <0 )
+			{
+				printf ("*** Error txtbufflen = %d \n", txtbufflen);
+				continue;
+			}
+			buff = (char *) malloc (txtbufflen);
+			filteredbuff = (char *) malloc (txtbufflen);
+			int bread;
+			bread = read (fdin, buff, txtbufflen);
+			close (fdin);
+
+			printf ("*** Error txtbufflen = %d \n", bread);
+
+			filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
+
+			int tempwritebytes2channel;
+			if (filteredbufflen > 0)
+			{
+				//printf ("*****filteredbufflen %d\n", filteredbufflen);
+				//for (temp = 0; temp < filteredbufflen; temp++)
+				//	putchar (filteredbuff[temp]);
+				tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fdout);
+			}
+			else
+				continue;
+
+		}
+	}
+
+	close (fdout);
+	printf ("doc - all OK!\n");
+
+	return 0;
+}

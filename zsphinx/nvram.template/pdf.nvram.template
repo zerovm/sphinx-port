@@ -6,9 +6,5 @@
 #inject files into FS
 channel=/dev/mount/import, mountpoint=/, access=ro
 
-
-[env]
-name=fname, value={FILE_NAME}
-
 [args]
-args=pdf-{TYPENUMBER}
+args=pdf

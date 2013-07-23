@@ -16,6 +16,7 @@
 #include "sphinx.h"
 #include "sphinxutils.h"
 #include "sphinxint.h"
+#include "zvmfileutil.h"
 #include <time.h>
 
 
@@ -81,9 +82,9 @@ void mylistdir (char *path)
 
 int main ( int argc, char ** argv )
 {
-	mylistdir("/");
-	unpackindex("/dev/input");
-	mylistdir("/");
+//	mylistdir("/");
+	unpackindexfd("/dev/input");
+//	mylistdir("/");
 	fprintf ( stdout, SPHINX_BANNER );
 	if ( argc<=1 )
 	{

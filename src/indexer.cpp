@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
+#include "zvmfileutil.h"
 
 #if USE_WINDOWS
 	#define snprintf	_snprintf
@@ -1898,7 +1899,7 @@ int main ( int argc, char ** argv )
 	//mylistdir ("/");
 
 	if (bIndexedOk)
-		packindex("/dev/output");
+		bufferedpackindexfd("/dev/output");
 
 	printf ("*** ZVM indexer works OK!\n");
 

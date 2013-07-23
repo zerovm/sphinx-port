@@ -954,7 +954,7 @@ void packindex (char * devname)
 		return;
 	}
 
-	char indexpath[]="index";
+	char indexpath[]="index"; // deirectory with  index files and zspfinx.conf
   	DIR *dir;
 	struct dirent *entry;
 	dir = opendir(indexpath);

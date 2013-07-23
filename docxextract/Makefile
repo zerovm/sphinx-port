@@ -1,7 +1,8 @@
+#CC=gcc
 CC=x86_64-nacl-gcc
-#CFLAGS=
+CFLAGS=-g2 -O0 
 
-UNZ_OBJS = docxtotext.o unzip.o ioapi.o zip.o
+UNZ_OBJS = docxtotext.o unzip.o ioapi.o zip.o ../src/zvmfileutil.c
 
 .c.o:
 	$(CC) -c $(CFLAGS) $*.c 

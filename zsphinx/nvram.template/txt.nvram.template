@@ -2,11 +2,8 @@
 # ZRT fstab file, injects tar images contents into ZRT FS #
 ###########################################################
 
-[fstab] 
-channel=/dev/mount/lib, mountpoint=/, access=ro
-
-[env]
-name=fname, value={FILE_NAME}
-
 [args]
-args=txt-{TYPENUMBER}
+args=txt
+
+[debug]
+verbosity=3

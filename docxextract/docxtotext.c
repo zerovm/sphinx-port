@@ -48,6 +48,10 @@
 #include <time.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include "../src/zvmfileutil.h"
+
 
 #ifdef _WIN32
 # include <direct.h>
@@ -569,6 +573,14 @@ void printheader (FILE *f)
 
 }
 
+void sprintheader (FILE *f, char *s)
+{
+	char *externalfilename = getenv("fname");
+	sprintf (s, "<filename>%s</filename>\n", externalfilename); //
+	sprintf (s, "<content>\n");
+
+}
+
 
 void wprintfooter (FILE *f)
 {
@@ -582,40 +594,50 @@ void printfooter (FILE *f)
 	  fprintf (f, "</sphinx:document>\n \n");
 }
 
-void gettextfromxml (void)
+
+
+void writebuffer2channel ()
+{
+
+	return;
+}
+
+/*
+ * takes the text between the text docx tags, fills the buffer with the filtered text. Return size of filtered text in buffer,
+ * */
+
+int gettextfromxml (char *filteredbuff)
 {
 	//
-	FILE *fin;
-	FILE *ftext;
-	//char *finname = "/home/volodymyr/git/zlib/zlib/contrib/minizip/word/document.xml";
-	char *finname = "document.xml";
-	//char *ftextname = "/home/volodymyr/git/zlib/zlib/contrib/minizip/etext.txt";
-	char *ftextname = DEVOUTNAME;
-	fin = fopen (finname, "r");
-	ftext = fopen (ftextname, "w");
+	int fdin; // input file descriptor
+	char *finname = "document.xml"; // input file name
+
+	fdin = open (finname, O_RDONLY);
+	if (fdin < 0)
+	{
+		printf ("*** ZVM Error open %s\n", finname);
+		return -1;
+	}
+
 	char *opentag1 = "<w:t>";
 	char *opentag2 = "<w:t ";
 	char *closetag1 = "";
 	char *closetag2 = "</w:t>";
-	char *buff;
-	char *textbuff;
+	char *buff; // buffer for readed data from xml doc
+	char *textbuff; // buffer for text, extracted from xml file
 
-	if (!fin)
-	{
-		printf ("error open document.xml file \n");
-		return;
-	}
-	fseek(fin, 0, SEEK_END);
-	int fsize = ftell(fin);
-	fseek(fin, 0, SEEK_SET);
+	int fsize = getfilesize_fd (fdin, NULL, 0);
+
 	buff = (char*)  malloc (fsize + 10);
 	textbuff = (char*)  malloc (fsize + 10);
-	int bread = fread (buff, sizeof (char), fsize, fin);
-	printf ("bread=%d\n", bread);
+
+
+	int bread = read (fdin, buff, fsize);
+	//printf ("bread=%d\n", bread);
+	close (fdin);
 	int i;
 	int ei; //счетчик извлеченный текст
 	ei = 0;
-	char c;
 	for (i = 0; i < fsize - 8; i++){
 		if (strncmp(opentag1,buff + i, 5) == 0)
 		{
@@ -638,12 +660,8 @@ void gettextfromxml (void)
 			}
 			textbuff[ei++] = ' ';
 		}
-
 	}
-	fclose (fin);
-
-	int bwrite;
-	bwrite = 0;
+	free (buff);
 
 	// remove &quot;&apos;
 	char *q= "&quot;";
@@ -656,75 +674,47 @@ void gettextfromxml (void)
 				textbuff[i+cq] = ' ';
 	}
 
+	int filteredbuffsize;
+	filteredbuffsize = getfilteredbuffer (textbuff, ei, filteredbuff);
 
-//	bwrite = fwrite (textbuff, sizeof (char), ei, ftext);
-	printheader (ftext);
-	for (i = 0;i < ei; i++ )
-	{
-		if (isalnum(textbuff [i]) || isspace (textbuff [i]) && !isspace(textbuff[i-1]))
-		{
-			putc (textbuff[i], ftext);
-			bwrite++;
-		}
-		else
-			putc(' ', ftext);
-	}
-	printfooter (ftext);
-	fclose (ftext);
-
-//	if (bwrite == ei)
-	printf ("*** ZVM extracted %d bytes OK!\n", ei);
-	free(buff);
-	free(textbuff);
-	return;
+	printf ("*** ZVM extracted from xml (docx format) %d bytes OK!\n", filteredbuffsize);
+	return filteredbuffsize;
 }
 
-void gettextfromxmlodt (void)
+
+/*
+ * takes the text between the text docx tags, fills the buffer with the filtered text. Return size of filtered text in buffer,
+ * */
+
+int gettextfromxmlodt (char *filteredbuff)
 {
 	//
-	FILE *fin;
-	FILE *ftext;
-	//char *finname = "/home/volodymyr/git/zlib/zlib/contrib/minizip/word/document.xml";
-	char *finname = "content.xml";
-	//char *ftextname = "/home/volodymyr/git/zlib/zlib/contrib/minizip/etext.txt";
-	char *ftextname = DEVOUTNAME;
-	fin = fopen (finname, "r");
-	ftext = fopen (ftextname, "w");
+	int fdin; // input file descriptor
+	char *finname = "content.xml"; // input file name
+
+	fdin = open (finname, O_RDONLY);
+	if (fdin < 0)
+	{
+		printf ("*** ZVM Error open %s\n", finname);
+		return -1;
+	}
+
 	char *opentag1 = "<text:p";
 	char *closetag2 = "</text:p>";
 	char *buff;
 	char *textbuff;
 
-	if (!fin)
-	{
-		printf ("error open document.xml file \n");
-		return;
-	}
+	int fsize = getfilesize_fd (fdin, NULL, 0);
 
-	fseek(fin, 0, SEEK_END);
-	int fsize = ftell(fin);
-	fseek(fin, 0, SEEK_SET);
 	buff = (char*)  malloc (fsize + 10);
 	textbuff = (char*)  malloc (fsize + 10);
-	int bread = fread (buff, sizeof (char), fsize, fin);
-	printf ("bread=%d\n", bread);
+	int bread = read (fdin, buff, fsize);
+	close (fdin);
+
 	int i;
 	int ei; //счетчик извлеченный текст
 	ei = 0;
-	char c;
-	char lastc;
 	for (i = 0; i < fsize - 8; i++){
-/*		if (strncmp(opentag1,buff + i, 5) == 0)
-		{
-			i = i + 5;
-			while (strncmp(closetag2,buff + i, 6)) // пока не закрывается тег <\\w:t>
-			{
-				textbuff [ei++] = buff [i++];
-			}
-			textbuff[ei++] = ' ';
-		}
-		else
-*/
 		if ((strncmp(opentag1, buff + i, 7) == 0))
 		{
 			// перематываем до начала текста
@@ -745,11 +735,9 @@ void gettextfromxmlodt (void)
 		}
 
 	}
-	fclose (fin);
+	free (buff);
 
-	int bwrite;
-	bwrite = 0;
-
+	// remove &quot;&apos;
 	char *h = "&#x0d;";
 	char *q = "&quot;";
 	char *a = "&apos;";
@@ -762,27 +750,12 @@ void gettextfromxmlodt (void)
 				textbuff[i+cq] = ' ';
 	}
 
-//	bwrite = fwrite (textbuff, sizeof (char), ei, ftext);
-	printheader (ftext);
+	int filteredbuffsize;
+	filteredbuffsize = getfilteredbuffer (textbuff, ei, filteredbuff);
 
-	for (i = 0;i < ei; i++ )
-	{
-		if (isalnum(textbuff [i]) || (isspace (textbuff [i]) && !isspace(textbuff[i-1])))
-		{
-			putc (textbuff[i], ftext);
-			bwrite++;
-		}
-		else
-			putc (' ',ftext);
-	}
-	printfooter (ftext);
-	fclose (ftext);
-
-//	if (bwrite == ei)
-	printf ("*** ZVM extracted %d bytes OK!\n", ei);
-	free(buff);
+	printf ("*** ZVM extracted form xml (docx format) %d bytes OK!\n", filteredbuffsize);
 	free(textbuff);
-	return;
+	return filteredbuffsize;
 }
 
 
@@ -809,27 +782,23 @@ int savefromstdin (void)
 	return 0;
 }
 
-int getdoctype (char *nodename)
+int getdoctype (char *filename)
 {
-	if (strncmp (nodename, "docx", 4) == 0)
+	char doctypename[strlen(filename)];
+	getext (filename, doctypename);
+	if (strncmp (doctypename, "docx", 4) == 0)
 		return 1;
-	if (strncmp (nodename, "odt", 3) == 0)
+	if (strncmp (doctypename, "odt", 3) == 0)
 		return 2;
+	if (strncmp (doctypename, "txt", 3) == 0)
+		return 3;
+
 	return 0;
 }
 
-
-int main(argc,argv)
-    int argc;
-    char *argv[];
+int extractfile (char *zipfilename)
 {
-
-    dt = getdoctype(argv[0]);
-
-    printf ("%d\n", dt);
-
-    const char *zipfilename=FILENAME;
-//    const char *zipfilename="/home/volodymyr/git/zlib/zlib/contrib/minizip/1.docx";
+    //const char zipfilename[strlen(filename)];
     const char *filename_to_extract=NULL;
     const char *password=NULL;
     char filename_try[MAXFILENAME+16] = "";
@@ -842,72 +811,13 @@ int main(argc,argv)
     int opt_extractdir=0;
     const char *dirname=NULL;
     unzFile uf=NULL;
-
-    ret_value = savefromstdin ();
-    if (ret_value != 0)
-    {
-    	return ret_value;
-    }
-/*
-    do_banner();
-    if (argc==1)
-    {
-        do_help();
-        return 0;
-    }
-    else
-    {
-        for (i=1;i<argc;i++)
-        {
-            if ((*argv[i])=='-')
-            {
-                const char *p=argv[i]+1;
-
-                while ((*p)!='\0')
-                {
-                    char c=*(p++);;
-                    if ((c=='l') || (c=='L'))
-                        opt_do_list = 1;
-                    if ((c=='v') || (c=='V'))
-                        opt_do_list = 1;
-                    if ((c=='x') || (c=='X'))
-                        opt_do_extract = 1;
-                    if ((c=='e') || (c=='E'))
-                        opt_do_extract = opt_do_extract_withoutpath = 1;
-                    if ((c=='o') || (c=='O'))
-                        opt_overwrite=1;
-                    if ((c=='d') || (c=='D'))
-                    {
-                        opt_extractdir=1;
-                        dirname=argv[i+1];
-                    }
-
-                    if (((c=='p') || (c=='P')) && (i+1<argc))
-                    {
-                        password=argv[i+1];
-                        i++;
-                    }
-                }
-            }
-            else
-            {
-                if (zipfilename == NULL)
-                    zipfilename = argv[i];
-                else if ((filename_to_extract==NULL) && (!opt_extractdir))
-                        filename_to_extract = argv[i] ;
-            }
-        }
-    }
-*/
-
-
+    //ret_value = savefromstdin ();
+    //if (ret_value != 0)
+    //{
+    //	return ret_value;
+    //}
     if (zipfilename!=NULL)
     {
-
-#        ifdef USEWIN32IOAPI
-        zlib_filefunc64_def ffunc;
-#        endif
-
         strncpy(filename_try, zipfilename,MAXFILENAME-1);
         /* strncpy doesnt append the trailing NULL, of the string is too long. */
         filename_try[ MAXFILENAME ] = '\0';
@@ -928,13 +838,11 @@ int main(argc,argv)
 #            endif
         }
     }
-
     if (uf==NULL)
     {
         printf("Cannot open %s or %s.zip\n",zipfilename,zipfilename);
         return 1;
     }
-
     if (opt_do_list==1)
         ret_value = do_list(uf);
     else if (opt_do_extract==1)
@@ -948,41 +856,183 @@ int main(argc,argv)
           printf("Error changing into %s, aborting\n", dirname);
           exit(-1);
         }
-
         if (filename_to_extract == NULL)
             ret_value = do_extract(uf, opt_do_extract_withoutpath, opt_overwrite, password);
         else
             ret_value = do_extract_onefile(uf, filename_to_extract, opt_do_extract_withoutpath, opt_overwrite, password);
     }
-
     unzClose(uf);
-
     if (ret_value != 0)
     {
     	printf ("Error\n");
     	return ret_value;
     }
-
-    if (dt == 1)
-    	gettextfromxml ();
-    else if (dt == 2)
-    	gettextfromxmlodt ();
-
-/*
-    FILE *f;
-    f = fopen ("etext.txt", "r");
-    if (!f)
-    {
-    	printf ("***ZVM Erroropen etext.txt\n");
-    }
-    char c;
-    while (!feof (f))
-    {
-    	c = getc(f);
-    	printf ("%c",c);
-
-    }
-    fclose (f);
-*/
     return ret_value;
+}
+
+int getbufffromtxt (char *filename, char *buffer)
+{
+	printf ("*** getbufffromtxt start extract text from txt %s\n", filename);
+
+	long txtbuffsize;
+	int fd = open (filename, O_RDONLY);
+	if (fd < 0)
+	{
+		printf ("*** ZVM Error open %s file\n", filename);
+		return -1;
+	}
+	txtbuffsize = getfilesize_fd(fd, NULL, 0);
+	if (txtbuffsize < 0)
+	{
+		close (fd);
+		return -1;
+	}
+	printf ("*** getbufffromtxt file size detected = %d\n", txtbuffsize);
+	*buffer = (char *) malloc (txtbuffsize);
+	//printf ("size of buffer %d\n", sizeof (buffer));
+	int bread = read (fd, buffer, txtbuffsize);
+	//printbuff (buffer, bread);
+	if (bread < 0 || bread != txtbuffsize)
+		printf ("***ZVM Error read data fron txt file %s\n", filename);
+	close (fd);
+	printf ("*** getbufffromtxt end extract text from txt\n");
+	//printbuff (buffer, txtbuffsize);
+	return txtbuffsize;
+}
+
+void printbuff (char*buff, int bufflen)
+{
+	printf ("***printbuff bufflen = %d\n", bufflen);
+	int i;
+	for (i = 0; i < bufflen; i++)
+		putchar (buff[i]);
+	return;
+}
+
+int main(argc,argv)
+    int argc;
+    char *argv[];
+{
+
+
+    char *filename;
+    char *chname; //
+    int fdout;
+
+    char *path = "/dev/in";
+    //char *path = "/home/volodymyr/git/sphinx-port/docxextract/1";
+    char *prefix = "/temp";
+    //char *prefix = "/home/volodymyr/temp";
+    long totalbyteswrite2text, byteswrite2text;
+
+  	DIR *dir;
+	struct dirent *entry;
+
+
+    byteswrite2text = 0;
+    totalbyteswrite2text = 0;
+//    fdout = open ("/home/volodymyr/temp/xmlpipe", O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+
+    fdout = open (DEVOUTNAME, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+    if (fdout < 0 )
+    {
+    	printf ("*** ZVM Error open % output device\n", DEVOUTNAME);
+    	return 1;
+    }
+	if (mkdir (prefix, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR) != 0)
+	{
+		printf ("*** ZVM Error create dir %s\n", prefix);
+		return 1;
+	}
+	dir = opendir(path);
+	if (dir ==0)
+	{
+		printf ("*** ZVM Error read dir %s, %d\n", path, dir);
+		return 1;
+	}
+	while(entry = readdir(dir))
+	{
+		int temp;
+		int filteredbufflen;
+		filteredbufflen =0;
+		if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
+		{
+			char *filteredbuff; // buffer for filtered text extracted from file of any format
+			char *buff; // temp buffer for readed data trom txt file.
+			long txtbufflen;
+			long filteredbufflen;
+
+			struct filemap fmap;
+			chname = malloc (strlen(path) + strlen (entry->d_name) + 2);
+			sprintf (chname, "%s/%s", path, entry->d_name);
+			printf ("start chname = %s\n", chname);
+			fmap = getfilefromchannel(chname, prefix);
+			printf ("***get from channel=%s, reafilename=%s, tempfilename=%s, real size=%ld\n", chname, fmap.realfilename, fmap.tempfilename, fmap.realfilesize);
+
+			//const char *docxfilename = "document.xml";
+			//const char *odtfilename = "content.xml";
+
+			if (fmap.realfilesize <= 0)
+			{
+				free (chname);
+				continue;
+			}
+			filteredbuff = (char *) malloc (fmap.realfilesize * 3);
+			dt = getdoctype (fmap.realfilename);
+			printf ("doc ty	pe %d\n", dt);
+			int retextractcode; //
+			long fsize;
+			switch (dt) {
+			case 1://docx
+				retextractcode = extractfile (fmap.tempfilename); // unzip incoming file place xml contents on file document.xml
+				if (retextractcode != 0)
+					continue;
+				filteredbufflen = gettextfromxml (filteredbuff); // extracting and filtering text data from content.xml file
+		    	break;
+			case 2://odt
+				retextractcode = extractfile (fmap.tempfilename); // unzip incoming file
+				if (retextractcode != 0)
+					continue;
+		    	filteredbufflen = gettextfromxmlodt (filteredbuff);
+		    	break;
+			case 3://txt
+				buff = malloc (fmap.realfilesize + 2);
+				txtbufflen = getbufffromtxt (fmap.tempfilename , buff);
+				filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
+		    	break;
+			}
+
+			//printbuff(filteredbuff, filteredbufflen);
+			printf ("filteredbufflen = %d\n", filteredbufflen);
+			int tempwritebytes2channel;
+
+			if (filteredbufflen > 0)
+			{
+//				printf ("*****filteredbufflen %d\n", filteredbufflen);
+//				for (temp = 0; temp < filteredbufflen; temp++)
+//					putchar (filteredbuff[temp]);
+				printf ( "start send data to xmlpipecreator \n");
+				tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fdout);
+				printf ( "end send data to xmlpipecreator tempwritebytes2channel - %d\n", tempwritebytes2channel);
+			}
+			else
+			{
+				//free (buff);
+				//buff =  0;
+				//free(filteredbuff);
+				//filteredbuff = 0;
+				continue;
+			}
+			//free (buff);
+			//buff = 0;
+			//free(filteredbuff);
+			//filteredbuff =0;
+			printf ("end chname = %s\n", chname);
+		//	free (chname);
+		}
+	}
+	close (fdout);
+	printf ("all ok\n");
+	return 0;
+
 }
