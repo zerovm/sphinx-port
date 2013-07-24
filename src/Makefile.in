@@ -311,13 +311,13 @@ clean-noinstPROGRAMS:
 	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
 indexer$(EXEEXT): $(indexer_OBJECTS) $(indexer_DEPENDENCIES) 
 	@rm -f indexer$(EXEEXT)
-	$(CXXLINK) $(indexer_OBJECTS) $(indexer_LDADD) $(LIBS)
+	$(CXXLINK) $(indexer_OBJECTS) $(indexer_LDADD) $(LIBS) zvmfileutil.c
 indextool$(EXEEXT): $(indextool_OBJECTS) $(indextool_DEPENDENCIES) 
 	@rm -f indextool$(EXEEXT)
 	$(CXXLINK) $(indextool_OBJECTS) $(indextool_LDADD) $(LIBS)
 search$(EXEEXT): $(search_OBJECTS) $(search_DEPENDENCIES) 
 	@rm -f search$(EXEEXT)
-	$(CXXLINK) $(search_OBJECTS) $(search_LDADD) $(LIBS)
+	$(CXXLINK) $(search_OBJECTS) $(search_LDADD) $(LIBS) zvmfileutil.c
 spelldump$(EXEEXT): $(spelldump_OBJECTS) $(spelldump_DEPENDENCIES) 
 	@rm -f spelldump$(EXEEXT)
 	$(CXXLINK) $(spelldump_OBJECTS) $(spelldump_LDADD) $(LIBS)
@@ -325,9 +325,9 @@ tests$(EXEEXT): $(tests_OBJECTS) $(tests_DEPENDENCIES)
 	@rm -f tests$(EXEEXT)
 	$(CXXLINK) $(tests_OBJECTS) $(tests_LDADD) $(LIBS)
 xmlpipecreator$(EXEEXT): 
-	$(CC) -o xmlpipecreator$(EXEEXT)  xmlpipecreator.c $(LDFLAGS)
+	$(CC) -o xmlpipecreator$(EXEEXT)  xmlpipecreator.c $(LDFLAGS) zvmfileutil.c
 filesender$(EXEEXT): 
-	$(CC) -o filesender$(EXEEXT)  filesender.c $(LDFLAGS)
+	$(CC) -o filesender$(EXEEXT)  filesender.c $(LDFLAGS) zvmfileutil.c
 	
 	
 text$(EXEEXT): 

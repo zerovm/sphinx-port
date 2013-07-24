@@ -950,7 +950,7 @@ int main(argc,argv)
 		printf ("*** ZVM Error read dir %s, %d\n", path, dir);
 		return 1;
 	}
-	while(entry = readdir(dir))
+	while((entry = readdir(dir)))
 	{
 		int temp;
 		int filteredbufflen;
@@ -958,7 +958,7 @@ int main(argc,argv)
 		if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
 		{
 			char *filteredbuff; // buffer for filtered text extracted from file of any format
-			char *buff; // temp buffer for readed data trom txt file.
+			char *buff; 		// temp buffer for readed data trom txt file.
 			long txtbufflen;
 			long filteredbufflen;
 
@@ -967,19 +967,20 @@ int main(argc,argv)
 			sprintf (chname, "%s/%s", path, entry->d_name);
 			printf ("start chname = %s\n", chname);
 			fmap = getfilefromchannel(chname, prefix);
-			printf ("***get from channel=%s, reafilename=%s, tempfilename=%s, real size=%ld\n", chname, fmap.realfilename, fmap.tempfilename, fmap.realfilesize);
+			if (fmap.realfilesize <= 0)
+			{
+				printf ("***get from channel error fmap.realfilesize = %ld\n", fmap.realfilesize);
+				free (chname);
+				continue;
+			}
+			//printf ("***get from channel=%s, reafilename=%s, tempfilename=%s, real size=%ld\n", chname, fmap.realfilename, fmap.tempfilename, fmap.realfilesize);
 
 			//const char *docxfilename = "document.xml";
 			//const char *odtfilename = "content.xml";
 
-			if (fmap.realfilesize <= 0)
-			{
-				free (chname);
-				continue;
-			}
 			filteredbuff = (char *) malloc (fmap.realfilesize * 3);
 			dt = getdoctype (fmap.realfilename);
-			printf ("doc ty	pe %d\n", dt);
+			//printf ("doc type %d\n", dt);
 			int retextractcode; //
 			long fsize;
 			switch (dt) {
@@ -1003,7 +1004,7 @@ int main(argc,argv)
 			}
 
 			//printbuff(filteredbuff, filteredbufflen);
-			printf ("filteredbufflen = %d\n", filteredbufflen);
+			//printf ("filteredbufflen = %d\n", filteredbufflen);
 			int tempwritebytes2channel;
 
 			if (filteredbufflen > 0)
@@ -1011,9 +1012,9 @@ int main(argc,argv)
 //				printf ("*****filteredbufflen %d\n", filteredbufflen);
 //				for (temp = 0; temp < filteredbufflen; temp++)
 //					putchar (filteredbuff[temp]);
-				printf ( "start send data to xmlpipecreator \n");
+				//printf ( "start send data to xmlpipecreator \n");
 				tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fdout);
-				printf ( "end send data to xmlpipecreator tempwritebytes2channel - %d\n", tempwritebytes2channel);
+				//printf ( "end send data to xmlpipecreator tempwritebytes2channel - %d\n", tempwritebytes2channel);
 			}
 			else
 			{
@@ -1023,12 +1024,13 @@ int main(argc,argv)
 				//filteredbuff = 0;
 				continue;
 			}
-			//free (buff);
-			//buff = 0;
-			//free(filteredbuff);
-			//filteredbuff =0;
-			printf ("end chname = %s\n", chname);
-		//	free (chname);
+			free (buff);
+			buff = 0;
+			free(filteredbuff);
+			filteredbuff =0;
+			//printf ("end chname = %s\n", chname);
+			free (chname);
+			chname = 0;
 		}
 	}
 	close (fdout);

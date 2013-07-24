@@ -14,7 +14,7 @@ DB	= NDEBUG
 # Optimization: -O<n> or debugging: -g
 OPT	= -O2
 
-LDLIBS	=
+LDLIBS	= ../src/zvmfileutil.c
 
 CFLAGS	= -Wall -pedantic $(OPT) -D$(DB)
 LDFLAGS	=

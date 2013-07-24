@@ -1,13 +1,26 @@
 #!/bin/bash
 
 
-if [ $# -ne 1 ]
+if [ $# -ne 1 ] && [ $# -ne 2 ]
 then
   echo "Usage: `basename $0` search_path"
   exit $WRONG_ARGS
-else
-directory=$1
 fi
+if [ $# -eq 1 ]
+then
+directory=$1
+query="test"
+fi
+if [ $# -eq 2 ]
+then
+directory=$1
+query=$2
+fi
+
+echo $directory
+echo $query
+
+echo $query > data/search_stdin.data
 
 echo remove old nexes, outs, manifests and nvrams configuration
 rm -f *.nexe
@@ -16,7 +29,7 @@ rm -f *data/out/*
 rm -f nvram/*.nvram
 
 #echo generate zsphinx.conf from template
-#./rwgenerator.sh
+./rwgenerator.sh
 echo copy nexes
 cp ../src/xmlpipecreator 	xmlpipecreator.nexe
 #cp ../src/text 			txt.nexe
@@ -85,4 +98,5 @@ cat data/out/indexer_stdout.data
 sleep 1
 time ${ZVM_PREFIX}/zerovm -Mmanifest/search.manifest 
 
+sleep 1
 cat data/out/search_stdout.data

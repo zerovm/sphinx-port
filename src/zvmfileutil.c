@@ -55,7 +55,11 @@ void getext (const char *fname, char *ext)
 }
 
 /*
- * return size of file in bytes
+ * return size of file in bytes by file descriptor if sizebyfilename=0
+ *
+ * and
+ *
+ * return size of file in bytes by file name if sizebyfilename=1
 */
 long getfilesize_fd (int fd, char *filename, int sizebyfilename)
 {
@@ -90,7 +94,6 @@ long getfilesize_fd (int fd, char *filename, int sizebyfilename)
 /*
 * write to indexer file documet header for sphinx xml format
 */
-
 void printdochead (int fd, char *realfilename, int docID)
 {
 	char str[strlen (realfilename) + 50];
@@ -108,10 +111,9 @@ void printdochead (int fd, char *realfilename, int docID)
 /*
 * write to indexer file documet header for sphinx xml format
 */
-
 void printdocfooter (int fd)
 {
-	char *str = "</content>\n</sphinx:document>\n \n";
+	const char *str = "</content>\n</sphinx:document>\n \n";
 	int bwrite;
 	bwrite = write (fd, str, strlen (str));
 	return;
@@ -121,7 +123,6 @@ void printdocfooter (int fd)
 /*
  * get text data from network in format size of text, real filename, text data
 */
-
 int getdatafromchannel (int fd, char *chname, int docID)
 {
 	int fdin;
@@ -174,10 +175,10 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		//read text data.
 		printf ("read data\n");
 		char *buff;
-		printf ("malloc\n");
+
 		buff = (char *) malloc (textsize + 1);
 		bread = read (fdin, buff, textsize);
-		printf ("bread = %d\n", bread);
+//		printf ("bread = %d\n", bread);
 
 		/*
 		 * write to xml pipe readed data
@@ -188,11 +189,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		//buff[textsize] ='\0';
 		int bwrite;
 		bwrite = write (fd, buff, textsize);
-		printf ("try free\n");
-//		free(buff);
-//		buff = 0;
-		printf ("free\n");
-//		printf ("write OK!\n");
+		free(buff);
 		printdocfooter (fd);
 //		printf ("printdocfooter  OK!\n");
 		docID++;
@@ -242,11 +239,6 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	sprintf (tempfilename, "%s/temp.tmp", prefix);
 
 	strcpy (fmap.tempfilename, tempfilename);
-	if (!tempfilename)
-	{
-		printf ("*** ZVM Error generate temp filename\n");
-		return fmap;
-	}
 
 	if (!chname)
 	{
@@ -268,7 +260,7 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 		return fmap;
 	}
 
-	blockreadsize = 1024*1024;
+	blockreadsize = 1024*64;
 	totalreadsize = 0;
 	readcount = 0;
 	buffsize = blockreadsize;
@@ -278,10 +270,9 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	while ((bread = read (fdin, buff + readcount * blockreadsize, blockreadsize)) > 0)
 	{
 		buffsize += blockreadsize;
-
 		resizebuff = (char *) realloc ((char *)buff, buffsize);
 
-		if (resizebuff != NULL && resizebuff != buff)
+		if (resizebuff != NULL )
 		{
 			buff = resizebuff;
 		}
@@ -316,8 +307,7 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	fmap.realfilesize = bwrite;
 	close (fdin);
 	close (fdout);
-	//free (buff);
-	//buff = 0;
+	free (buff);
 	return fmap;
 }
 
@@ -337,11 +327,14 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 		return;
 	}
 	long fsize = getfilesize_fd (fin, NULL, 0);
-	char buff[fsize];
+	char *buff;
 	char *headbuf = (char *) malloc (strlen (realfilename) + 20);
 	sprintf (headbuf,"%d %s //", (int) fsize, realfilename);
-	long bwrite = write (fout, headbuf, strlen (headbuf)); // write header of file -
-	long bread = read (fin, buff, fsize);
+	buff = (char *) malloc ( fsize + strlen (headbuf));
+	long bwrite = 0;
+	//= write (fout, headbuf, strlen (headbuf)); // write header of file -
+	strncpy (buff, headbuf, strlen (headbuf));
+	long bread = read (fin, buff + strlen (headbuf), fsize);
 	bwrite += write (fout, buff, bread);
 	close (fin);
 	close (fout);
@@ -400,7 +393,6 @@ int getfilteredbuffer (const char *buff, long bufflen, char *filteredbuff)
 	char lastc = ' ';
 	long filteredbuffsize;
 	filteredbuffsize =0;
-	//*filteredbuff = (char *) malloc (sizeof (buff) + 1);
 	for (i = 0; i < bufflen; i++)
 	{
 		if (isalnum(buff[i]) || ((isspace (buff[i]) && !isspace (lastc))))
@@ -420,20 +412,14 @@ void unpackindexfd (char * devname)
 
 	int fdinfile;
 
-
-	//FILE *infile;
 	char dirName[] = "index";
 	int result=mkdir(dirName, 0755);
 	if (result != 0)
 		printf ("*** ZVM Error can`t create directory %s\n", dirName);
-	//char devname []  = "/dev/input"; ZVM
-	//char devname []  = "/dev/input";
 	int MAXREAD = 1024;
-	//char indexfilename[MAXREAD];
 	char readbuf [MAXREAD];
 	int letcount;
 	letcount = 0;
-//	infile = fopen (devname, "r");
 
 	fdinfile = open (devname, O_RDONLY);
 
@@ -444,11 +430,6 @@ void unpackindexfd (char * devname)
 	}
 
 
-//	if (!infile)
-//	{
-//		printf ("*** ZVM error input indexpack file\n");
-//		return;
-//	}
 	int c;
 	int filelen;
 	filelen = 0;
@@ -463,7 +444,6 @@ void unpackindexfd (char * devname)
 		if (bread == 0)
 		{
 			printf ("*** ZVM unpack index completed successfully!\n");
-			//fclose (infile);
 			close (fdinfile);
 			return;
 		}
@@ -471,7 +451,6 @@ void unpackindexfd (char * devname)
 		if (c != '{')
 		{
 			printf("*** ZVM Error format packfile\n");
-			//fclose (infile);
 			close (fdinfile);
 			return;
 		}
@@ -491,16 +470,8 @@ void unpackindexfd (char * devname)
 			bread = read (fdinfile, &c, 1);
 		}
 		readbuf [--letcount] = '\0';
-		//FILE *efile;
 		int fdefile;
-		//efile = fopen (readbuf, "w");
 		fdefile = open (readbuf, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
-//		if (!efile)
-//		{
-//			printf ("*** ZVM Error open %s file for write\n", readbuf);
-//			fclose (infile);
-//			return;
-//		}
 		if (fdefile <= 0)
 		{
 			printf ("*** ZVM Error open %s file for write\n", readbuf);
@@ -509,13 +480,12 @@ void unpackindexfd (char * devname)
 
 		}
 		char *buff = (char *) malloc (filelen);
-//		int readb = fread(buff,sizeof (char),filelen,infile);
-//		int writeb = fwrite(buff,sizeof (char),filelen,efile);
 		int readb = read(fdinfile, buff,filelen);
 		int writeb = write(fdefile, buff,readb);
 
-//		fflush (efile);
+
 		close (fdefile);
+		free (buff);
 		if (readb != writeb)
 			printf ("*** Warning while unpacking index file, readb = %d, writeb = %d\n", readb, writeb);
 		else
@@ -529,25 +499,14 @@ void unpackindexfd (char * devname)
 
 /*
  ZVM Function for packing all index files from directory in ZeroVM FS, specified in Zsphinx.conf to /fdev/output device
-  */
+*/
 
 void bufferedpackindexfd (char * devname)
 {
 	printf("*** ZVM start pack index to %s \n", devname);
-//	FILE *packfile;
 	int fdpackfile;
 
-
-	//char packfilename[]= "/dev/output"; // ZVM
-	//char packfilename[]= "/dev/input";
-//	packfile = fopen (devname, "w");
 	fdpackfile = open (devname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
-
-//	if (!packfile)
-//	{
-//		printf ("*** ZVM Error open packfile (write)%s\n", devname);
-//		return;
-//	}
 
 	if ( fdpackfile  <= 0 )
 	{
@@ -567,32 +526,20 @@ void bufferedpackindexfd (char * devname)
 	bytecount = 0;
 	while(entry = readdir(dir))
 	{
-
-		//printf ("item - index/%s\n", entry->d_name);
 		if(entry->d_type != DT_DIR)
 		{
 			newpath = (char *) malloc (strlen (entry->d_name) + strlen(indexpath) + 2);
 			sprintf(newpath, "%s/%s", indexpath, entry->d_name);
 
 			int c;
-//			FILE *f;
-//			f = fopen(newpath, "rb");
 			long size;
 			long buffsize;
-//			fseek(f, 0, SEEK_END);
-//			size = ftell(f);
-//			rewind (f);
 
 			int fd;
 			fd = open (newpath, O_RDONLY);
 			size = getfilesize_fd(fd, NULL, 0);
 
-			//fprintf (packfile, "{%d %s}\n", (int) size, newpath);
-
-
-
 			buffsize = size + strlen (newpath) * 2 + 50;
-			//printf ("buffsize = %ld\n", buffsize);
 			char *buff;
 			buff = (char *) malloc (buffsize);
 
@@ -601,36 +548,21 @@ void bufferedpackindexfd (char * devname)
 			long bread;
 			int tempbufflen;
 			tempbufflen = strlen (buff);
-			//printf ("tempbufflen = %ld\n", tempbufflen);
 			bread = read (fd, buff + tempbufflen, size);
 			if (bread < 0)
 			{
 				close (fd);
 				continue;
 			}
-			//printf ("Read OK!\n, tempbufflen + size = %ld\n", tempbufflen + size);
 
 			sprintf (buff + tempbufflen + size, "{%s}\n", newpath);
 			long bwrite;
 			bwrite = write (fdpackfile, buff, tempbufflen + size + strlen (newpath) + 3);
-			//free (buff);
-
-
-//			while (!feof (f))
-//			{
-//				c = getc (f);
-//				if (c != EOF)
-//					putc (c, packfile);
-//			}
-//			fprintf (packfile, "{%s}\n", newpath);
-//			fclose (f);
 			close (fd);
 			free (buff);
 			printf ("file %s (%d bytes) packed - OK!\n", newpath, (int) size);
 		}
 	}
-//	fflush (packfile);
-//	fclose (packfile);
 	close (fdpackfile);
-	printf ("*** ZVM End pack index OK!\n");
+	printf ("*** ZVM unpack completed successfully!\n");
 }

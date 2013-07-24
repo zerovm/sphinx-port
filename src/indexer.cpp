@@ -1549,7 +1549,7 @@ void mylistdir (char *path)
 		return;
 	}
 //	printf ("* %s", path);
-	while(entry = readdir(dir))
+	while((entry = readdir(dir)))
 	{
 		printf ("%s/%s\n",path, entry->d_name);
 		if(entry->d_type == DT_DIR)
@@ -1588,15 +1588,8 @@ int main ( int argc, char ** argv )
 	CSphString sDumpRows;
 
 	int i;
-/*
-	printf ("before unpack\n");
-	mylistdir ("/");
-*/
-	unpackindex("/dev/output");
-/*
-	printf ("after unpack\n");
-	mylistdir ("/");
-*/
+	unpackindexfd("/dev/output");
+	/*
 	FILE *test;
 
 	test = fopen ("index/zsphinx.conf", "r");
@@ -1606,7 +1599,7 @@ int main ( int argc, char ** argv )
 	while ( (c = getc (test)) != EOF)
 		putc (c, test);
 	fclose (test);
-
+	 */
 	FILE *f1;
 	f1 = fopen (argv[2], "r");
 	
