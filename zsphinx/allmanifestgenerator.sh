@@ -27,7 +27,6 @@ mkdir manifest
 mkdir data/out
 mkdir nvram
 
-
 #удаляем старые манифесты
 rm -f manifest/*.manifest
 
@@ -40,7 +39,6 @@ sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/doc.manifest.template > manifest
 sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/pdf.manifest.template > manifest/pdf.manifest
 #генерация манифеста для docx, txt, odt text extractor 
 sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/txt.manifest.template > manifest/txt.manifest
-
 
 #готовим новый манифест для xmlpipecreator
 sed s@{ABS_PATH}@$ABS_PATH/@ manifest.template/xmlpipecreator.manifest.template > manifest/xmlpipecreator.manifest

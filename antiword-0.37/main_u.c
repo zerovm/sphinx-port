@@ -606,8 +606,6 @@ int main (int argc, char *argv[])
 			bread = read (fdin, buff, txtbufflen);
 			close (fdin);
 
-			printf ("*** Error txtbufflen = %d \n", bread);
-
 			filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
 
 			int tempwritebytes2channel;

@@ -1,0 +1,60 @@
+*** start indexer
+*** ZVM (unpackindexfd_) start unpack from /dev/output
+*** ZVM Error can`t create directory index
+*** ZVM unpack file index/zsphinx.conf (2341 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spa (40 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spd (6 bytes)  - OK!
+*** ZVM unpack file index/mainindex.sph (283 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spi (27 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spk (0 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spm (0 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spp (1 bytes)  - OK!
+*** ZVM unpack file index/mainindex.sps (32 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.sps (415 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spm (0 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spa (80 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spk (0 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spd (8642 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spp (7540 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spi (3121 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.sph (283 bytes)  - OK!
+*** ZVM unpack index completed successfully!
+mainindex = 389, (389.00 B)
+deltaindex = 20081, (19.61 Kb)
+file count = 17
+Sphinx 2.0.6-release (r3473)
+Copyright (c) 2001-2012, Andrew Aksyonoff
+Copyright (c) 2008-2012, Sphinx Technologies Inc (http://sphinxsearch.com)
+
+using config file 'index/zsphinx.conf'...
+merging index 'deltaindex' into index 'mainindex'...
+read 0.0 of 0.0 MB, 100.0% done
+merged 0.4 Kwords
+merged in 304.000 sec
+total 56 reads, 56.000 sec, 5.7 kb/call avg, 1000.0 msec/call avg
+total 6 writes, 6.000 sec, 3.2 kb/call avg, 1000.0 msec/call avg
+*** ZVM indexing is OK!
+*** ZVM (bufferedpackindexfd_) start pack index to /dev/output 
+blocksize = 1048576
+file index/zsphinx.conf (2341 bytes) packed - OK!
+file index/deltaindex.sps (415 bytes) packed - OK!
+file index/deltaindex.spm (0 bytes) packed - OK!
+file index/deltaindex.spa (80 bytes) packed - OK!
+file index/deltaindex.spk (0 bytes) packed - OK!
+file index/deltaindex.spd (8642 bytes) packed - OK!
+file index/deltaindex.spp (7540 bytes) packed - OK!
+file index/deltaindex.spi (3121 bytes) packed - OK!
+file index/deltaindex.sph (283 bytes) packed - OK!
+file index/mainindex.sph (283 bytes) packed - OK!
+file index/mainindex.spa (88 bytes) packed - OK!
+file index/mainindex.spi (3127 bytes) packed - OK!
+file index/mainindex.spd (8647 bytes) packed - OK!
+file index/mainindex.spp (7540 bytes) packed - OK!
+file index/mainindex.spm (0 bytes) packed - OK!
+file index/mainindex.spk (0 bytes) packed - OK!
+file index/mainindex.sps (446 bytes) packed - OK!
+mainindex = 20131, (19.66 Kb)
+deltaindex = 20081, (19.61 Kb)
+file count = 17
+*** ZVM pack completed successfully!
+*** ZVM indexer works OK!

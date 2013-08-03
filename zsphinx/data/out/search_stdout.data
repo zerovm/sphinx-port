@@ -1,0 +1,42 @@
+*** ZVM (unpackindexfd_) start unpack from /dev/input
+*** ZVM Error can`t create directory index
+*** ZVM unpack file index/zsphinx.conf (2341 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.sps (415 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spm (0 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spa (80 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spk (0 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spd (8642 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spp (7540 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.spi (3121 bytes)  - OK!
+*** ZVM unpack file index/deltaindex.sph (283 bytes)  - OK!
+*** ZVM unpack file index/mainindex.sph (283 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spa (88 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spi (3127 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spd (8647 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spp (7540 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spm (0 bytes)  - OK!
+*** ZVM unpack file index/mainindex.spk (0 bytes)  - OK!
+*** ZVM unpack file index/mainindex.sps (446 bytes)  - OK!
+*** ZVM unpack index completed successfully!
+mainindex = 20131, (19.66 Kb)
+deltaindex = 20081, (19.61 Kb)
+file count = 17
+Sphinx 2.0.6-release (r3473)
+Copyright (c) 2001-2012, Andrew Aksyonoff
+Copyright (c) 2008-2012, Sphinx Technologies Inc (http://sphinxsearch.com)
+
+using config file 'index/zsphinx.conf'...
+index 'mainindex': query 'channel
+': returned 6 matches of 6 total in 6.000 sec
+
+displaying matches:
+1. document=38, weight=1254, filename=/home/volodymyr/git/togit/sphinx-port_test/zsphinx/docs/manifest.pdf
+2. document=42, weight=1254, filename=/home/volodymyr/git/togit/sphinx-port_test/zsphinx/docs/manifest.doc
+3. document=40, weight=1242, filename=/home/volodymyr/git/togit/sphinx-port_test/zsphinx/docs/manifest.txt
+4. document=37, weight=1240, filename=/home/volodymyr/git/togit/sphinx-port_test/zsphinx/docs/channels.pdf
+5. document=39, weight=1240, filename=/home/volodymyr/git/togit/sphinx-port_test/zsphinx/docs/channels.txt
+6. document=41, weight=1240, filename=/home/volodymyr/git/togit/sphinx-port_test/zsphinx/docs/channels.doc
+
+words:
+1. 'channel': 6 documents, 282 hits
+

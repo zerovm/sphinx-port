@@ -3,8 +3,9 @@
 ###########################################################
 
 [args]
-args=indexer --config index/zsphinx.conf mainindex
+args=indexer --config index/zsphinx.conf deltaindex
+#args=indexer --config index/zsphinx.conf mainindex
 #--merge mainindex deltaindex
 
-[debug]
-verbosity=3
+#[debug]
+#verbosity=3

@@ -5,5 +5,5 @@
 [args]
 args=txt
 
-[debug]
-verbosity=3
+#[debug]
+#verbosity=3

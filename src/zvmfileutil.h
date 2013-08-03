@@ -10,6 +10,20 @@
 
 #define MAXFIENAME 1024
 
+#define I_DEVINPUTDATA "/dev/output"
+#define I_DEVOUTPUTDATA "/dev/output"
+
+#define S_DEVINPUTDATA "/dev/input"
+#define S_DEVOUTPUTDATA "/dev/output"
+#define DELTAINDEX "deltaindex"
+#define MAININDEX "mainindex"
+#define READWRITEBUFFSIZE 1024*1024
+
+#define INDEXDIRNAME "index"
+#define ZIPBASED_TEMP_FILEANME "/temp/temp.zip"
+//#define INDEXDIRNAME "f1"
+//#define INDEXDIRNAME "/home/volodymyr/disk/f1"
+
 #define TEST
 
 struct filemap {
@@ -27,8 +41,8 @@ int puttext2channel (char *, long , char *, int);
 //int getdatafromchannel (int *, char * , long *);
 int getdatafromchannel (int, char *, int);
 int getfilteredbuffer (const char *, long , char *);
-void unpackindexfd (char *);
-void packindexfd (char *);
+void unpackindex_fd (char *);
 void bufferedpackindexfd (char *);
+int mymakedir (char *);
 
 #endif /* ZVMFILEUTIL_H_ */

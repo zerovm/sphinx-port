@@ -152,10 +152,18 @@ int main(int argc, char **argv)
 	printf ("*** start transfer to indexer\n");
 #endif
 	docID = getmaxid (MAXID_DEV_NAME_IN);
+	int _docID = docID;
+
 	printf ("*** ZVM start search incoming devices\n");
 	createxmlpipe (fd);
+	char *bbb = "test\n";
+	int bwr = write (1, bbb, strlen (bbb));
 	mylistdir (fd, p);
+	docID = _docID;
 	closexmlpipe (fd);
+	createxmlpipe (1);
+	mylistdir (1, p);
+	closexmlpipe (1);
 	close (fd);
 	setmaxid (MAXID_DEV_NAME_OUT, docID);
 #ifdef ZVMDEBUG

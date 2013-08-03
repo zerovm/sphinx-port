@@ -232,10 +232,10 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	long realfilesize;
 	long bread, readcount, blockreadsize, totalreadsize;
 	char tempfilename[strlen (chname) + strlen (prefix) + 1];
-
 	fmap.realfilesize = 0;
 	i = 0;
 	getext (chname, ext);
+
 	sprintf (tempfilename, "%s/temp.tmp", prefix);
 
 	strcpy (fmap.tempfilename, tempfilename);
@@ -260,14 +260,14 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 		return fmap;
 	}
 
-	blockreadsize = 1024*64;
+	blockreadsize = READWRITEBUFFSIZE;
 	totalreadsize = 0;
 	readcount = 0;
 	buffsize = blockreadsize;
 	totalreadsize = 0;
 	bread = 0;
 	buff = (char *) malloc (blockreadsize);
-	while ((bread = read (fdin, buff + readcount * blockreadsize, blockreadsize)) > 0)
+	while ((bread = (long)read (fdin, buff + readcount * blockreadsize, blockreadsize)) > 0)
 	{
 		buffsize += blockreadsize;
 		resizebuff = (char *) realloc ((char *)buff, buffsize);
@@ -284,6 +284,16 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 		totalreadsize += bread;
 		readcount++;
 	}
+	printf ("totalreadsize = %ld\n", totalreadsize);
+	if (totalreadsize <= 0)
+	{
+		close (fdin);
+		close (fdout);
+		free (buff);
+		fmap.realfilesize = 0;
+		return fmap;
+	}
+
 
 	// FIX if an incorrect format of the read data
 	i = 0;
@@ -292,7 +302,7 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	nbytes [i] = '\0';
 
 	realfilesize = atoi (nbytes);
-
+	printf ("realfilesize = %ld\n", realfilesize);
 	i++; // rewind space
 	int j;
 	for (j = 0;i < totalreadsize - 1;i++, j++)
@@ -303,7 +313,11 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	}
 	fmap.realfilename[j-1] = '\0';
 	i += 2; //rewind space and //
-	int bwrite = write (fdout, buff + i, realfilesize);
+	int bwrite = 0;
+	if (realfilesize > 0)
+		bwrite = write (fdout, buff + i, realfilesize);
+
+
 	fmap.realfilesize = bwrite;
 	close (fdin);
 	close (fdout);
@@ -327,6 +341,11 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 		return;
 	}
 	long fsize = getfilesize_fd (fin, NULL, 0);
+	if (fsize >= 10 * 1024 * 1024)
+	{
+		printf ("Too big file\n");
+		return;
+	}
 	char *buff;
 	char *headbuf = (char *) malloc (strlen (realfilename) + 20);
 	sprintf (headbuf,"%d %s //", (int) fsize, realfilename);
@@ -404,54 +423,81 @@ int getfilteredbuffer (const char *buff, long bufflen, char *filteredbuff)
 	return filteredbuffsize;
 }
 
-void unpackindexfd (char * devname)
+void printstat (long mainbytes, long deltabytes, int filecount, const char * mainindexname, char *deltaindexname)
 {
-	//
+	float konvmainbytes = (mainbytes / 1024) > 0 ? (mainbytes / (1024 * 1024)) > 0 ? (mainbytes / (1024 * 1024 * 1024)) > 0 ? (mainbytes / (1024.0 * 1024.0 * 1024.0)) : (mainbytes / (1024.0 * 1024.0)) : (mainbytes / 1024.0) : mainbytes;
+	float konvdeltabytes = (deltabytes / 1024) > 0 ? (deltabytes / (1024 * 1024)) > 0 ? (deltabytes / (1024 * 1024 * 1024)) > 0 ? (deltabytes / (1024.0 * 1024.0 * 1024.0)) : (deltabytes / (1024.0 * 1024.0)) : (deltabytes / 1024.0) : deltabytes;
+	const char *strmain = (mainbytes / 1024) > 0 ? (mainbytes / (1024 * 1024)) > 0 ? (mainbytes / (1024 * 1024 * 1024)) > 0 ? "Gb" : "Mb" : "Kb" : "B";
+	const char *strdelta = (deltabytes / 1024) > 0 ? (deltabytes / (1024 * 1024)) > 0 ? (deltabytes / (1024 * 1024 * 1024)) > 0 ? "Gb" : "Mb" : "Kb" : "B";
 
-	printf ("*** ZVM start unpack from %s\n", devname);
+	printf ("%s = %ld, (%5.2f %s)\n", mainindexname, mainbytes, konvmainbytes, strmain);
+	printf ("%s = %ld, (%5.2f %s)\n", deltaindexname, deltabytes, konvdeltabytes, strdelta);
+	printf ("file count = %d\n", filecount);
+	return;
+}
 
+
+void unpackindex_fd (char *	devname)
+{
+	printf ("*** ZVM (unpackindexfd_) start unpack from %s\n", devname);
 	int fdinfile;
-
-	char dirName[] = "index";
-	int result=mkdir(dirName, 0755);
+	char *dirName = (char*)INDEXDIRNAME;
+	int result=mymakedir(dirName);
 	if (result != 0)
 		printf ("*** ZVM Error can`t create directory %s\n", dirName);
 	int MAXREAD = 1024;
 	char readbuf [MAXREAD];
 	int letcount;
 	letcount = 0;
-
 	fdinfile = open (devname, O_RDONLY);
-
 	if (fdinfile <= 0)
 	{
 		printf ("*** ZVM error input indexpack file\n");
 		return;
 	}
-
-
-	int c;
-	int filelen;
-	filelen = 0;
+	char c;
 	int bread;
 	bread = 1;
+	long deltabytes = 0;
+	long mainbytes = 0;
+	int filecount = 0;
 	while (bread > 0)
 	{
-		// получение количества байт сохраненном файле в файле
+		// получение количества байт в сохраненном файле
 		letcount = 0;
 		//c = getc (infile);
 		bread = read (fdinfile, &c, 1);
+
 		if (bread == 0)
 		{
 			printf ("*** ZVM unpack index completed successfully!\n");
 			close (fdinfile);
+			printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char*) DELTAINDEX);
 			return;
 		}
+		//sprintf ("c=%c\n", c);
+		/*
+		while (c != '{' && bread >= 0)
+		{
+			bread = read (fdinfile, &c, 1);
+		}
+		*/
 
 		if (c != '{')
 		{
-			printf("*** ZVM Error format packfile\n");
+			int tellsize = lseek (fdinfile, 0, SEEK_CUR);
+			int bytesleft = 0;
+			printf ("Error *\n");
+/*
+			while ( (bread = read (fdinfile, &c, 1)) > 0)
+			{
+				//printf ("%c", c);
+				bytesleft++;
+			}
+*/
+			printf("*** ZVM Error format packfile c=*%c*, current position = %d, bytes left = %d\n", c, tellsize, bytesleft);
 			close (fdinfile);
+			printstat (mainbytes, deltabytes, filecount, (char*) MAININDEX, (char *) DELTAINDEX);
 			return;
 		}
 		bread = read (fdinfile, &c, 1);
@@ -460,7 +506,11 @@ void unpackindexfd (char * devname)
 			bread = read (fdinfile, &c, 1);
 		}
 		readbuf [letcount] = '\0';
+		//printf ("readbuf=%s\n", readbuf);
+		long filelen = 0;
+		//filelen = 0;
 		filelen = atoi (readbuf);
+		//printf ("filelen detected = %ld\n", filelen);
 		//получение имени файла
 		letcount =0;
 		bread = read (fdinfile, &c, 1);
@@ -470,43 +520,106 @@ void unpackindexfd (char * devname)
 			bread = read (fdinfile, &c, 1);
 		}
 		readbuf [--letcount] = '\0';
+		//printf ("readbuf=%s\n", readbuf);
 		int fdefile;
 		fdefile = open (readbuf, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 		if (fdefile <= 0)
 		{
 			printf ("*** ZVM Error open %s file for write\n", readbuf);
 			close (fdinfile);
+
 			return;
 
 		}
-		char *buff = (char *) malloc (filelen);
-		int readb = read(fdinfile, buff,filelen);
-		int writeb = write(fdefile, buff,readb);
+		char *buff = NULL;
+		int blocksize = READWRITEBUFFSIZE;
+		int readb = 0;//read(fdinfile, buff,filelen);
+		int writeb = 0;//write(fdefile, buff,readb);
 
+		long countreadbytes = 0;
+		long countwritebytes = 0;
 
-		close (fdefile);
+		buff = (char *) malloc (blocksize * sizeof (char));
+		if (filelen > 0)
+		{
+
+			//printf ("filelen = %d, block size = %d \n", filelen, blocksize);
+			if (blocksize > filelen)
+				blocksize = filelen;
+			int i=filelen / blocksize + 1;
+			//printf ("readcount %d\n", i);
+			for (; i > 0; i--)
+			{
+
+				if (filelen < blocksize)
+					blocksize = filelen;
+				if (i == 1)
+					blocksize = filelen - countreadbytes;
+				//printf ("blocksize = %d\n", blocksize);
+				//printf ("filelen = %d, blocksize = %d \n", filelen, blocksize);
+				readb = read(fdinfile, buff, blocksize);
+				if (readb > 0)
+					writeb = write(fdefile, buff, readb);
+				else
+					writeb = readb;
+				countreadbytes += readb;
+				countwritebytes += writeb;
+				//printf ("countreadbytes=%d, current readbytes=%d \n", countreadbytes, readb);
+			}
+			readb = countreadbytes;
+			writeb = countwritebytes;
+		}
+		// if (filelen > 0)
+/*
+		if (filelen > 0)
+		{
+			buff = (char *) malloc (filelen);
+			readb = read(fdinfile, buff,filelen);
+			writeb = write(fdefile, buff,readb);
+		} // if (filelen > 0)
+*/
+
+		char *indexnameptr = NULL;
+		if ((indexnameptr = strstr (readbuf,DELTAINDEX)) != NULL )
+			deltabytes += filelen;
+
+		indexnameptr = NULL;
+		if ((indexnameptr = strstr (readbuf,MAININDEX)) != NULL )
+			mainbytes += filelen;
+		filecount++;
+
 		free (buff);
+		close (fdefile);
 		if (readb != writeb)
 			printf ("*** Warning while unpacking index file, readb = %d, writeb = %d\n", readb, writeb);
 		else
 			printf ("*** ZVM unpack file %s (%d bytes)  - OK!\n", readbuf, writeb);
 		bread = read (fdinfile, &c, 1);
+		//printf ("c = %c\n", c);
+		int loopcount =0;
 		while (c != '\n')
+		{
+			loopcount++;
 			bread = read (fdinfile, &c, 1);
+			//printf ("*%c", c);
+		}
+		//printf ("loopcount = %d\n", loopcount);
 	}
+	printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char* ) DELTAINDEX);
 	close (fdinfile);
 }
 
 /*
- ZVM Function for packing all index files from directory in ZeroVM FS, specified in Zsphinx.conf to /fdev/output device
+ ZVM Function for packing all index files from directory in ZeroVM FS, specified in Zsphinx.conf to /dev/output device
 */
 
 void bufferedpackindexfd (char * devname)
 {
-	printf("*** ZVM start pack index to %s \n", devname);
+	printf("*** ZVM (bufferedpackindexfd_) start pack index to %s \n", devname);
 	int fdpackfile;
 
 	fdpackfile = open (devname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+
 
 	if ( fdpackfile  <= 0 )
 	{
@@ -514,7 +627,7 @@ void bufferedpackindexfd (char * devname)
 		return;
 	}
 
-	char indexpath[]="index"; // deirectory with  index files and zspfinx.conf
+	char *indexpath = (char *)INDEXDIRNAME; // deirectory with  index files and zspfinx.conf
   	DIR *dir;
 	struct dirent *entry;
 	dir = opendir(indexpath);
@@ -522,47 +635,123 @@ void bufferedpackindexfd (char * devname)
 
 	if (!dir)
 		printf ("*** ZVM Error open DIR %s\n", indexpath);
-	int bytecount;
-	bytecount = 0;
-	while(entry = readdir(dir))
+	int blocksize = READWRITEBUFFSIZE; // 10 Mb
+	printf ("blocksize = %d\n", blocksize);
+	char *buff = NULL;
+	buff = (char *) malloc (blocksize);
+
+	long deltabytes = 0;
+	long mainbytes = 0;
+	int filecount = 0;
+
+	while((entry = readdir(dir)))
 	{
 		if(entry->d_type != DT_DIR)
 		{
+
+			size_t size;
+			size_t bread = 0;
+			size_t bwrite;
+			size_t bytecount;
+			bytecount = 0;
+
 			newpath = (char *) malloc (strlen (entry->d_name) + strlen(indexpath) + 2);
 			sprintf(newpath, "%s/%s", indexpath, entry->d_name);
-
-			int c;
-			long size;
-			long buffsize;
-
 			int fd;
+
 			fd = open (newpath, O_RDONLY);
 			size = getfilesize_fd(fd, NULL, 0);
 
-			buffsize = size + strlen (newpath) * 2 + 50;
-			char *buff;
-			buff = (char *) malloc (buffsize);
+			char tempstr [strlen (newpath) * 2 + 50];
 
-			sprintf (buff, "{%d %s}\n", (int) size, newpath);
-
-			long bread;
-			int tempbufflen;
-			tempbufflen = strlen (buff);
-			bread = read (fd, buff + tempbufflen, size);
-			if (bread < 0)
+			sprintf(tempstr, "{%zu %s}\n", size, newpath);
+			bwrite = write (fdpackfile, tempstr, strlen (tempstr));
+			if (size > 0)
 			{
-				close (fd);
-				continue;
-			}
-
-			sprintf (buff + tempbufflen + size, "{%s}\n", newpath);
-			long bwrite;
-			bwrite = write (fdpackfile, buff, tempbufflen + size + strlen (newpath) + 3);
+				while ((bread = read(fd, buff, blocksize)) > 0)
+				{
+					//bread = read (fd, buff, blocksize);
+					bytecount += bread;
+					bwrite = write(fdpackfile, buff, bread);
+				}
+			} else
+				bytecount = 0;
+//			if (bread < 0)
+//			{
+//				close (fd);
+//				continue;
+//			}
+//			bwrite = write (fdpackfile, buff, size);
+			//bwrite = write (1, buff, size);
+			sprintf (tempstr, "{%s}\n", newpath);
+			bwrite = write (fdpackfile, tempstr, strlen (tempstr));
+			//bwrite = write (1, tempstr, strlen (tempstr));
 			close (fd);
-			free (buff);
 			printf ("file %s (%d bytes) packed - OK!\n", newpath, (int) size);
+
+
+			char *indexnameptr = NULL;
+			if ((indexnameptr = strstr (newpath,DELTAINDEX)) != NULL )
+				deltabytes += size;
+
+			indexnameptr = NULL;
+			if ((indexnameptr = strstr (newpath,MAININDEX)) != NULL )
+				mainbytes += size;
+			filecount++;
 		}
 	}
+	free (buff);
 	close (fdpackfile);
-	printf ("*** ZVM unpack completed successfully!\n");
+	printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char *) DELTAINDEX);
+
+	printf ("*** ZVM pack completed successfully!\n");
+}
+
+int mymakedir (char * newdir)
+{
+  char *buffer ;
+  char *p;
+  int  len = (int)strlen(newdir);
+
+  if (len <= 0)
+    return 0;
+
+  buffer = (char*)malloc(len+1);
+        if (buffer==NULL)
+        {
+                printf("Error allocating memory\n");
+                return 1;
+        }
+  strcpy(buffer,newdir);
+
+  if (buffer[len-1] == '/') {
+    buffer[len-1] = '\0';
+  }
+  if (mkdir (buffer,0775) == 0)
+    {
+      free(buffer);
+      return 1;
+    }
+
+  p = buffer+1;
+  while (1)
+    {
+      char hold;
+
+      while(*p && *p != '\\' && *p != '/')
+        p++;
+      hold = *p;
+      *p = 0;
+      if ((mkdir (buffer,0775) == -1) && (errno == ENOENT))
+        {
+          printf("couldn't create directory %s\n",buffer);
+          free(buffer);
+          return 0;
+        }
+      if (hold == 0)
+        break;
+      *p++ = hold;
+    }
+  free(buffer);
+  return 0;
 }

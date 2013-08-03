@@ -25,7 +25,7 @@ echo $query > data/search_stdin.data
 echo remove old nexes, outs, manifests and nvrams configuration
 rm -f *.nexe
 rm -f manifest/*.manifest
-rm -f *data/out/*
+rm -f data/out/*
 rm -f nvram/*.nvram
 
 #echo generate zsphinx.conf from template
@@ -72,7 +72,7 @@ do
 #		then
 #			echo nodecount $NODECOUNT tempnodecount $TEMPNODECOUNT 
 			echo run $file
-			${ZVM_PREFIX}/zerovm -M$file &
+			${ZVM_PREFIX}/zerovm -P -M$file &
 #			echo OK
 #		else
 #			echo nodecount $NODECOUNT tempnodecount $TEMPNODECOUNT q
@@ -83,7 +83,7 @@ do
 	fi
 done
 echo run manifest/indexer.manifest
-time ${ZVM_PREFIX}/zerovm -Mmanifest/indexer.manifest
+time ${ZVM_PREFIX}/zerovm -P -Mmanifest/indexer.manifest
 #${ZVM_PREFIX}/zerovm -Mmanifest/xmlpipecreator.manifest &
 #echo run manifest/xmlpipecreator.manifest
 #echo run manifest/indexer.manifest
@@ -91,12 +91,11 @@ time ${ZVM_PREFIX}/zerovm -Mmanifest/indexer.manifest
 
 ./ns_stop.sh
 
-sleep 1
+
+sleep 2
 
 cat data/out/indexer_stdout.data
 
-sleep 1
-time ${ZVM_PREFIX}/zerovm -Mmanifest/search.manifest 
+./mergedelta+main.sh
 
-sleep 1
-cat data/out/search_stdout.data
+./search.sh "channel"

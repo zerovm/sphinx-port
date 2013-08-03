@@ -8,5 +8,5 @@ name=fname, value={FILE_NAME}
 [args]
 args=filesender-{DOCNUMBER}
 
-[debug]
-verbosity=4
+#[debug]
+#verbosity=4

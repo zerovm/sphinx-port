@@ -8,5 +8,5 @@ channel=/dev/mount/index,  mountpoint=/, access=ro
 channel=/dev/mount/config,  mountpoint=/, access=ro
 
 [args]
-args=search --config index/zsphinx.conf --stdin -i deltaindex
+args=search --config index/zsphinx.conf --stdin -i mainindex
 

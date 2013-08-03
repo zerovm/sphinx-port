@@ -59,9 +59,13 @@ void mylistdir (char *path)
 		return;
 	}
 //	printf ("* %s", path);
-	while(entry = readdir(dir))
+	while((entry = readdir(dir)))
 	{
-		printf ("%s/%s\n",path, entry->d_name);
+		//char *filename = (char *) malloc (strlen (path)+ strlen (entry->d_name) + 2);
+		//sprintf (filename, "%s/%s\n",path, entry->d_name);
+		//long size = getfilesize_fd (0, filename, 1);
+
+		printf ("%s/%s (%ld)\n",(char *) path, entry->d_name);
 		if(entry->d_type == DT_DIR)
 		{
 			if (strcmp (entry->d_name, ".") != 0 && strcmp (entry->d_name, "..") != 0)
@@ -83,8 +87,8 @@ void mylistdir (char *path)
 int main ( int argc, char ** argv )
 {
 //	mylistdir("/");
-	unpackindexfd("/dev/input");
-//	mylistdir("/");
+	unpackindex_fd( (char *)S_DEVINPUTDATA);
+	//mylistdir("/");
 	fprintf ( stdout, SPHINX_BANNER );
 	if ( argc<=1 )
 	{

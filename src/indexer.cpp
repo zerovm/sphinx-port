@@ -1588,29 +1588,31 @@ int main ( int argc, char ** argv )
 	CSphString sDumpRows;
 
 	int i;
-	unpackindexfd("/dev/output");
-	/*
+	unpackindex_fd( (char *) I_DEVINPUTDATA);
+	//mylistdir ("/");
+
+
+
+
 	FILE *test;
 
 	test = fopen ("index/zsphinx.conf", "r");
 	if (!test)
-		printf ("Error open sphinx config file\n");
-	char c;
+	{
+		printf ("Error open sphinx config file\n\n");
+		return 1;
+	}
+/*	char c;
 	while ( (c = getc (test)) != EOF)
-		putc (c, test);
+		putchar (c);
 	fclose (test);
-	 */
-	FILE *f1;
-	f1 = fopen (argv[2], "r");
-	
-	if (!f1)
-		printf ("**Config file %s not found\n", argv[2]);
-	
+*/
+
 	for ( i=1; i<argc; i++ )
 	{
 #ifndef X86_64_ZEROVM
 		if (i >= argc) 
-		{	
+		{
 			i++;
 			break;
 		}
@@ -1892,7 +1894,7 @@ int main ( int argc, char ** argv )
 	//mylistdir ("/");
 
 	if (bIndexedOk)
-		bufferedpackindexfd("/dev/output");
+		bufferedpackindexfd((char *)I_DEVOUTPUTDATA);
 
 	printf ("*** ZVM indexer works OK!\n");
 
