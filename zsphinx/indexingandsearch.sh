@@ -96,6 +96,6 @@ sleep 2
 
 cat data/out/indexer_stdout.data
 
-./mergedelta+main.sh
+#./mergedelta+main.sh
 
-./search.sh "channel"
+#./search.sh "channel"

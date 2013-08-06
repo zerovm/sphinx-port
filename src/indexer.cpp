@@ -1533,41 +1533,7 @@ bool SendRotate ( const CSphConfig & hConf, bool bForce )
 
 #include <dirent.h>
 
-void mylistdir (char *path)
-{
-  	DIR *dir;
-	struct dirent *entry;
-	//struct stat sb;
-	//char statcheck [1024];
-	char newpath[1024];
-	//char newpathf[1024];
-	//char extfile [1024];
-	dir = opendir(path);
-	int len;//, lennew, lennewlast;
-	if(dir == 0)
-	{
-		return;
-	}
-//	printf ("* %s", path);
-	while((entry = readdir(dir)))
-	{
-		printf ("%s/%s\n",path, entry->d_name);
-		if(entry->d_type == DT_DIR)
-		{
-			if (strcmp (entry->d_name, ".") != 0 && strcmp (entry->d_name, "..") != 0)
-			{
-				strcpy (newpath, path);
-				len = strlen (newpath);
-				if (newpath [len-1] != '/')
-					strcat (newpath, "/");
-				strcat (newpath, entry->d_name);
-				mylistdir (newpath);
-			}
-		}
 
-	}
-	closedir(dir);
-}
 
 
 int main ( int argc, char ** argv )

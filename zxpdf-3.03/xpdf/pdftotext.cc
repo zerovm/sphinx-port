@@ -39,7 +39,6 @@
 #include "config.h"
 #include "../../src/zvmfileutil.h"
 
-#define DEVOUTNAME "/dev/out/xmlpipecreator"
 
 static void printInfoString(FILE *f, Dict *infoDict, const char *key,
 			    const char *text1, const char *text2,
@@ -104,7 +103,7 @@ static ArgDesc argDesc[] = {
 };
 
 
-
+/*
 void mylistdir (char *path)
 {
   	DIR *dir;
@@ -144,7 +143,7 @@ void mylistdir (char *path)
 	}
 	closedir(dir);
 }
-
+*/
 void printheader (FILE *f)
 {
 	char *externalfilename = getenv("fname");
@@ -208,7 +207,7 @@ int wmain(int argc, char *argv[]) {
   }
 */
 //#ifdef ZVMDEBUG
-  mylistdir ("/dev/in");
+  mylistdir ((char *) "/dev/in");
 //#endif
   // copy from stdin incoming pdf file to temp file
   fileName = new GString("temp.pdf");
@@ -441,7 +440,7 @@ int wmain(int argc, char *argv[]) {
   delete textFileName;
  err2:
   delete doc;
-  uMap->decRefCnt();
+  uMap->decRefCnt(	);
  err1:
   delete globalParams;
  err0:
@@ -461,9 +460,9 @@ int main (int argc, char *argv[])
     char *chname; //
     int fdout;
 
-    char *path = "/dev/in";
+    char *path = (char *)"/dev/in";
     //char *path = "/home/volodymyr/git/sphinx-port/docxextract/1";
-    char *prefix = "";
+    char *prefix = (char *) "";
     //char *prefix = "/home/volodymyr/temp";
     long totalbyteswrite2text, byteswrite2text;
 
@@ -506,8 +505,8 @@ int main (int argc, char *argv[])
 			char *buff; // temp buffer fot readed data trom txt file.
 			long txtbufflen;
 			long filteredbufflen;
-			char *tmpdocfilename = "temp.pdf";
-			char *tmptxtfilename = "temp.txt";//TEMP_FILE_FOR_EXTRACTED_TEXT; // tempextracted.txt
+			char *tmpdocfilename = (char *) "temp.pdf";
+			char *tmptxtfilename = (char *)"temp.txt";//TEMP_FILE_FOR_EXTRACTED_TEXT; // tempextracted.txt
 			int fdin;
 			chname = (char *) malloc (strlen(path) + strlen (entry->d_name) + 2);
 			sprintf (chname, "%s/%s", path, entry->d_name);

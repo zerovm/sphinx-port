@@ -53,7 +53,6 @@
 #include "../src/zvmfileutil.h"
 
 #define FILENAME "file.doc"
-#define DEVOUTNAME "/dev/out/xmlpipecreator"
 
 
 /* The name of this program */

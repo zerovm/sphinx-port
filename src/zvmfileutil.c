@@ -242,7 +242,7 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 
 	if (!chname)
 	{
-		printf ("*** ZVM Error open in channelname\n");
+		printf ("*** ZVM Error open in channel name\n");
 		return fmap;
 	}
 
@@ -316,8 +316,6 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	int bwrite = 0;
 	if (realfilesize > 0)
 		bwrite = write (fdout, buff + i, realfilesize);
-
-
 	fmap.realfilesize = bwrite;
 	close (fdin);
 	close (fdout);
@@ -341,7 +339,8 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 		return;
 	}
 	long fsize = getfilesize_fd (fin, NULL, 0);
-	if (fsize >= 10 * 1024 * 1024)
+
+	if (fsize >= MAX_FILE_LENGTH)
 	{
 		printf ("Too big file\n");
 		return;
@@ -349,15 +348,16 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 	char *buff;
 	char *headbuf = (char *) malloc (strlen (realfilename) + 20);
 	sprintf (headbuf,"%d %s //", (int) fsize, realfilename);
-	buff = (char *) malloc ( fsize + strlen (headbuf));
+	buff = (char *) malloc (fsize + strlen (headbuf));
 	long bwrite = 0;
 	//= write (fout, headbuf, strlen (headbuf)); // write header of file -
 	strncpy (buff, headbuf, strlen (headbuf));
 	long bread = read (fin, buff + strlen (headbuf), fsize);
-	bwrite += write (fout, buff, bread);
+	bwrite += write (fout, buff, bread + strlen (headbuf));
 	close (fin);
 	close (fout);
 	printf ("%ld bytes writed into file %s from file %s, realfilename %s\n", bwrite, outputchname, inputchname, realfilename);
+	free (buff);
 	return;
 }
 
@@ -727,7 +727,7 @@ int mymakedir (char * newdir)
   if (buffer[len-1] == '/') {
     buffer[len-1] = '\0';
   }
-  if (mkdir (buffer,0775) == 0)
+  if (mkdir (buffer,0777) == 0)
     {
       free(buffer);
       return 1;
@@ -742,7 +742,7 @@ int mymakedir (char * newdir)
         p++;
       hold = *p;
       *p = 0;
-      if ((mkdir (buffer,0775) == -1) && (errno == ENOENT))
+      if ((mkdir (buffer,0777) == -1) && (errno == ENOENT))
         {
           printf("couldn't create directory %s\n",buffer);
           free(buffer);
@@ -754,4 +754,36 @@ int mymakedir (char * newdir)
     }
   free(buffer);
   return 0;
+}
+
+void mylistdir (char *path)
+{
+  	DIR *dir;
+	struct dirent *entry;
+	char newpath[1024];
+	dir = opendir(path);
+	int len;
+	if(dir == 0)
+	{
+		return;
+	}
+
+	while((entry = readdir(dir)))
+	{
+		printf ("%s/%s\n",path, entry->d_name);
+		if(entry->d_type == DT_DIR)
+		{
+			if (strcmp (entry->d_name, ".") != 0 && strcmp (entry->d_name, "..") != 0)
+			{
+				strcpy (newpath, path);
+				len = strlen (newpath);
+				if (newpath [len-1] != '/')
+					strcat (newpath, "/");
+				strcat (newpath, entry->d_name);
+				mylistdir (newpath);
+			}
+		}
+
+	}
+	closedir(dir);
 }

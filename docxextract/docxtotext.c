@@ -68,8 +68,6 @@
 #define WRITEBUFFERSIZE (8192)
 #define MAXFILENAME (256)
 #define FILENAME "file.docx"
-#define DEVOUTNAME "/dev/out/xmlpipecreator"
-
 #ifdef _WIN32
 #define USEWIN32IOAPI
 #include "iowin32.h"
@@ -800,7 +798,6 @@ int extractfile (char *zipfilename)
     //}
 
 
-
     if (zipfilename!=NULL)
     {
         strncpy(filename_try, zipfilename,MAXFILENAME-1);
@@ -898,8 +895,12 @@ int main(argc,argv)
     char *chname; //
     int fdout;
 
+
     char *path = "/dev/in";
+    //char *path = "/home/volodymyr/git/sphinx-port/zsphinx/data/fsout";
+
     char *prefix = "/temp";
+    //char *prefix = "/home/volodymyr/temp";
     long totalbyteswrite2text, byteswrite2text;
 
   	DIR *dir;
@@ -956,35 +957,44 @@ int main(argc,argv)
 
 			dt = getdoctype (fmap.realfilename);
 			int retextractcode = 0; //
-			int renameretcode=0;
+			int renameretcode = 0;
+			int deletefileretcode = 0;
+//			memset (filteredbuff, '\0', buffsize);
+//			memset (buff, '\0', buffsize);
 			switch (dt) {
 			case 1://docx
 				renameretcode = rename (fmap.tempfilename, ZIPBASED_TEMP_FILEANME);
+				printf ("fmap.tmp = %s const= %s, retcode = %d\n", fmap.tempfilename, ZIPBASED_TEMP_FILEANME, renameretcode);
 				if (renameretcode != 0)
 					continue;
 				retextractcode = extractfile (ZIPBASED_TEMP_FILEANME); // unzip incoming file place xml contents on file document.xml
+				printf ("docx\n");
 				if (retextractcode != 0)
 				{
 					continue;
 				}
 				filteredbufflen = gettextfromxml (filteredbuff); // extracting and filtering text data from content.xml file
+
 				break;
 			case 2://odt
 				renameretcode = rename (fmap.tempfilename, ZIPBASED_TEMP_FILEANME);
 				if (renameretcode != 0)
 					continue;
 				retextractcode = extractfile (ZIPBASED_TEMP_FILEANME); // unzip incoming file
+				printf ("odt\n");
 				if (retextractcode != 0)
 				{
 					continue;
 				}
-		    	filteredbufflen = gettextfromxmlodt (filteredbuff);
+		    	filteredbufflen = gettextfromxmlodt (filteredbuff); // extracting and filtering text data from document.xml file
 		    	break;
 			case 3://txt
 				txtbufflen = getbufffromtxt (fmap.tempfilename , buff);
 				filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
+				printf ("txt\n");
 		    	break;
 			}
+			printf ("after extract\n");
 
 			int i;
 			printf ("*** real file name %s, filteredbufflen = %d\n", fmap.realfilename, filteredbufflen);

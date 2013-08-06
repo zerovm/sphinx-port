@@ -34,7 +34,7 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = indexer$(EXEEXT) search$(EXEEXT) \
-	spelldump$(EXEEXT) indextool$(EXEEXT) xmlpipecreator$(EXEEXT) text$(EXEEXT) filesender$(EXEEXT)
+	spelldump$(EXEEXT) indextool$(EXEEXT) xmlpipecreator$(EXEEXT) filesender$(EXEEXT)
 noinst_PROGRAMS = tests$(EXEEXT)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
@@ -100,10 +100,10 @@ CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
 SOURCES = $(libsphinx_a_SOURCES) $(indexer_SOURCES) \
 	$(indextool_SOURCES) $(search_SOURCES) \
-	$(spelldump_SOURCES) $(tests_SOURCES) $(xmlpipecreator_SOURCES) $(text_SOURCES) $(filesender_SOURCES)
+	$(spelldump_SOURCES) $(tests_SOURCES) $(xmlpipecreator_SOURCES) $(filesender_SOURCES)
 DIST_SOURCES = $(libsphinx_a_SOURCES) $(indexer_SOURCES) \
 	$(indextool_SOURCES) $(search_SOURCES) \
-	$(spelldump_SOURCES) $(tests_SOURCES) $(xmlpipecreator_SOURCES) $(text_SOURCES) $(filesender_SOURCES)
+	$(spelldump_SOURCES) $(tests_SOURCES) $(xmlpipecreator_SOURCES) $(filesender_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)

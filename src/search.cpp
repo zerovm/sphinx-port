@@ -42,16 +42,12 @@ const char * myctime ( DWORD uStamp )
 }
 
 #include <dirent.h>
-
+/*
 void mylistdir (char *path)
 {
   	DIR *dir;
 	struct dirent *entry;
-	//struct stat sb;
-	//char statcheck [1024];
 	char newpath[1024];
-	//char newpathf[1024];
-	//char extfile [1024];
 	dir = opendir(path);
 	int len;//, lennew, lennewlast;
 	if(dir == 0)
@@ -82,7 +78,7 @@ void mylistdir (char *path)
 	}
 	closedir(dir);
 }
-
+*/
 
 int main ( int argc, char ** argv )
 {

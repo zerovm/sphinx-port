@@ -24,15 +24,13 @@
 #undef ZVMDEBUG
 */
 
-//void mylistdir (int *,char *);
+
 
 FILE *outf;
 
-//int doccount=1000;
-//int doccount2=10000;
 int docID=1;
 
-void mylistdir (int fd, char *path)
+void mylistdir_xmlpipe (int fd, char *path)
 {
   	DIR *dir;
 	struct dirent *entry;
@@ -152,18 +150,10 @@ int main(int argc, char **argv)
 	printf ("*** start transfer to indexer\n");
 #endif
 	docID = getmaxid (MAXID_DEV_NAME_IN);
-	int _docID = docID;
-
 	printf ("*** ZVM start search incoming devices\n");
 	createxmlpipe (fd);
-	char *bbb = "test\n";
-	int bwr = write (1, bbb, strlen (bbb));
-	mylistdir (fd, p);
-	docID = _docID;
+	mylistdir_xmlpipe (fd, p);
 	closexmlpipe (fd);
-	createxmlpipe (1);
-	mylistdir (1, p);
-	closexmlpipe (1);
 	close (fd);
 	setmaxid (MAXID_DEV_NAME_OUT, docID);
 #ifdef ZVMDEBUG
