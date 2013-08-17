@@ -18,6 +18,7 @@
 #include "sphinxint.h"
 #include "zvmfileutil.h"
 #include <time.h>
+#include <stdlib.h>
 
 
 #define CONF_CHECK(_hash,_key,_msg,_add) \
@@ -80,11 +81,75 @@ void mylistdir (char *path)
 }
 */
 
+
+char** getwordsformstr (const char *s, int *wordcount)// char **res)
+{
+
+	char *str = (char *) malloc (sizeof (char) * (strlen (s) + 1));
+	strncpy (str, s, strlen (s));
+	int len = strlen (str);
+	int i = 0;
+	int j = 0;
+	int wc = 0;
+
+
+	//remobe spaces from start of string
+	while (!isalnum(*str) )
+		str++;
+	len = strlen(str);
+
+	// remove spaces on ends of string
+	while (!isalnum (str[len -1]))
+		len--;
+	str[len] = '\0';
+
+	//counting the number of words in query
+	while (i < len)
+	{
+		if (!isalnum (str[i]))
+		{
+			(*wordcount)++;
+			while (!isalnum(str[i+1]))
+				i++;
+		}
+		if (str [i+1] == '\0')
+			(*wordcount)++;
+		i++;
+	}
+	//
+	char **res = (char **) malloc (sizeof (char *) * *wordcount);
+	char *temp = NULL;
+	temp = (char *) malloc (sizeof (char) * len);
+	for (i = 0; i <= len; i++)
+	{
+		if (temp == NULL)
+			return 0;
+		if (!isalnum(str[i]) || str [i] == '\0')
+		{
+			temp[j] = '\0';
+			res[wc] = (char *) malloc (sizeof (char) * (strlen(temp) + 1));
+			strncpy (res[wc], temp, strlen (temp) + 1);
+			j =0;
+			wc++;
+			while (!isalnum(str[i+1]))
+				i++;
+		}
+		else
+		{
+			temp[j++] = str[i];
+		}
+	}
+	printf ("OK");
+	return res;
+}
+
+
+
 int main ( int argc, char ** argv )
 {
 //	mylistdir("/");
 	unpackindex_fd( (char *)S_DEVINPUTDATA);
-	//mylistdir("/");
+//	mylistdir("/");
 	fprintf ( stdout, SPHINX_BANNER );
 	if ( argc<=1 )
 	{
@@ -244,9 +309,21 @@ int main ( int argc, char ** argv )
 	sphLoadConfig ( sOptConfig, false, cp );
 
 	/////////////////////
+	// get word list from string query
+	/////////////////////
+	int wordcount = 0;
+	char **res = NULL;
+	res = getwordsformstr (sQuery, &wordcount);
+
+
+	/////////////////////
 	// search each index
 	/////////////////////
 	//int iters =0;
+
+
+
+
 	hConf["index"].IterateStart ();
 	while ( hConf["index"].IterateNext () )
 	{
@@ -319,6 +396,7 @@ int main ( int argc, char ** argv )
 		pIndex->SetWordlistPreload ( hIndex.GetInt("ondisk_dict")==0 );
 
 		CSphString sWarning;
+
 
 		sError = "could not create index (check that files exist)";
 		for ( ; pIndex; )
@@ -457,7 +535,17 @@ int main ( int argc, char ** argv )
 						default:					fprintf ( stdout, "(unknown-type-%d)", tAttr.m_eAttrType );
 					}
 				}
-				fprintf ( stdout, "\n" );
+
+				int *hitcount = (int *) malloc (sizeof (int) * wordcount);
+
+				Hitpos_t **pHits = (Hitpos_t **) malloc (sizeof (Hitpos_t *) * wordcount);
+				int ii = 0;
+				for (ii =0; ii < wordcount; ii++)
+				{
+					hitcount[ii] = 0;
+					pHits[ii] = pIndex->ZGetHitlist(stdout, res[ii] , false, &hitcount[ii], tMatch.m_iDocID);
+
+				}
 
 				#if USE_MYSQL
 				if ( sQueryInfo )
@@ -499,6 +587,7 @@ int main ( int argc, char ** argv )
 				#endif
 			}
 		}
+
 
 		fprintf ( stdout, "\nwords:\n" );
 		pResult->m_hWordStats.IterateStart();

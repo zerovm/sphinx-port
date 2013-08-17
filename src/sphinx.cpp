@@ -1338,8 +1338,10 @@ public:
 	virtual void				DebugDumpHeader ( FILE * fp, const char * sHeaderName, bool bConfig );
 	virtual void				DebugDumpDocids ( FILE * fp );
 	virtual void				DebugDumpHitlist ( FILE * fp, const char * sKeyword, bool bID );
+	virtual Hitpos_t * 			ZGetHitlist ( FILE * fp, const char * sKeyword, bool bID, int *pHitCount, SphDocID_t tDocID);
 	virtual int					DebugCheck ( FILE * fp );
 	template <class Qword> void	DumpHitlist ( FILE * fp, const char * sKeyword, bool bID );
+	template <class Qword> Hitpos_t * ZHitlist ( FILE * fp, const char * sKeyword, bool bID, int *pHitCount, SphDocID_t tDocID);
 
 	virtual bool				Prealloc ( bool bMlock, bool bStripPath, CSphString & sWarning );
 	virtual bool				Mlock ();
@@ -13299,6 +13301,122 @@ void CSphIndex_VLN::DebugDumpDocids ( FILE * fp )
 	for ( DWORD uRow=0; uRow<2*(1+m_uDocinfoIndex); uRow++, pDocinfo+=iRowStride )
 		printf ( "id=" DOCID_FMT "\n", DOCINFO2ID ( pDocinfo ) );
 }
+
+
+
+
+Hitpos_t* CSphIndex_VLN::ZGetHitlist ( FILE * fp, const char * sKeyword, bool bID, int *pHitCount, SphDocID_t tDocID)
+{
+	WITH_QWORD ( this, false, Qword, ZHitlist<Qword> ( fp, sKeyword, bID, pHitCount, tDocID));
+}
+
+
+template < class Qword >
+Hitpos_t* CSphIndex_VLN::ZHitlist ( FILE * fp, const char * sKeyword, bool bID, int *pHitCount, SphDocID_t tDocID)
+{
+	// get keyword id
+	SphWordID_t uWordID = 0;
+	BYTE * sTok = NULL;
+	if ( !bID )
+	{
+		CSphString sBuf ( sKeyword );
+
+		m_pTokenizer->SetBuffer ( (BYTE*)sBuf.cstr(), strlen ( sBuf.cstr() ) );
+		sTok = m_pTokenizer->GetToken();
+
+		if ( !sTok )
+			sphDie ( "keyword=%s, no token (too short?)", sKeyword );
+
+		uWordID = m_pDict->GetWordID ( sTok );
+		if ( !uWordID )
+			sphDie ( "keyword=%s, tok=%s, no wordid (stopped?)", sKeyword, sTok );
+
+		//fprintf ( fp, "keyword=%s, tok=%s, wordid="UINT64_FMT"\n", sKeyword, sTok, uint64_t(uWordID) );
+
+	} else
+	{
+		uWordID = (SphWordID_t) strtoull ( sKeyword, NULL, 10 );
+		if ( !uWordID )
+			sphDie ( "failed to convert keyword=%s to id (must be integer)", sKeyword );
+
+		fprintf ( fp, "wordid="UINT64_FMT"\n", uint64_t(uWordID) );
+	}
+
+	// open files
+	CSphAutofile tDoclist, tHitlist, tWordlist;
+	if ( tDoclist.Open ( GetIndexFileName("spd"), SPH_O_READ, m_sLastError ) < 0 )
+		sphDie ( "failed to open doclist: %s", m_sLastError.cstr() );
+
+	if ( tHitlist.Open ( GetIndexFileName ( m_uVersion>=3 ? "spp" : "spd" ), SPH_O_READ, m_sLastError ) < 0 )
+		sphDie ( "failed to open hitlist: %s", m_sLastError.cstr() );
+
+	if ( tWordlist.Open ( GetIndexFileName ( "spi" ), SPH_O_READ, m_sLastError ) < 0 )
+		sphDie ( "failed to open wordlist: %s", m_sLastError.cstr() );
+
+	// aim
+	DiskIndexQwordSetup_c tTermSetup ( tDoclist, tHitlist, tWordlist, m_bPreloadWordlist ? 0 : m_tWordlist.m_iMaxChunk );
+	tTermSetup.m_pDict = m_pDict;
+	tTermSetup.m_pIndex = this;
+	tTermSetup.m_eDocinfo = m_tSettings.m_eDocinfo;
+	tTermSetup.m_tMin.Clone ( *m_pMin, m_tSchema.GetRowSize() );
+	tTermSetup.m_bSetupReaders = true;
+
+	Qword tKeyword ( false, false );
+	tKeyword.m_tDoc.m_iDocID = m_pMin->m_iDocID;
+	tKeyword.m_iWordID = uWordID;
+	tKeyword.m_sWord = sKeyword;
+	tKeyword.m_sDictWord = (const char *)sTok;
+	if ( !tTermSetup.QwordSetup ( &tKeyword ) )
+		sphDie ( "failed to setup keyword" );
+
+	int iSize = m_tSchema.GetRowSize();
+	CSphVector<CSphRowitem> dAttrs ( iSize );
+
+	int iMaxHits = 20; // initial length of array of Hits
+	Hitpos_t *pHits = (Hitpos_t *) malloc ( sizeof(Hitpos_t) * iMaxHits );
+
+	// press play on tape
+	for ( ;; )
+	{
+		tKeyword.GetNextDoc ( iSize ? &dAttrs[0] : NULL );
+		if ( !tKeyword.m_tDoc.m_iDocID )
+			break;
+		tKeyword.SeekHitlist ( tKeyword.m_iHitlistPos );
+
+		int iHits = 0;
+		if ( tKeyword.m_bHasHitlist )
+			for ( Hitpos_t uHit = tKeyword.GetNextHit(); uHit!=EMPTY_HIT; uHit = tKeyword.GetNextHit() )
+			{
+				if (tDocID == tKeyword.m_tDoc.m_iDocID)
+				{
+					//fprintf ( fp, "doc="DOCID_FMT", hit=0x%08x\n", tKeyword.m_tDoc.m_iDocID, uHit ); // FIXME?
+					if (iHits >= iMaxHits) // resize array of Hits
+					{
+						Hitpos_t *old = NULL;
+						Hitpos_t *tempHits = NULL;
+						tempHits = (Hitpos_t *) malloc (sizeof (Hitpos_t) * iMaxHits * 2);
+						if (tempHits != NULL)
+						{
+							old = pHits;
+							memcpy (tempHits, pHits, sizeof (Hitpos_t) * iMaxHits);
+							free (old);
+							pHits = tempHits;
+							iMaxHits = iMaxHits * 2;
+						}
+					}
+					pHits [iHits] = uHit;
+					iHits++;
+					*pHitCount = iHits;
+				}
+
+			}
+	}
+
+	return pHits;
+}
+
+
+
 
 
 void CSphIndex_VLN::DebugDumpHitlist ( FILE * fp, const char * sKeyword, bool bID )

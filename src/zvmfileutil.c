@@ -298,7 +298,10 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	// FIX if an incorrect format of the read data
 	i = 0;
 	while (isdigit (buff[i]))
-		nbytes [i] = buff[i++];
+	{
+		nbytes [i] = buff[i];
+		i++;
+	}
 	nbytes [i] = '\0';
 
 	realfilesize = atoi (nbytes);
@@ -439,12 +442,20 @@ void printstat (long mainbytes, long deltabytes, int filecount, const char * mai
 
 void unpackindex_fd (char *	devname)
 {
-	printf ("*** ZVM (unpackindexfd_) start unpack from %s\n", devname);
+	printf ("*** ZVM (unpackindexfd) start unpack from %s\n", devname);
 	int fdinfile;
 	char *dirName = (char*)INDEXDIRNAME;
-	int result=mymakedir(dirName);
-	if (result != 0)
-		printf ("*** ZVM Error can`t create directory %s\n", dirName);
+  	DIR *dir;
+	dir = opendir(dirName);
+
+	if (dir == NULL)
+	{
+		int result=mymakedir(dirName);
+		if (result != 0)
+			printf ("*** ZVM Error can`t create directory %s\n", dirName);
+	}
+	else
+		closedir (dir);
 	int MAXREAD = 1024;
 	char readbuf [MAXREAD];
 	int letcount;
@@ -730,7 +741,7 @@ int mymakedir (char * newdir)
   if (mkdir (buffer,0777) == 0)
     {
       free(buffer);
-      return 1;
+      return 0;
     }
 
   p = buffer+1;

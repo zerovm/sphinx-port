@@ -1073,6 +1073,7 @@ public:
 	virtual void				DebugDumpHeader ( FILE * fp, const char * sHeaderName, bool bConfig ) {}
 	virtual void				DebugDumpDocids ( FILE * fp ) {}
 	virtual void				DebugDumpHitlist ( FILE * fp, const char * sKeyword, bool bID ) {}
+	virtual Hitpos_t*			ZGetHitlist ( FILE * fp, const char * sKeyword, bool bID, int *pHitCount, SphDocID_t tDocID) {}
 	virtual int					DebugCheck ( FILE * fp );
 #if USE_WINDOWS
 #pragma warning(pop)

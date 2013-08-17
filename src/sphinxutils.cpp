@@ -964,7 +964,7 @@ void packindex (char * devname)
 		printf ("*** ZVM Error open DIR %s\n", indexpath);
 	int bytecount;
 	bytecount = 0;
-	while(entry = readdir(dir))
+	while((entry = readdir(dir)))
 	{
 		//printf ("%s/%s\n",path, entry->d_name);
 		if(entry->d_type != DT_DIR)

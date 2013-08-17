@@ -2700,6 +2700,7 @@ public:
 
 	/// internal debugging hook, DO NOT USE
 	virtual void				DebugDumpHitlist ( FILE * fp, const char * sKeyword, bool bID ) = 0;
+	virtual Hitpos_t*			ZGetHitlist ( FILE * fp, const char * sKeyword, bool bID, int *pHitCount, SphDocID_t tDocID) = 0;
 
 	/// internal debugging hook, DO NOT USE
 	virtual int					DebugCheck ( FILE * fp ) = 0;
