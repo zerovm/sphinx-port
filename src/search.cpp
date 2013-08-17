@@ -81,6 +81,186 @@ void mylistdir (char *path)
 }
 */
 
+struct range {
+	Hitpos_t tStartPos;
+	Hitpos_t tEndPos;
+};
+
+typedef range tRange;
+
+void PrintRangeT (range rng)
+{
+	printf ("start = %d, end=%d\n", rng.tStartPos, rng.tEndPos);
+}
+
+void PrintRangeArray ( Hitpos_t *pHitsArray, int iHitsCount )
+{
+	int i;
+	for (i = 0; i < iHitsCount; i++)
+		printf ("pHitsArray[%d]=%d\n", i, pHitsArray[i]);
+}
+
+void PrintHitsArray (Hitpos_t **pHits, int *pHitCount, int iWordCount)
+{
+	int i, j;
+	for ( i = 0; i < iWordCount; i++)
+	{
+		for (j = 0; j < pHitCount[i]; j++)
+			printf("pHits[%d][%d]=%d\n", i,j,pHits[i][j]);
+	}
+}
+
+int GetDistanceFrom2Range (range tRange)
+{
+	int iDist =0;
+
+	iDist = abs(tRange.tEndPos - tRange.tStartPos);
+
+	return iDist;
+}
+
+int GetDistanceFrom2Hits (Hitpos_t iStartPos, Hitpos_t iEndPos)
+{
+	int iDist =0;
+
+	iDist = abs(iEndPos - iStartPos);
+
+	return iDist;
+}
+
+Hitpos_t GetMinPosFromArray (Hitpos_t *pHitsArray, int iHitsCount)
+{
+	Hitpos_t tMinHitPos =0;
+	int i = 0;
+	if (iHitsCount > 0)
+		tMinHitPos = pHitsArray [0];
+	for  (i = 0; i < iHitsCount; i++)
+	{
+		if (tMinHitPos > pHitsArray [i])
+			tMinHitPos = pHitsArray [i];
+	}
+	return tMinHitPos;
+}
+
+Hitpos_t GetMaxPosFromArray (Hitpos_t *pHitsArray, int iHitsCount)
+{
+	Hitpos_t tMaxHitPos = 0;
+	int i = 0;
+	if (iHitsCount > 0)
+		tMaxHitPos = pHitsArray [0];
+	for  (i = 0; i < iHitsCount; i++)
+	{
+		if (tMaxHitPos < pHitsArray [i])
+			tMaxHitPos = pHitsArray [i];
+	}
+	return tMaxHitPos;
+}
+
+
+range GetStartEndRange (Hitpos_t *pHitsArray, int iHitsCount)
+{
+	range tRange;
+	Hitpos_t tMaxHitPos = GetMaxPosFromArray (pHitsArray, iHitsCount);
+	Hitpos_t tMinHitPos = GetMinPosFromArray (pHitsArray, iHitsCount);
+
+	tRange.tStartPos = tMinHitPos;
+	tRange.tEndPos = tMaxHitPos;
+
+	return (tRange);
+}
+
+int GetDistanceFromArrayHits (Hitpos_t *pHitsArray, int iHitsCount)
+{
+	int iDist = 0;
+
+	range tRange;
+
+	tRange = GetStartEndRange (pHitsArray, iHitsCount);
+
+	iDist = abs(tRange.tEndPos - tRange.tStartPos);
+
+	return iDist;
+}
+
+range GetSnippetRange (Hitpos_t **pHits, int *pHitCount, int iWordCount)//, int *pStartPos, int *pEndPos)
+{
+	Hitpos_t tMaxHitPos = 0;
+	Hitpos_t tMinHitPos = 1;
+
+	int i = 0, j =0, k =0; // counters
+	int iMinHits; // the minimum number of hits
+	int iIndexMinHits = 0; // index in array of hits of the minimum number of hits
+	int iMinDif;
+	range tMinDif;
+
+
+
+
+
+	Hitpos_t *pHitpos = (Hitpos_t *) malloc (sizeof (Hitpos_t) * iWordCount) ;// array of poses
+
+
+	// find min and max hits poses in the text
+	for (i =0; i < iWordCount; i++)
+	{
+		for (j = 0; j < pHitCount[i]; j++)
+		{
+			if (tMaxHitPos < pHits[i][j])
+				tMaxHitPos = pHits[i][j];
+			if (tMinHitPos > pHits[i][j])
+				tMinHitPos = pHits[i][j];
+		}
+	}
+
+	//finding words with the fewest hits
+	iMinHits = pHitCount[0];
+	for (i = 0; i < iWordCount; i++)
+	{
+		if (pHitCount[i] < iMinHits)
+		{
+			iMinHits = pHitCount[i];
+			iIndexMinHits = i;
+		}
+	}
+
+	iMinDif = GetMaxPosFromArray(pHits[iIndexMinHits], pHitCount[iIndexMinHits]);
+
+	for (i = 0; i < pHitCount[iIndexMinHits]; i++)// array hits of word with minimum number of hits
+	{
+		for (j = 0; j < iWordCount; j++)// array of number of hits
+		{
+			if ( j == iIndexMinHits)
+			{
+				pHitpos[j] = pHits[j][i];
+				continue;
+			}
+			int iMinDist;
+			int iIndexMinDist = 0;
+			iMinDist = tMaxHitPos; // initial distance - max hit pos
+			for (k = 0; k < pHitCount[j]; k++)
+			{
+				int iDist;
+				iDist = GetDistanceFrom2Hits(pHits[iIndexMinHits][i], pHits[j][k]);
+				if (iDist < iMinDist)
+				{
+					iMinDist = iDist;
+					iIndexMinDist = k;
+				}
+			}
+			pHitpos[j] = pHits[j][iIndexMinDist];
+		}
+		int iDistRange;
+		iDistRange = GetDistanceFromArrayHits (pHitpos, iWordCount);
+
+		if (iDistRange < iMinDif)
+		{
+			iMinDif = iDistRange;
+			tMinDif = GetStartEndRange (pHitpos, iWordCount);
+		}
+	}
+
+	return (range)(tMinDif);
+}
 
 char** getwordsformstr (const char *s, int *wordcount)// char **res)
 {
@@ -546,6 +726,10 @@ int main ( int argc, char ** argv )
 					pHits[ii] = pIndex->ZGetHitlist(stdout, res[ii] , false, &hitcount[ii], tMatch.m_iDocID);
 
 				}
+				range tSnippetRange = GetSnippetRange(pHits, hitcount, wordcount);
+				printf (" q result: sart=%d, end=%d\n", tSnippetRange.tStartPos, tSnippetRange.tEndPos);
+
+				//fprintf ( stdout, "\n" );
 
 				#if USE_MYSQL
 				if ( sQueryInfo )
