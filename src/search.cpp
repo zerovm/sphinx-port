@@ -319,7 +319,9 @@ char** getwordsformstr (const char *s, int *wordcount)// char **res)
 			temp[j++] = str[i];
 		}
 	}
+#ifdef TEST
 	printf ("OK");
+#endif
 	return res;
 }
 
@@ -330,7 +332,9 @@ int main ( int argc, char ** argv )
 //	mylistdir("/");
 	unpackindex_fd( (char *)S_DEVINPUTDATA);
 //	mylistdir("/");
+#ifdef TEST
 	fprintf ( stdout, SPHINX_BANNER );
+#endif
 	if ( argc<=1 )
 	{
 		fprintf ( stdout,
@@ -650,17 +654,19 @@ int main ( int argc, char ** argv )
 			fprintf ( stdout, "index '%s': search error: %s.\n", sIndexName, sError.cstr() );
 			return 1;
 		}
-
+#ifdef TEST
 		fprintf ( stdout, "index '%s': query '%s': returned %d matches of "INT64_FMT" total in %d.%03d sec\n",
 			sIndexName, sQuery, pResult->m_dMatches.GetLength(), pResult->m_iTotalMatches,
 			pResult->m_iQueryTime/1000, pResult->m_iQueryTime%1000 );
-
+#endif
 		if ( !pResult->m_sWarning.IsEmpty() )
 			fprintf ( stdout, "WARNING: %s\n", pResult->m_sWarning.cstr() );
 
 		if ( pResult->m_dMatches.GetLength() )
 		{
+#ifdef TEST
 			fprintf ( stdout, "\ndisplaying matches:\n" );
+#endif
 
 			int iMaxIndex = Min ( iStart+iLimit, pResult->m_dMatches.GetLength() );
 			for ( int i=iStart; i<iMaxIndex; i++ )
@@ -727,7 +733,7 @@ int main ( int argc, char ** argv )
 
 				}
 				range tSnippetRange = GetSnippetRange(pHits, hitcount, wordcount);
-				printf (" q result: sart=%d, end=%d\n", tSnippetRange.tStartPos, tSnippetRange.tEndPos);
+				printf ("; start=%d; end=%d\n", tSnippetRange.tStartPos, tSnippetRange.tEndPos);
 
 				//fprintf ( stdout, "\n" );
 

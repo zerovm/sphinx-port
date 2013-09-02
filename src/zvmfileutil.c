@@ -442,7 +442,9 @@ void printstat (long mainbytes, long deltabytes, int filecount, const char * mai
 
 void unpackindex_fd (char *	devname)
 {
+#ifdef TEST
 	printf ("*** ZVM (unpackindexfd) start unpack from %s\n", devname);
+#endif
 	int fdinfile;
 	char *dirName = (char*)INDEXDIRNAME;
   	DIR *dir;
@@ -481,9 +483,13 @@ void unpackindex_fd (char *	devname)
 
 		if (bread == 0)
 		{
+#ifdef TEST
 			printf ("*** ZVM unpack index completed successfully!\n");
+#endif
 			close (fdinfile);
+#ifdef TEST
 			printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char*) DELTAINDEX);
+#endif
 			return;
 		}
 		//sprintf ("c=%c\n", c);
@@ -496,8 +502,10 @@ void unpackindex_fd (char *	devname)
 
 		if (c != '{')
 		{
+#ifdef TEST
 			int tellsize = lseek (fdinfile, 0, SEEK_CUR);
 			int bytesleft = 0;
+#endif
 			printf ("Error *\n");
 /*
 			while ( (bread = read (fdinfile, &c, 1)) > 0)
@@ -506,9 +514,13 @@ void unpackindex_fd (char *	devname)
 				bytesleft++;
 			}
 */
+#ifdef TEST
 			printf("*** ZVM Error format packfile c=*%c*, current position = %d, bytes left = %d\n", c, tellsize, bytesleft);
+#endif
 			close (fdinfile);
+#ifdef TEST
 			printstat (mainbytes, deltabytes, filecount, (char*) MAININDEX, (char *) DELTAINDEX);
+#endif
 			return;
 		}
 		bread = read (fdinfile, &c, 1);
@@ -603,8 +615,10 @@ void unpackindex_fd (char *	devname)
 		close (fdefile);
 		if (readb != writeb)
 			printf ("*** Warning while unpacking index file, readb = %d, writeb = %d\n", readb, writeb);
+#ifdef TEST
 		else
 			printf ("*** ZVM unpack file %s (%d bytes)  - OK!\n", readbuf, writeb);
+#endif
 		bread = read (fdinfile, &c, 1);
 		//printf ("c = %c\n", c);
 		int loopcount =0;
@@ -616,7 +630,9 @@ void unpackindex_fd (char *	devname)
 		}
 		//printf ("loopcount = %d\n", loopcount);
 	}
+#ifdef TEST
 	printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char* ) DELTAINDEX);
+#endif
 	close (fdinfile);
 }
 
@@ -626,7 +642,9 @@ void unpackindex_fd (char *	devname)
 
 void bufferedpackindexfd (char * devname)
 {
+#ifdef TEST
 	printf("*** ZVM (bufferedpackindexfd_) start pack index to %s \n", devname);
+#endif
 	int fdpackfile;
 
 	fdpackfile = open (devname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
@@ -647,7 +665,9 @@ void bufferedpackindexfd (char * devname)
 	if (!dir)
 		printf ("*** ZVM Error open DIR %s\n", indexpath);
 	int blocksize = READWRITEBUFFSIZE; // 10 Mb
+#ifdef TEST
 	printf ("blocksize = %d\n", blocksize);
+#endif
 	char *buff = NULL;
 	buff = (char *) malloc (blocksize);
 
@@ -698,8 +718,9 @@ void bufferedpackindexfd (char * devname)
 			bwrite = write (fdpackfile, tempstr, strlen (tempstr));
 			//bwrite = write (1, tempstr, strlen (tempstr));
 			close (fd);
+#ifdef TEST
 			printf ("file %s (%d bytes) packed - OK!\n", newpath, (int) size);
-
+#endif
 
 			char *indexnameptr = NULL;
 			if ((indexnameptr = strstr (newpath,DELTAINDEX)) != NULL )
@@ -713,9 +734,10 @@ void bufferedpackindexfd (char * devname)
 	}
 	free (buff);
 	close (fdpackfile);
+#ifdef TEST
 	printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char *) DELTAINDEX);
-
 	printf ("*** ZVM pack completed successfully!\n");
+#endif
 }
 
 int mymakedir (char * newdir)

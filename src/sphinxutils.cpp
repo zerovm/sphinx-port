@@ -1260,9 +1260,10 @@ const char * sphLoadConfig ( const char * sOptConfig, bool bQuiet, CSphConfigPar
 #endif
 		"./sphinx.conf)" );
 
+#ifdef TEST
 	if ( !bQuiet )
 		fprintf ( stdout, "using config file '%s'...\n", sOptConfig );
-
+#endif
 	// load config
 	if ( !cp.Parse ( sOptConfig ) )
 		sphDie ( "failed to parse config file '%s'", sOptConfig );

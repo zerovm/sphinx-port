@@ -14,11 +14,15 @@
 //#define DEVOUTNAME "/home/volodymyr/temp/docxextract"
 
 
-#define I_DEVINPUTDATA "/dev/output"
-#define I_DEVOUTPUTDATA "/dev/output"
+#define SERVERSOFT "zerocloud"
 
-#define S_DEVINPUTDATA "/dev/input"
-#define S_DEVOUTPUTDATA "/dev/output"
+#define FS_DEVINPUTDATA "/dev/input" // file sender input channel
+
+#define I_DEVINPUTDATA "/dev/output"// indexer input
+#define I_DEVOUTPUTDATA "/dev/output" // indexer output
+
+#define S_DEVINPUTDATA "/dev/input" // search input
+#define S_DEVOUTPUTDATA "/dev/output" // search output
 #define DELTAINDEX "deltaindex"
 #define MAININDEX "mainindex"
 #define READWRITEBUFFSIZE 1024*1024
@@ -31,7 +35,8 @@
 //#define INDEXDIRNAME "f1"
 //#define INDEXDIRNAME "/home/volodymyr/disk/f1"
 
-#define TEST
+//#define TEST
+#undef TEST
 
 struct filemap {
 	char realfilename[MAXFIENAME];

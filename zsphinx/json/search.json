@@ -1,0 +1,18 @@
+[
+    {
+    	"name" : "search",
+		"exec" : 
+        {
+        	"path" : "swift://g_103319991787805482239/stest/search.nexe",
+            "args" : "--config index/zsphinx.conf --stdin -i mainindex"
+        },
+		"file_list" : 
+		[
+			{"device" : "stdin", "path"	: "swift://g_103319991787805482239/stest/data/search.txt"},
+			{"device" : "input", "path" : "swift://g_103319991787805482239/stest/data/rwindex"},
+            {"device" : "stdout"},
+			{"device" : "stderr"}
+		]
+	}
+]
+

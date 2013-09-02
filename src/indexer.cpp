@@ -1554,6 +1554,7 @@ int main ( int argc, char ** argv )
 	CSphString sDumpRows;
 
 	int i;
+
 	unpackindex_fd( (char *) I_DEVINPUTDATA);
 	//mylistdir ("/");
 
@@ -1568,11 +1569,8 @@ int main ( int argc, char ** argv )
 		printf ("Error open sphinx config file\n\n");
 		return 1;
 	}
-/*	char c;
-	while ( (c = getc (test)) != EOF)
-		putchar (c);
 	fclose (test);
-*/
+
 
 	for ( i=1; i<argc; i++ )
 	{
