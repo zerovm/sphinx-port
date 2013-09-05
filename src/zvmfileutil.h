@@ -36,8 +36,8 @@
 //#define INDEXDIRNAME "f1"
 //#define INDEXDIRNAME "/home/volodymyr/disk/f1"
 
-#define TEST
-//#undef TEST
+//#define TEST
+#undef TEST
 
 struct filemap {
 	char realfilename[MAXFIENAME];

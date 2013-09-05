@@ -24,7 +24,7 @@ echo "mkdir search/sys"
 mkdir search/sys
 echo ======================================================================
 
-echo 'test' > search/sys/search_request.txt
+echo 'manifest' > search/sys/search_request.txt
 echo '1' > search/sys/xml_maxindex.data
 
 
