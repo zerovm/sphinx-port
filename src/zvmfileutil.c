@@ -156,7 +156,9 @@ int getdatafromchannel (int fd, char *chname, int docID)
 			bread = read (fdin, &c, 1);
 			textsizebuff[textsizebufflen++] = c;
 		}
+
 		textsizebuff[textsizebufflen++] = '\0';
+		printf ("textsizebufflen = %d\n", textsizebufflen);
 		textsize = atoi (textsizebuff);
 
 		if (textsize <= 0 || bread <=0)
@@ -295,7 +297,7 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	}
 
 
-	// FIX if an incorrect format of the read data
+	// FIX if an incorrect format of the readed data
 	i = 0;
 	while (isdigit (buff[i]))
 	{
@@ -803,7 +805,8 @@ void mylistdir (char *path)
 
 	while((entry = readdir(dir)))
 	{
-		printf ("%s/%s\n",path, entry->d_name);
+
+		printf ("%s/%s D_TYPE = %d\n",path, entry->d_name, entry->d_type);
 		if(entry->d_type == DT_DIR)
 		{
 			if (strcmp (entry->d_name, ".") != 0 && strcmp (entry->d_name, "..") != 0)
@@ -816,7 +819,6 @@ void mylistdir (char *path)
 				mylistdir (newpath);
 			}
 		}
-
 	}
 	closedir(dir);
 }

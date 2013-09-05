@@ -11,6 +11,7 @@
 #define MAXFIENAME 1024
 
 #define DEVOUTNAME "/dev/out/xmlpipecreator"
+//#define DEVOUTNAME "/dev/output"
 //#define DEVOUTNAME "/home/volodymyr/temp/docxextract"
 
 
@@ -18,7 +19,7 @@
 
 #define FS_DEVINPUTDATA "/dev/input" // file sender input channel
 
-#define I_DEVINPUTDATA "/dev/output"// indexer input
+#define I_DEVINPUTDATA "/dev/input"// indexer input
 #define I_DEVOUTPUTDATA "/dev/output" // indexer output
 
 #define S_DEVINPUTDATA "/dev/input" // search input
@@ -35,8 +36,8 @@
 //#define INDEXDIRNAME "f1"
 //#define INDEXDIRNAME "/home/volodymyr/disk/f1"
 
-//#define TEST
-#undef TEST
+#define TEST
+//#undef TEST
 
 struct filemap {
 	char realfilename[MAXFIENAME];
