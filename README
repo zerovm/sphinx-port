@@ -11,9 +11,9 @@ cd expat-2.1.0;
 make install
 
 install Zlib:
-wget http://zlib.net/zlib-1.2.7.tar.gz;
-tar xvf zlib-1.2.7.tar.gz;
-cd zlib-1.2.7;
+wget http://zlib.net/zlib-1.2.8.tar.gz;
+tar xvf zlib-1.2.8.tar.gz;
+cd zlib-1.2.8;
 CC=x86_64-nacl-gcc ./configure --prefix=$ZVM_PREFIX/x86_64-nacl;
 make;
 sudo make install;
@@ -22,15 +22,13 @@ sudo make install;
 
 installing sphinx-port
 
-./cinfigureall.sh
+./configureall.sh
 
 make
 
-cd zxpdf-3.03
-make
+cd zxpdf-3.03;make
 
-cd ../docxextract
-make
+cd ../docxextract;make
 
 cd ../antiword-0.37
 make
@@ -38,5 +36,6 @@ make
 run indexing, and then run search "channel" from txt files on tar archive doc.tar
 $ cd ../zsphinx
 
-$ ./runindexingandsearch.sh "путь к индексируемым документам"
+#specify directory ss arg for indexing files
+$ ./runindexingandsearch.sh "~/temp"
 

@@ -14,6 +14,6 @@ echo -------------------------
 echo 
 cd zxpdf-3.03
 
-./configure --host=x86_64-nacl
+./configure --host=x86_64-nacl 
 
 

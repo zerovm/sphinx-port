@@ -3,18 +3,18 @@
 
 if [ $# -ne 1 ] && [ $# -ne 2 ]
 then
-  echo "Usage: `basename $0` search_path"
-  exit $WRONG_ARGS
+    echo "Usage: `basename $0` search_path"
+    exit $WRONG_ARGS
 fi
 if [ $# -eq 1 ]
 then
-directory=$1
-query="test"
+    directory=$1
+    query="test"
 fi
 if [ $# -eq 2 ]
 then
-directory=$1
-query=$2
+    directory=$1
+    query=$2
 fi
 
 echo $directory
@@ -41,19 +41,20 @@ cp ../docxextract/docxtotext txt.nexe
 #cp ../docxextract/docxtotext odt.nexe
 cp ../antiword-0.37/antiword doc.nexe
 
-echo generate manifest
-#генерируем манифесты для всех нодов а также для search
-./allmanifestgenerator.sh "$1"
+#Extract from entire directory the list of filenames by extension and
+#associate every matched file with filesender node. Also create
+#manifest, nvram files for every zerovm nodes including: 
+#filesenders, extractors, xmlpipecreator, search
+./allmanifestgenerator.sh "$directory"
 
-#считаем количество всех нодов
-NODECOUNT=0
+#Calc nodes count to be run in test cluster,
+NODECOUNT=-1 #xml node temporarily excluded from cluster
 for file in manifest/*.manifest
 do
-	let NODECOUNT=NODECOUNT+1
+    let NODECOUNT=NODECOUNT+1
 done
 
-let NODECOUNT=NODECOUNT-1
-
+#Run nameserver and pass cluster nodes count as param
 ./ns_start.sh $NODECOUNT
 
 
@@ -61,9 +62,14 @@ let NODECOUNT=NODECOUNT-1
 TEMPNODECOUNT=0
 for file in manifest/*.manifest
 do
+#In current loop run xmlpipecreator node and 
+#filesender, extractor nodes for every matched file in directory 
 	#if [ $file != manifest/xmlpipecreator.manifest ] && [ $file != manifest/indexer.manifest ] && 
-	if [ $file != manifest/search.manifest ] && [ $file != manifest/indexer_merge.manifest ] && [ $file != manifest/indexer_delta.manifest ]&& [ $file != manifest/indexer.manifest ]
-	then
+    if  [ $file != manifest/search.manifest ] && \
+	[ $file != manifest/indexer_merge.manifest ] && \
+	[ $file != manifest/indexer_delta.manifest ]&& \
+	[ $file != manifest/indexer.manifest ]
+    then
 #		let TEMPNODECOUNT=TEMPNODECOUNT+1
 #		echo nodecount $NODECOUNT
 #		echo tempnodecount $TEMPNODECOUNT
@@ -71,8 +77,8 @@ do
 #		if [ "$file" = "m/" ] 
 #		then
 #			echo nodecount $NODECOUNT tempnodecount $TEMPNODECOUNT 
-			echo run $file
-			${ZVM_PREFIX}/zerovm -P -M$file &
+	echo run $file
+	${ZVM_PREFIX}/zerovm -P -M$file &
 #			echo OK
 #		else
 #			echo nodecount $NODECOUNT tempnodecount $TEMPNODECOUNT q
@@ -80,10 +86,11 @@ do
 #			${ZVM_PREFIX}/zerovm -M$file &
 #			echo OK
 #		fi
-	fi
+    fi
 done
 echo run manifest/indexer.manifest
 time ${ZVM_PREFIX}/zerovm -P -Mmanifest/indexer.manifest
+
 #${ZVM_PREFIX}/zerovm -Mmanifest/xmlpipecreator.manifest &
 #echo run manifest/xmlpipecreator.manifest
 #echo run manifest/indexer.manifest

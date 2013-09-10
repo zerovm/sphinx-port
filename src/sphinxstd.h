@@ -1,10 +1,10 @@
 //
-// $Id: sphinxstd.h 3461 2012-10-19 09:48:07Z kevg $
+// $Id: sphinxstd.h 3701 2013-02-20 18:10:18Z deogar $
 //
 
 //
-// Copyright (c) 2001-2012, Andrew Aksyonoff
-// Copyright (c) 2008-2012, Sphinx Technologies Inc
+// Copyright (c) 2001-2013, Andrew Aksyonoff
+// Copyright (c) 2008-2013, Sphinx Technologies Inc
 // All rights reserved
 //
 // This program is free software; you can redistribute it and/or modify
@@ -58,10 +58,21 @@ typedef int __declspec("SAL_nokernel") __declspec("SAL_nodriver") __prefast_flag
 #include <sys/types.h>
 #endif
 
+#ifndef USE_WINDOWS
+#ifdef _MSC_VER
+#define USE_WINDOWS 1
+#else
+#define USE_WINDOWS 0
+#endif // _MSC_VER
+#endif
+
 #if !USE_WINDOWS
 #include <sys/mman.h>
 #include <errno.h>
 #include <pthread.h>
+#ifdef __FreeBSD__
+#include <semaphore.h>
+#endif
 #endif
 
 /////////////////////////////////////////////////////////////////////////////
@@ -76,6 +87,14 @@ typedef int __declspec("SAL_nokernel") __declspec("SAL_nodriver") __prefast_flag
 #define __analysis_assume(_arg)
 #endif
 
+
+/// some function arguments only need to have a name in debug builds
+#ifndef NDEBUG
+#define DEBUGARG(_arg) _arg
+#else
+#define DEBUGARG(_arg)
+#endif
+
 /////////////////////////////////////////////////////////////////////////////
 // PORTABILITY
 /////////////////////////////////////////////////////////////////////////////
@@ -83,7 +102,11 @@ typedef int __declspec("SAL_nokernel") __declspec("SAL_nodriver") __prefast_flag
 #if _WIN32
 
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
+
+#include <intrin.h> // for bsr
+#pragma intrinsic(_BitScanReverse)
 
 #define strcasecmp			strcmpi
 #define strncasecmp			_strnicmp
@@ -158,6 +181,10 @@ typedef unsigned long long uint64_t;
 #define UINT64_MAX U64C(0xffffffffffffffff)
 #endif
 
+#ifndef INT64_MIN
+#define INT64_MIN I64C(0x8000000000000000)
+#endif
+
 #ifndef INT64_MAX
 #define INT64_MAX I64C(0x7fffffffffffffff)
 #endif
@@ -165,12 +192,22 @@ typedef unsigned long long uint64_t;
 STATIC_SIZE_ASSERT ( uint64_t, 8 );
 STATIC_SIZE_ASSERT ( int64_t, 8 );
 
+// conversion macros that suppress %lld format warnings vs printf
+// problem is, on 64-bit Linux systems with gcc and stdint.h, int64_t is long int
+// and despite sizeof(long int)==sizeof(long long int)==8, gcc bitches about that
+// using PRIi64 instead of %lld is of course The Right Way, but ugly like fuck
+// so lets wrap them args in INT64() instead
+#define INT64(_v) ((long long int)(_v))
+#define UINT64(_v) ((unsigned long long int)(_v))
+
 /////////////////////////////////////////////////////////////////////////////
 // MEMORY MANAGEMENT
 /////////////////////////////////////////////////////////////////////////////
 
 #define SPH_DEBUG_LEAKS			0
+#define SPH_ALLOC_FILL			0
 #define SPH_ALLOCS_PROFILER		0
+#define SPH_DEBUG_BACKTRACES 0 // will add not only file/line, but also full backtrace
 
 #if SPH_DEBUG_LEAKS || SPH_ALLOCS_PROFILER
 
@@ -206,12 +243,16 @@ void			sphMemStatMMapDel ( int64_t iSize );
 #undef new
 #define new		new(__FILE__,__LINE__)
 
+#if USE_RE2
+void			operator delete ( void * pPtr ) throw ();
+void			operator delete [] ( void * pPtr ) throw ();
+#else
 /// delete for my new
 void			operator delete ( void * pPtr );
 
 /// delete for my new
 void			operator delete [] ( void * pPtr );
-
+#endif
 #endif // SPH_DEBUG_LEAKS || SPH_ALLOCS_PROFILER
 
 /////////////////////////////////////////////////////////////////////////////
@@ -238,15 +279,27 @@ void			sphDie ( const char * sMessage, ... ) __attribute__ ( ( format ( printf, 
 void			sphSetDieCallback ( SphDieCallback_t pfDieCallback );
 
 /// how much bits do we need for given int
-inline int		sphLog2 ( uint64_t iValue )
+inline int sphLog2 ( uint64_t uValue )
 {
+#if USE_WINDOWS
+	DWORD uRes;
+	if ( BitScanReverse ( &uRes, (DWORD)( uValue>>32 ) ) )
+		return 33+uRes;
+	BitScanReverse ( &uRes, DWORD(uValue) );
+	return 1+uRes;
+#elif __GNUC__
+	if ( !uValue )
+		return 0;
+	return 64 - __builtin_clzl(uValue);
+#else
 	int iBits = 0;
-	while ( iValue )
+	while ( uValue )
 	{
-		iValue >>= 1;
+		uValue >>= 1;
 		iBits++;
 	}
 	return iBits;
+#endif
 }
 
 /// float vs dword conversion
@@ -254,6 +307,16 @@ inline DWORD sphF2DW ( float f )	{ union { float f; DWORD d; } u; u.f = f; retur
 
 /// dword vs float conversion
 inline float sphDW2F ( DWORD d )	{ union { float f; DWORD d; } u; u.d = d; return u.f; }
+
+/// double to bigint conversion
+inline uint64_t sphD2QW ( double f )	{ union { double f; uint64_t d; } u; u.f = f; return u.d; }
+
+/// bigint to double conversion
+inline double sphQW2D ( uint64_t d )	{ union { double f; uint64_t d; } u; u.d = d; return u.f; }
+
+/// microsecond precision timestamp
+/// current UNIX timestamp in seconds multiplied by 1000000, plus microseconds since the beginning of current second
+int64_t		sphMicroTimer ();
 
 //////////////////////////////////////////////////////////////////////////
 // RANDOM NUMBERS GENERATOR
@@ -590,9 +653,9 @@ T * sphBinarySearch ( T * pStart, T * pEnd, const PRED & tPred, U tRef )
 
 	while ( pEnd-pStart>1 )
 	{
-		if ( tRef<tPred(*pStart) || tRef>tPred(*pEnd) )
+		if ( tRef<tPred(*pStart) || tPred(*pEnd)<tRef )
 			break;
-		assert ( tRef>tPred(*pStart) );
+		assert ( tPred(*pStart)<tRef );
 		assert ( tRef<tPred(*pEnd) );
 
 		T * pMid = pStart + (pEnd-pStart)/2;
@@ -809,16 +872,22 @@ public:
 		SafeDeleteArray ( m_pData );
 	}
 
-	/// query current length
+	/// query current length, in elements
 	inline int GetLength () const
 	{
 		return m_iLength;
 	}
 
-	/// query current reserved size
+	/// query current reserved size, in elements
 	inline int GetLimit () const
 	{
 		return m_iLimit;
+	}
+
+	/// query currently used RAM, in bytes
+	inline int GetSizeBytes() const
+	{
+		return m_iLimit*sizeof(T);
 	}
 
 public:
@@ -1080,6 +1149,19 @@ public:
 	int GetLength() const
 	{
 		return m_iSize;
+	}
+
+	int GetSizeBytes() const
+	{
+		return m_iSize*sizeof(T);
+	}
+
+	T * LeakData ()
+	{
+		T * pData = m_pData;
+		m_pData = NULL;
+		Reset ( 0 );
+		return pData;
 	}
 };
 
@@ -1478,7 +1560,7 @@ public:
 	inline bool operator == ( const char * t ) const
 	{
 		if ( !t || !m_sValue )
-			return ( !t && !m_sValue );
+			return ( ( !t && !m_sValue ) || ( !t && m_sValue && !*m_sValue ) || ( !m_sValue && t && !*t ) );
 		return strcmp ( m_sValue, t )==0;
 	}
 
@@ -1510,6 +1592,12 @@ public:
 		{
 			m_sValue = NULL;
 		}
+	}
+
+	CSphString ( const char * sValue, int iLen )
+		: m_sValue ( NULL )
+	{
+		SetBinary ( sValue, iLen );
 	}
 
 	const CSphString & operator = ( const CSphString & rhs )
@@ -1617,19 +1705,19 @@ public:
 		return strncmp ( m_sValue, sPrefix, strlen(sPrefix) )==0;
 	}
 
-	bool Ends ( const char * sPrefix ) const
+	bool Ends ( const char * sSuffix ) const
 	{
-		if ( !m_sValue || !sPrefix )
+		if ( !m_sValue || !sSuffix )
 			return false;
 
 		int iVal = strlen ( m_sValue );
-		int iPrefix = strlen ( sPrefix );
-		if ( iVal<iPrefix )
+		int iSuffix = strlen ( sSuffix );
+		if ( iVal<iSuffix )
 			return false;
-		return strncmp ( m_sValue+iVal-iPrefix, sPrefix, iPrefix )==0;
+		return strncmp ( m_sValue+iVal-iSuffix, sSuffix, iSuffix )==0;
 	}
 
-	void Chop ()
+	void Trim ()
 	{
 		if ( m_sValue )
 		{
@@ -1652,6 +1740,14 @@ public:
 		char * pBuf = m_sValue;
 		m_sValue = NULL;
 		return pBuf;
+	}
+
+	// opposite to Leak()
+	void Adopt ( char ** sValue )
+	{
+		SafeDeleteArray ( m_sValue );
+		m_sValue = *sValue;
+		*sValue = NULL;
 	}
 
 	bool operator < ( const CSphString & b ) const
@@ -1758,6 +1854,16 @@ public:
 	}
 };
 
+//////////////////////////////////////////////////////////////////////////
+
+/// name+int pair
+struct CSphNamedInt
+{
+	CSphString	m_sName;
+	int			m_iValue;
+
+	CSphNamedInt () : m_iValue ( 0 ) {}
+};
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1905,7 +2011,8 @@ public:
 		if ( m_pData==MAP_FAILED )
 		{
 			if ( m_iLength>0x7fffffffUL )
-				sError.SetSprintf ( "mmap() failed: %s (length="INT64_FMT" is over 2GB, impossible on some 32-bit systems)", strerror(errno), (int64_t)m_iLength );
+				sError.SetSprintf ( "mmap() failed: %s (length="INT64_FMT" is over 2GB, impossible on some 32-bit systems)",
+					strerror(errno), (int64_t)m_iLength );
 			else
 				sError.SetSprintf ( "mmap() failed: %s (length="INT64_FMT")", strerror(errno), (int64_t)m_iLength );
 			m_iLength = 0;
@@ -1953,7 +2060,7 @@ public:
 
 
 	/// deallocate storage
-void Reset ()
+	void Reset ()
 	{
 		if ( !m_pData )
 			return;
@@ -1963,13 +2070,12 @@ void Reset ()
 #if USE_WINDOWS
 		delete [] m_pData;
 #else
-
-
 		if ( g_bHeadProcess )
 		{
 			int iRes = munmap ( m_pData, m_iLength );
 			if ( iRes )
 				sphWarn ( "munmap() failed: %s", strerror(errno) );
+
 #if SPH_ALLOCS_PROFILER
 			sphMemStatMMapDel ( m_iLength );
 #endif
@@ -2027,19 +2133,24 @@ class CSphProcessSharedMutex
 {
 public:
 	explicit CSphProcessSharedMutex ( int iExtraSize=0 );
+	~CSphProcessSharedMutex(); // not virtual for now.
 	void	Lock () const;
 	void	Unlock () const;
 	bool	TimedLock ( int tmSpin ) const; // wait at least tmSpin microseconds the lock will available
 	const char * GetError () const;
+	BYTE *	GetSharedData() const;
 
 protected:
 #if !USE_WINDOWS
 	CSphSharedBuffer<BYTE>		m_pStorage;
+#ifdef __FreeBSD__
+	sem_t *						m_pMutex;
+#else
 	pthread_mutex_t *			m_pMutex;
+#endif
 	CSphString					m_sError;
 #endif
 };
-
 
 #if !USE_WINDOWS
 /// process-shared mutex variable that survives fork
@@ -2053,7 +2164,7 @@ public:
 	{
 		if ( m_pMutex )
 		{
-			m_pValue = reinterpret_cast<T*> ( m_pStorage.GetWritePtr () + sizeof ( pthread_mutex_t ) );
+			m_pValue = reinterpret_cast<T*> ( GetSharedData() );
 			*m_pValue = tInitValue;
 		}
 	}
@@ -2157,12 +2268,40 @@ protected:
 	HANDLE m_hMutex;
 #else
 	pthread_mutex_t m_tMutex;
+public:
+	inline pthread_mutex_t* GetInternalMutex()
+	{
+		return &m_tMutex;
+	}
+#endif
+};
+
+// event implementation
+class CSphAutoEvent
+{
+public:
+	CSphAutoEvent () {}
+	~CSphAutoEvent() {}
+
+	bool Init ( CSphMutex * pMutex );
+	bool Done();
+	void SetEvent();
+	bool WaitEvent();
+
+protected:
+	bool m_bInitialized;
+	bool m_bSent;
+#if USE_WINDOWS
+	HANDLE m_hEvent;
+#else
+	pthread_cond_t m_tCond;
+	pthread_mutex_t* m_pMutex;
 #endif
 };
 
 
 /// static mutex (for globals)
-class CSphStaticMutex : public CSphMutex
+class CSphStaticMutex : private CSphMutex
 {
 public:
 	CSphStaticMutex()
@@ -2173,6 +2312,16 @@ public:
 	~CSphStaticMutex()
 	{
 		Done();
+	}
+
+	bool Lock ()
+	{
+		return CSphMutex::Lock();
+	}
+
+	bool Unlock ()
+	{
+		return CSphMutex::Unlock();
 	}
 };
 
@@ -2198,7 +2347,6 @@ public:
 protected:
 	T &	m_tMutexRef;
 };
-
 
 /// MT-aware refcounted base
 /// mutex protected, might be slow
@@ -2476,10 +2624,47 @@ public:
 		assert ( iIndex<m_iElements );
 		m_pData [ iIndex>>5 ] |= ( 1UL<<( iIndex&31 ) ); // NOLINT
 	}
+
+	void BitClear ( int iIndex )
+	{
+		assert ( iIndex>=0 );
+		assert ( iIndex<m_iElements );
+		m_pData [ iIndex>>5 ] &= ~( 1UL<<( iIndex&31 ) ); // NOLINT
+	}
+};
+
+/// generic COM-like uids
+enum ExtraData_e
+{
+	EXTRA_GET_DATA_ZONESPANS,
+	EXTRA_GET_DATA_ZONESPANLIST,
+	EXTRA_GET_DATA_RANKFACTORS,
+	EXTRA_GET_DATA_PACKEDFACTORS,
+	EXTRA_SET_MVAPOOL,
+	EXTRA_SET_STRINGPOOL,
+	EXTRA_SET_MAXMATCHES,
+	EXTRA_SET_MATCHPUSHED,
+	EXTRA_SET_MATCHPOPPED
+};
+
+/// generic COM-like interface
+class ISphExtra
+{
+public:
+	virtual						~ISphExtra () {}
+	inline bool					ExtraData	( ExtraData_e eType, void** ppData )
+	{
+		return ExtraDataImpl ( eType, ppData );
+	}
+private:
+	virtual bool ExtraDataImpl ( ExtraData_e, void** )
+	{
+		return false;
+	}
 };
 
 #endif // _sphinxstd_
 
 //
-// $Id: sphinxstd.h 3461 2012-10-19 09:48:07Z kevg $
+// $Id: sphinxstd.h 3701 2013-02-20 18:10:18Z deogar $
 //

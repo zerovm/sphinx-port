@@ -13,7 +13,7 @@ else
 	TYPENUMBER=$3
 fi
 
-echo "generate manifest for $FILE_NAME"
+echo "Filesender manifest is Node #$DOCNUMBER for indexing file: $FILE_NAME"
 
 SCRIPT=$(readlink -f "$0")
 ABS_PATH=`dirname "$SCRIPT"`/

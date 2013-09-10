@@ -12,6 +12,7 @@ indexer
 searchd
 {
 	<searchd_settings/>
+compat_sphinxql_magics = 1
 	workers = threads
 }
 
@@ -95,6 +96,8 @@ INSERT INTO test_table VALUES
 <sphinxql>select * from main where match('unhappy')</sphinxql>
 <sphinxql>select * from main where match('solutions')</sphinxql>
 <sphinxql>select * from main where match('green')</sphinxql>
+<!-- regression inline docinfo vs expressoin -->
+<sphinxql>select * from main where match( ' "smallest white pieces of paper"/3 ')</sphinxql>
 </sphqueries>
 
 </test>

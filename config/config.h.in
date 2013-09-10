@@ -5,6 +5,9 @@
 /* Define to be the name of the compiler. */
 #undef COMPILER
 
+/* Flags used to configure me */
+#undef CONFIGURE_FLAGS
+
 /* Define to 1 if you have the `backtrace' function. */
 #undef HAVE_BACKTRACE
 
@@ -18,13 +21,19 @@
 #undef HAVE_DLERROR
 
 /* Define to 1 if you have the `dlopen' function. */
-#undef HAVE_DLOPEN
+#define HAVE_DLOPEN 0
 
 /* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
 #undef HAVE_DOPRNT
 
 /* Define to 1 if you have the `dup2' function. */
 #undef HAVE_DUP2
+
+/* Define if your system supports the epoll system calls */
+#undef HAVE_EPOLL
+
+/* Define to 1 if you have the `epoll_ctl' function. */
+#undef HAVE_EPOLL_CTL
 
 /* Define to 1 if you have the <execinfo.h> header file. */
 #undef HAVE_EXECINFO_H
@@ -81,6 +90,9 @@
 /* Define to 1 if you have the <netinet/in.h> header file. */
 #undef HAVE_NETINET_IN_H
 
+/* Define to 1 if you have the `poll' function. */
+#undef HAVE_POLL
+
 /* Define to 1 if you have the `pread' function. */
 #undef HAVE_PREAD
 
@@ -92,7 +104,7 @@
 
 /* Define to 1 if your system has a GNU libc compatible `realloc' function,
    and to 0 otherwise. */
-#undef HAVE_REALLOC
+#define HAVE_REALLOC
 
 /* Define to 1 if you have the `select' function. */
 #undef HAVE_SELECT
@@ -136,6 +148,9 @@
 
 /* Define to 1 if you have the `strtol' function. */
 #undef HAVE_STRTOL
+
+/* Define to 1 if you have the <sys/epoll.h> header file. */
+#undef HAVE_SYS_EPOLL_H
 
 /* Define to 1 if you have the <sys/file.h> header file. */
 #undef HAVE_SYS_FILE_H
@@ -258,6 +273,9 @@
 /* Define to 1 if you want to compile with PostgreSQL support */
 #undef USE_PGSQL
 
+/* re2 library support */
+#undef USE_RE2
+
 /* define to use POSIX Syslog for logging */
 #undef USE_SYSLOG
 
@@ -297,13 +315,8 @@
 /* Define to `int' if <sys/types.h> does not define. */
 #undef pid_t
 
-/* Define to rpl_realloc if the replacement function should be used. */
-#undef realloc
-
 /* Define to `unsigned int' if <sys/types.h> does not define. */
 #undef size_t
 
 /* Define as `fork' if `vfork' does not work. */
 #undef vfork
-
-

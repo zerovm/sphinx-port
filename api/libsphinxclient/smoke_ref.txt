@@ -203,7 +203,7 @@ command_search: 18
 command_excerpt: 4
 command_update: 4
 command_keywords: 1
-command_persist: 1
+command_persist: 2
 command_status: 1
 command_flushattrs: 0
 agent_connect: 1
@@ -214,6 +214,8 @@ ag_dist_0_connect_failures: 0
 ag_dist_0_network_errors: 0
 ag_dist_0_wrong_replies: 0
 ag_dist_0_unexpected_closings: 0
+ag_dist_0_warnings: 0
+ag_dist_0_succeeded_queries: 1
 query_cpu: OFF
 dist_local: 0.000
 query_reads: OFF

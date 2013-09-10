@@ -1,10 +1,10 @@
-
-// $Id: search.cpp 3413 2012-09-25 12:37:09Z kevg $
+//
+// $Id: search.cpp 3701 2013-02-20 18:10:18Z deogar $
 //
 
 //
-// Copyright (c) 2001-2012, Andrew Aksyonoff
-// Copyright (c) 2008-2012, Sphinx Technologies Inc
+// Copyright (c) 2001-2013, Andrew Aksyonoff
+// Copyright (c) 2008-2013, Sphinx Technologies Inc
 // All rights reserved
 //
 // This program is free software; you can redistribute it and/or modify
@@ -503,10 +503,6 @@ int main ( int argc, char ** argv )
 	/////////////////////
 	// search each index
 	/////////////////////
-	//int iters =0;
-
-
-
 
 	hConf["index"].IterateStart ();
 	while ( hConf["index"].IterateNext () )
@@ -575,12 +571,12 @@ int main ( int argc, char ** argv )
 		tQuery.m_sQuery = sQuery;
 		CSphQueryResult * pResult = NULL;
 
-		CSphIndex * pIndex = sphCreateIndexPhrase ( NULL, hIndex["path"].cstr() );
+		CSphIndex * pIndex = sphCreateIndexPhrase ( sIndexName, hIndex["path"].cstr() );
 		pIndex->SetEnableStar ( hIndex.GetInt("enable_star")!=0 );
 		pIndex->SetWordlistPreload ( hIndex.GetInt("ondisk_dict")==0 );
+		pIndex->SetGlobalIDFPath ( hIndex.GetStr ( "global_idf" ) );
 
 		CSphString sWarning;
-
 
 		sError = "could not create index (check that files exist)";
 		for ( ; pIndex; )
@@ -597,6 +593,9 @@ int main ( int argc, char ** argv )
 
 			// handle older index versions (<9)
 			if ( !sphFixupIndexSettings ( pIndex, hIndex, sError ) )
+				sphDie ( "index '%s': %s", sIndexName, sError.cstr() );
+
+			if ( hIndex ( "global_idf" ) && !sphPrereadGlobalIDF ( hIndex.GetStr ( "global_idf" ), sError ) )
 				sphDie ( "index '%s': %s", sIndexName, sError.cstr() );
 
 			// lookup first timestamp if needed
@@ -619,7 +618,7 @@ int main ( int argc, char ** argv )
 			}
 
 			// do querying
-			ISphMatchSorter * pTop = sphCreateQueue ( &tQuery, pIndex->GetMatchSchema(), sError );
+			ISphMatchSorter * pTop = sphCreateQueue ( &tQuery, pIndex->GetMatchSchema(), sError, NULL );
 			if ( !pTop )
 			{
 				sError.SetSprintf ( "failed to create sorting queue: %s", sError.cstr() );
@@ -630,7 +629,7 @@ int main ( int argc, char ** argv )
 			if ( !pIndex->MultiQuery ( &tQuery, pResult, 1, &pTop, NULL ) )
 			{
 				// failure; pull that error message
-				sError = pIndex->GetLastError();
+				sError = pResult->m_sError;
 				SafeDelete ( pResult );
 			} else
 			{
@@ -707,7 +706,7 @@ int main ( int argc, char ** argv )
 					{
 						case SPH_ATTR_INTEGER:
 						case SPH_ATTR_ORDINAL:
-						case SPH_ATTR_BOOL:		fprintf ( stdout, "%u", (DWORD)tMatch.GetAttr ( tAttr.m_tLocator ) ); break;
+						case SPH_ATTR_BOOL:			fprintf ( stdout, "%u", (DWORD)tMatch.GetAttr ( tAttr.m_tLocator ) ); break;
 						case SPH_ATTR_TIMESTAMP:	fprintf ( stdout, "%s", myctime ( (DWORD)tMatch.GetAttr ( tAttr.m_tLocator ) ) ); break;
 						case SPH_ATTR_FLOAT:		fprintf ( stdout, "%f", tMatch.GetAttrFloat ( tAttr.m_tLocator ) ); break;
 						case SPH_ATTR_BIGINT:		fprintf ( stdout, INT64_FMT, tMatch.GetAttr ( tAttr.m_tLocator ) ); break;
@@ -778,15 +777,12 @@ int main ( int argc, char ** argv )
 			}
 		}
 
-
 		fprintf ( stdout, "\nwords:\n" );
 		pResult->m_hWordStats.IterateStart();
 		int iWord = 1;
-		
 		while ( pResult->m_hWordStats.IterateNext() )
 		{
 			const CSphQueryResultMeta::WordStat_t & tStat = pResult->m_hWordStats.IterateGet();
-
 			fprintf ( stdout, "%d. '%s': "INT64_FMT" documents, "INT64_FMT" hits\n",
 				iWord,
 				pResult->m_hWordStats.IterateGetKey().cstr(),
@@ -801,18 +797,11 @@ int main ( int argc, char ** argv )
 		///////////
 
 		SafeDelete ( pIndex );
-//		printf ("%p \n ", pIndex);
-//		if (pIndex) 
-//		{
-//			delete pIndex;
-//			pIndex = NULL;
-//		}
-		
 	}
 
 	sphShutdownWordforms ();
 }
 
 //
-// $Id: search.cpp 3413 2012-09-25 12:37:09Z kevg $
+// $Id: search.cpp 3701 2013-02-20 18:10:18Z deogar $
 //
