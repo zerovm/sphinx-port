@@ -11,8 +11,8 @@
 #define MAXFIENAME 1024
 
 #define DEVOUTNAME "/dev/out/xmlpipecreator"
-//#define DEVOUTNAME "/dev/output"
-//#define DEVOUTNAME "/home/volodymyr/temp/docxextract"
+/* #define DEVOUTNAME "/dev/output" */
+/* #define DEVOUTNAME "/home/volodymyr/temp/docxextract" */
 
 
 #define SERVERSOFT "zerocloud"
