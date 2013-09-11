@@ -1164,6 +1164,7 @@ bool sphThreadKeyCreate ( SphThreadKey_t * pKey )
 #else
 # ifdef X86_64_ZEROVM
 	*pKey = gThreadKey; 
+	return true;
 #else
 	return pthread_key_create ( pKey, NULL )==0;
 # endif
