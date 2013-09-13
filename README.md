@@ -7,9 +7,9 @@ cd expat-2.1.0;
 make install
 
 #install Zlib:
-wget http://zlib.net/zlib-1.2.7.tar.gz;
-tar xvf zlib-1.2.7.tar.gz;
-cd zlib-1.2.7;
+wget http://zlib.net/zlib-1.2.8.tar.gz;
+tar xvf zlib-1.2.8.tar.gz;
+cd zlib-1.2.8;
 CC=x86_64-nacl-gcc ./configure --prefix=$ZVM_PREFIX/x86_64-nacl;
 make;
 sudo make install;
@@ -22,5 +22,7 @@ cd ../antiword-0.37; make;
 cd ../zsphinx;
 
 #Search
-./indexingandsearch.sh {Путь к документам для поиска}
+./indexingandsearch.sh {~/search path}
 
+#Run sphinx search on zwift
+https://github.com/zerovm/sphinx-port/blob/master/zsphinx/zwift/README.md
