@@ -959,8 +959,6 @@ int main(argc,argv)
 			int retextractcode = 0; //
 			int renameretcode = 0;
 			int deletefileretcode = 0;
-//			memset (filteredbuff, '\0', buffsize);
-//			memset (buff, '\0', buffsize);
 			switch (dt) {
 			case 1://docx
 				renameretcode = rename (fmap.tempfilename, ZIPBASED_TEMP_FILEANME);
@@ -1006,7 +1004,8 @@ int main(argc,argv)
 
 			if (filteredbufflen > 0)
 			{
-				tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fdout);
+				printf ("filename = %s json %s\n", fmap.realfilename, fmap.json);
+				tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fmap.json,  fdout);
 			}
 			else
 			{

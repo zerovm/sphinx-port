@@ -33,7 +33,7 @@ char *myrealloc (char * buff, size_t *buffsize)
 
 char * generateJson ()
 {
-	size_t jsonmaxsize = 1024;
+	size_t jsonmaxsize = 1024; // initial lengt of JSON data
 	size_t jsonsize = 0;
 	char *json = (char *) malloc (sizeof (char) * jsonmaxsize);
 
@@ -44,7 +44,6 @@ char * generateJson ()
 	for ( i = 0; environ[i] != NULL; i++)
 	{
 		int envsize = strlen (environ[i]);
-		//printf ("%s\n", environ[i]);
 		char *pKey = (char *) malloc (envsize * sizeof (char));
 		char *pVal = (char *) malloc (envsize * sizeof (char));
 		char *pEq;
@@ -54,7 +53,11 @@ char * generateJson ()
 			eqPos = pEq - environ[i];
 
 		if (eqPos == 0)
+		{
+			free (pKey);
+			free (pVal);
 			continue;
+		}
 		//copy key && value
 		strncpy ( pKey, environ[i], eqPos );
 		strncpy ( pVal, environ[i] + eqPos + 1, envsize - eqPos );
@@ -68,6 +71,8 @@ char * generateJson ()
 
 		sprintf (json + jsonsize + 1, "\t\"%s\":\"%s\",\n",pKey, pVal);
 		jsonsize += addsize;
+		free (pKey);
+		free (pVal);
 	}
 
 	if (jsonsize + 2 > jsonmaxsize)
@@ -120,7 +125,7 @@ int main (int argc, char *argv[])
 		sprintf (devnameout, "/dev/out/txt");
 	else
 		sprintf (devnameout, "/dev/out/%s", ext);
-	putfile2channel (devnamein, devnameout, filename);
+	putfile2channel (devnamein, devnameout, filename, json);
 #ifdef TEST
 	struct filemap fmap = getfilefromchannel ("/home/volodymyr/data_test/txt", "/home/volodymyr/data_test"); ///
 	printf ("tmp name - %s; real file name - %s; size %d\n", fmap.tempfilename, fmap.realfilename, (int) fmap.realfilesize);

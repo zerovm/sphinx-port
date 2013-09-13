@@ -117,6 +117,7 @@ void createxmlpipe (int fd)
 <sphinx:schema>\n\
 <sphinx:field name=\"content\"/> \n\
 <sphinx:attr name=\"filename\" type=\"string\"/> \n\
+<sphinx:attr name=\"meta\" type=\"json\"/> \n\
 </sphinx:schema>\n\
 \n";
 	int bwrite;

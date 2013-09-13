@@ -42,6 +42,7 @@
 struct filemap {
 	char realfilename[MAXFIENAME];
 	char tempfilename[MAXFIENAME];
+	char *json; // null-terminated string that contains the json data
 	long realfilesize;
 };
 
@@ -49,8 +50,8 @@ void reverse (char *);
 void getext (const char *, char *);
 long getfilesize_fd (int, char *, int );
 struct filemap getfilefromchannel (char *, char *);
-void putfile2channel (char *, char *, char *);
-int puttext2channel (char *, long , char *, int);
+void putfile2channel (char *, char *, char *, char *);
+int puttext2channel (char *, long , char *, char *, int);
 //int getdatafromchannel (int *, char * , long *);
 int getdatafromchannel (int, char *, int);
 int getfilteredbuffer (const char *, long , char *);

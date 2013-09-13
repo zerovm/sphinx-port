@@ -96,14 +96,26 @@ long getfilesize_fd (int fd, char *filename, int sizebyfilename)
 */
 void printdochead (int fd, char *realfilename, int docID)
 {
-	char str[strlen (realfilename) + 50];
+	char str[strlen (realfilename) + 50]; // 50 - stock
 	int bwrite;
 
 	sprintf (str, "<sphinx:document id=\"%d\">\n", docID);
 	bwrite = write (fd, str, strlen (str));
 
-	sprintf (str, "<filename>%s</filename>\n<content>\n", realfilename);
+	sprintf (str, "<filename>%s</filename>\n", realfilename);
 	bwrite = write (fd, str, strlen (str));
+	return;
+}
+
+void printjson (int fd, char *json)
+{
+	// <meta> </meta>;
+	char str [strlen (json) + 50]; // 50 - stock
+	int bwrite = 0;
+
+	sprintf (str, "<meta>%s</meta>\n", json);
+	bwrite = write (fd, str, strlen (str));
+
 	return;
 }
 
@@ -113,7 +125,7 @@ void printdochead (int fd, char *realfilename, int docID)
 */
 void printdocfooter (int fd)
 {
-	const char *str = "</content>\n</sphinx:document>\n \n";
+	const char *str = "\n</sphinx:document>\n \n";
 	int bwrite;
 	bwrite = write (fd, str, strlen (str));
 	return;
@@ -144,6 +156,8 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		int textsizebufflen;
 		char realfilename [2048];
 		int realfilenamelen;
+		char json [2048];
+		int jsonlen = 0;
 
 		realfilenamelen = 0;
 		textsizebufflen = 0;
@@ -166,14 +180,31 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		//get real filename
 		bread = read (fdin, &c, 1);
 		lastc = '\0';
-
 		while ( !(c == '/' && lastc == '/') && bread > 0)
 		{
 			realfilename [realfilenamelen++] = c;
 			lastc = c;
 			bread = read (fdin, &c, 1);
 		}
+
 		realfilename[realfilenamelen-2] = '\0';
+///////////////////
+//get json
+///////////////////
+		bread = read (fdin, &c, 1);
+		lastc = '\0';
+		while ( !(c == '/' && lastc == '/') && bread > 0)
+		{
+			json [jsonlen++] = c;
+			lastc = c;
+			bread = read (fdin, &c, 1);
+		}
+
+		json[jsonlen-1] = '\0';
+///////////////////
+// end read json
+///////////////////
+
 		//read text data.
 		printf ("read data\n");
 		char *buff;
@@ -187,10 +218,18 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		*/
 
 		printdochead (fd, realfilename, docID);
+
+		printf ("%s\n", json);
+
+		printjson (fd, json);
+
 //		printf ("printdochead OK!\n");
 		//buff[textsize] ='\0';
 		int bwrite;
+
+		bwrite = write (fd, "<content>", 9);
 		bwrite = write (fd, buff, textsize);
+		bwrite = write (fd, "</content>", 10);
 		free(buff);
 		printdocfooter (fd);
 //		printf ("printdocfooter  OK!\n");
@@ -219,7 +258,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 /*
  * get data (file doc, txt, docx, pdf ... etc.) from channel and save file data to temporary file
  * return struct - tempfilename, realfilename, size of file
-
+ *
 */
 struct filemap getfilefromchannel (char * chname, char 	*prefix)
 {
@@ -318,6 +357,25 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	}
 	fmap.realfilename[j-1] = '\0';
 	i += 2; //rewind space and //
+
+
+
+
+
+	// json data size = total size - header size - file size
+	size_t jsonsize = totalreadsize - realfilesize - i + 10; // 10 - stock :)
+	char *json = (char *) malloc (jsonsize * sizeof (char));
+
+	for (j = 0;i < totalreadsize - 1;i++, j++)
+	{
+		if (buff [i] == '/' && buff [i + 1] == '/')
+			break;
+		json[j] = buff[i];
+	}
+	json[j-1] = '\0';
+	i += 2; //rewind space and //
+	fmap.json = json;
+	//
 	int bwrite = 0;
 	if (realfilesize > 0)
 		bwrite = write (fdout, buff + i, realfilesize);
@@ -330,14 +388,14 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 
 
 /*
- * put incoming file into channel in format filesize, real filename, file data
+ * put incoming file into channel in format filesize, real filename, json, file data
  */
 
-void putfile2channel (char * inputchname, char * outputchname, char *realfilename)
+void putfile2channel (char * inputchname, char * outputchname, char *realfilename, char *json)
 {
 	int fin, fout;
-	fin = open (inputchname, O_RDONLY);
-	fout = open (outputchname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+	fin = open (inputchname, O_RDONLY); // open input channel
+	fout = open (outputchname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR); //open output channel
 	if ((fin < 0) || (fout < 0))
 	{
 		printf("error open file (), fdin=%d, fdout=%d\n", fin, fout);
@@ -350,15 +408,19 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 		printf ("Too big file\n");
 		return;
 	}
+
 	char *buff;
-	char *headbuf = (char *) malloc (strlen (realfilename) + 20);
-	sprintf (headbuf,"%d %s //", (int) fsize, realfilename);
+	char *headbuf = (char *) malloc (strlen (realfilename) + 20 + strlen (json));
+	sprintf (headbuf,"%d %s //%s //", (int) fsize, realfilename, json);
 	buff = (char *) malloc (fsize + strlen (headbuf));
 	long bwrite = 0;
+
 	//= write (fout, headbuf, strlen (headbuf)); // write header of file -
 	strncpy (buff, headbuf, strlen (headbuf));
+
 	long bread = read (fin, buff + strlen (headbuf), fsize);
 	bwrite += write (fout, buff, bread + strlen (headbuf));
+
 	close (fin);
 	close (fout);
 	printf ("%ld bytes writed into file %s from file %s, realfilename %s\n", bwrite, outputchname, inputchname, realfilename);
@@ -370,7 +432,7 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
  * put extracted text data to channel in format: size of text, real file name, extracted text
  */
 
-int puttext2channel (char *bufftext, long size, char *realfilename, int channelfd)
+int puttext2channel (char *bufftext, long size, char *realfilename, char *json, int channelfd)
 {
 	long totalbytewrite, bytewrite;
 	bytewrite = 0;
@@ -390,6 +452,7 @@ int puttext2channel (char *bufftext, long size, char *realfilename, int channelf
 	}
 	sprintf (tempbuff, "%s //", realfilename);
 	totalbytewrite += bytewrite;
+
 	bytewrite = write (channelfd, tempbuff, strlen (tempbuff)); // write real filename + " //"
 	if (bytewrite == 0)
 		{
@@ -397,6 +460,24 @@ int puttext2channel (char *bufftext, long size, char *realfilename, int channelf
 			return -1;
 		}
 	totalbytewrite += bytewrite;
+
+	bytewrite = write (channelfd, json, strlen (json)); // write json data
+	if (bytewrite == 0)
+		{
+			printf("*** ZVM error write json data to file\n");
+			return -1;
+		}
+	totalbytewrite += bytewrite;
+
+	bytewrite = write (channelfd, "//", 2); // write "//"
+	if (bytewrite == 0)
+		{
+			printf("*** ZVM error write data to file\n");
+			return -1;
+		}
+	totalbytewrite += bytewrite;
+
+
 	bytewrite = write (channelfd, bufftext, size);  // write filtered text buffer
 	if (bytewrite == 0)
 		{
@@ -404,6 +485,7 @@ int puttext2channel (char *bufftext, long size, char *realfilename, int channelf
 			return -1;
 		}
 	totalbytewrite += bytewrite;
+
 	return totalbytewrite;
 }
 
