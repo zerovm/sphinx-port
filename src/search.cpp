@@ -18,7 +18,8 @@
 #include "sphinxint.h"
 #include "zvmfileutil.h"
 #include <time.h>
-#include <stdlib.h>
+//#include <stdlib.h>
+//#include <string.h>
 
 
 #define CONF_CHECK(_hash,_key,_msg,_add) \
@@ -325,6 +326,23 @@ char** getwordsformstr (const char *s, int *wordcount)// char **res)
 	return res;
 }
 
+int mystrindex (const char *s, const char *t)
+{
+	int i,j,k;
+	printf ("%s, %s\n", t, s);
+	for (i  =0; (unsigned char) s[i] != '\0'; i++)
+	{
+		printf ("%c\n", s[i]);
+		for (j = i, k = 0; t[k] != '\0' && s[j] == t[k]; j++, k++)
+		{
+			printf ("s[%d]=%c,  t[%d]=%c\n", j, s[j], k, t[k]);
+		}
+		if ( k > 0 && t[k] == '\0')
+			return i;
+	}
+	return -1;
+}
+
 
 
 int main ( int argc, char ** argv )
@@ -347,6 +365,7 @@ int main ( int argc, char ** argv )
 			"-b, --boolean\t\tmatch in boolean mode\n"
 			"-p, --phrase\t\tmatch exact phrase\n"
 			"-e, --extended\t\tmatch in extended mode\n"
+			"-j, --json <key> <v>\tonly match if key in JSON attr value is v\n"
 			"-f, --filter <attr> <v>\tonly match if attribute attr value is v\n"
 			"-s, --sortby <CLAUSE>\tsort matches by 'CLAUSE' in sort_extended mode\n"
 			"-S, --sortexpr <EXPR>\tsort matches by 'EXPR' DESC in sort_expr mode\n"
@@ -380,6 +399,21 @@ int main ( int argc, char ** argv )
 	bool bStdin = false;
 	int iStart = 0;
 	int iLimit = 20;
+
+	/////
+	//max param length
+	////
+	int MaxParamLen = 0; //max command line parameter length
+	for (int i =0; i < argc; i++)
+	{
+		if ( MaxParamLen < strlen (argv[i]))
+			MaxParamLen = strlen (argv[i]);
+	}
+
+	char *pJSONFilterKey [MaxParamLen];
+	char *pJSONFilterVal [MaxParamLen];
+
+	int iJSONFilterCount = 0;
 
 	#define OPT(_a1,_a2)	else if ( !strcmp(argv[i],_a1) || !strcmp(argv[i],_a2) )
 	#define OPT1(_a1)		else if ( !strcmp(argv[i],_a1) )
@@ -435,7 +469,23 @@ int main ( int argc, char ** argv )
 				pFilter->m_dValues.Add ( uVal );
 				pFilter->m_dValues.Uniq ();
 				i += 2;
-			} else						break; // unknown option
+			}
+			/*this snippet must be copied in to new version*/
+			OPT ("-j", "--json")
+			{
+				// json filter settings
+				iJSONFilterCount++;
+				//copy keys
+				pJSONFilterKey [iJSONFilterCount - 1] = (char *) malloc (sizeof (char) * strlen (argv[i+1]) + 1);
+				strncpy (pJSONFilterKey [iJSONFilterCount - 1], argv[i+1], strlen (argv[i+1]) + 1);
+				//copy value
+				pJSONFilterVal [iJSONFilterCount - 1] = (char *) malloc (sizeof (char) * strlen (argv[i+2]) + 1);
+				strncpy (pJSONFilterVal [iJSONFilterCount - 1], argv[i+2], strlen (argv[i+2]) + 1);
+				i += 2;
+			}
+			/*this snippet must be copied in to new version*/
+			else
+				break; // unknown option
 
 		} else if ( strlen(sQuery) + strlen(argv[i]) + 1 < sizeof(sQuery) )
 		{
@@ -444,10 +494,16 @@ int main ( int argc, char ** argv )
 			strcat ( sQuery, " " ); // NOLINT
 		}
 	}
-	// start unpackindex
 
 	iStart = Max ( iStart, 0 );
 	iLimit = Max ( iLimit, 0 );
+
+	// test input parameters
+//	printf ("test input parameters\n");
+//	for ( int a = 0; a < iJSONFilterCount; a++)
+//	{
+//		printf ("%d. %s = %s\n", a, pJSONFilterKey[a], pJSONFilterVal[a]);
+//	}
 
 	if ( i!=argc )
 	{
@@ -578,6 +634,8 @@ int main ( int argc, char ** argv )
 
 		CSphString sWarning;
 
+		int iSkipedMatches = 0;
+
 		sError = "could not create index (check that files exist)";
 		for ( ; pIndex; )
 		{
@@ -597,6 +655,16 @@ int main ( int argc, char ** argv )
 
 			if ( hIndex ( "global_idf" ) && !sphPrereadGlobalIDF ( hIndex.GetStr ( "global_idf" ), sError ) )
 				sphDie ( "index '%s': %s", sIndexName, sError.cstr() );
+
+/*
+			 for (int i = 0; i < pSchema->GetAttrsCount(); i++)
+			 {
+				printf("attr type = %d, ", pSchema->GetAttr(i).m_eAttrType);
+				printf("aggr func = %d, ", pSchema->GetAttr(i).m_eAggrFunc);
+				printf("src = %d, ", pSchema->GetAttr(i).m_eSrc);
+				printf("attr[%d]=%s\n", i, pSchema->GetAttr(i).m_sName.cstr());
+			}
+*/
 
 			// lookup first timestamp if needed
 			// FIXME! remove this?
@@ -654,12 +722,14 @@ int main ( int argc, char ** argv )
 			return 1;
 		}
 #ifdef TEST
-		fprintf ( stdout, "index '%s': query '%s': returned %d matches of "INT64_FMT" total in %d.%03d sec\n",
+		fprintf ( stdout, "index '%s': query '%s': returned %d matches without filtering by meta tgs of "INT64_FMT" total in %d.%03d sec\n",
 			sIndexName, sQuery, pResult->m_dMatches.GetLength(), pResult->m_iTotalMatches,
 			pResult->m_iQueryTime/1000, pResult->m_iQueryTime%1000 );
 #endif
 		if ( !pResult->m_sWarning.IsEmpty() )
 			fprintf ( stdout, "WARNING: %s\n", pResult->m_sWarning.cstr() );
+
+		int iFilteredCount = 0;
 
 		if ( pResult->m_dMatches.GetLength() )
 		{
@@ -671,6 +741,65 @@ int main ( int argc, char ** argv )
 			for ( int i=iStart; i<iMaxIndex; i++ )
 			{
 				CSphMatch & tMatch = pResult->m_dMatches[i];
+
+				//if ( tMatch. )
+				const CSphColumnInfo & _tAttr = pResult->m_tSchema.GetAttr(1);
+
+				const BYTE *_pStr;
+				int iLen = sphUnpackStr ( pResult->m_pStrings + tMatch.GetAttr ( _tAttr.m_tLocator ), &_pStr );
+				char *cStr = (char *) malloc (sizeof (char) * iLen + 1);
+				char *pKey;
+				char *pVal;
+				//find all keys
+				int iMatchKeys = 0;
+				int a= 0, b =0;
+				for (a=0; a < iLen; a++)
+				{
+					if (isprint(_pStr[a]))
+						cStr [b++] = _pStr[a];
+				}
+
+				cStr[b] = '\0';
+
+				for ( int l = 0; l < iJSONFilterCount; l++)
+				{
+					//printf ("key=%s val=%s, _pStr=%s \n", pJSONFilterKey [l], pJSONFilterVal [l], cStr);
+					if ( (pKey = strstr ((char *) cStr, pJSONFilterKey [l] )) == NULL)
+					{
+						//printf ("*1\n");
+						continue;
+					}
+					else
+					{
+						if ( (pVal = strstr ((char*) cStr, pJSONFilterVal[l] )) == NULL)
+						{
+							//printf ("*2\n");
+							continue;
+						}
+						else
+						{
+							//printf ("*3\n");
+							if ((strlen (pJSONFilterKey [l]) - (pVal - pKey) + 1) > 2)
+							{
+								//printf("*4 %d,  %d\n",strlen (pJSONFilterKey [l]), pVal - pKey);
+								continue;
+							}
+							else
+							{
+								//printf ("find match key + value\n");
+								iMatchKeys++;
+							}
+						}
+					}
+				}
+				//printf ("iMatchKeys=%d, iJSONFilterCount=%d\n", iMatchKeys, iJSONFilterCount);
+				if (iMatchKeys != iJSONFilterCount)
+					continue;
+				else
+					iFilteredCount++;
+				//printf ("start print result\n");
+
+				//printf ("iFilteredCount = %d\n", iFilteredCount);
 				fprintf ( stdout, "%d. document=" DOCID_FMT ", weight=%d", 1+i, tMatch.m_iDocID, tMatch.m_iWeight );
 
 				for ( int j=0; j<pResult->m_tSchema.GetAttrsCount(); j++ )
@@ -717,7 +846,13 @@ int main ( int argc, char ** argv )
 								fwrite ( pStr, 1, iLen, stdout );
 								break;
 							}
-						default:					fprintf ( stdout, "(unknown-type-%d)", tAttr.m_eAttrType );
+						case SPH_ATTR_JSON:
+							{
+								printf ("JSON field");
+								break;
+							}
+						default:
+							fprintf ( stdout, "(unknown-type-%d)", tAttr.m_eAttrType );
 					}
 				}
 
@@ -776,6 +911,12 @@ int main ( int argc, char ** argv )
 				#endif
 			}
 		}
+
+#ifdef TEST
+		fprintf ( stdout, "index '%s': query '%s': returned %d matches with filtering by META tags (total returned %d) of "INT64_FMT" total in %d.%03d sec\n",
+			sIndexName, sQuery, iFilteredCount, pResult->m_dMatches.GetLength(), pResult->m_iTotalMatches,
+			pResult->m_iQueryTime/1000, pResult->m_iQueryTime%1000 );
+#endif
 
 		fprintf ( stdout, "\nwords:\n" );
 		pResult->m_hWordStats.IterateStart();
