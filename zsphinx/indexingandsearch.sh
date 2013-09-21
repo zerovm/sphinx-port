@@ -29,7 +29,7 @@ rm -f data/out/*
 rm -f nvram/*.nvram
 
 #echo generate zsphinx.conf from template
-./rwgenerator.sh
+./rwgenerator_.sh
 echo copy nexes
 cp ../src/xmlpipecreator 	xmlpipecreator.nexe
 #cp ../src/text 			txt.nexe
