@@ -86,7 +86,6 @@ int main (int argc, char *argv[])
 
 			printf ("filename = %s json %s\n", fmap.realfilename, fmap.json);
 			tempwritebytes2channel = puttext2channel (filteredbuff, strlen (filteredbuff), fmap.realfilename, fmap.json, fdout);
-			free (filteredbuff);
 		}
 	}
 	close (fdout);

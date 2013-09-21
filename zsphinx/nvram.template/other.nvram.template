@@ -1,0 +1,9 @@
+###########################################################
+# ZRT fstab file, injects tar images contents into ZRT FS #
+###########################################################
+
+[args]
+args=other
+
+#[debug]
+#verbosity=3

@@ -2,7 +2,7 @@
 #{DOCNUMBER} порядковый номер документа
 #{FILE_NAME} имя подключаемого файла
 
-if [ $# -ne 3 ]
+if [ $# -lt 3 ]
 then
 	echo "Usage: `basename $0` {DOCNUMBER} {FILE_NAME} {TYPENUMBER}"
 	echo "test" $DOCNUMBER $FILE_NAME $TYPENUMBER 
@@ -13,6 +13,7 @@ else
 	TYPENUMBER=$3
 fi
 
+
 echo "Filesender manifest is Node #$DOCNUMBER for indexing file: $FILE_NAME"
 
 SCRIPT=$(readlink -f "$0")
@@ -21,23 +22,30 @@ ABS_PATH=`dirname "$SCRIPT"`/
 
 FILETYPE="${FILE_NAME##*.}"
 
-if [ "$FILETYPE" = "txt" ] || [ "$FILETYPE" = "docx" ] || [ "$FILETYPE" = "odt" ]
-then 
-	DOC_TYPE_NUMBER=4
-	DOC_TYPE="txt"
+if [ $# -eq 4 ]
+then
+	DOC_TYPE_NUMBER=6
+	DOC_TYPE="other"
+else
+	if [ "$FILETYPE" = "txt" ] || [ "$FILETYPE" = "docx" ] || [ "$FILETYPE" = "odt" ]
+	then 
+		DOC_TYPE_NUMBER=4
+		DOC_TYPE="txt"
+	fi
+
+	if [ "$FILETYPE" = "pdf" ]
+	then
+		DOC_TYPE_NUMBER=3
+		DOC_TYPE="pdf"
+	fi
+
+	if [ "$FILETYPE" = "doc" ] 
+	then
+		DOC_TYPE_NUMBER=5
+		DOC_TYPE="doc"
+	fi
 fi
 
-if [ "$FILETYPE" = "pdf" ]
-then
-	DOC_TYPE_NUMBER=3
-	DOC_TYPE="pdf"
-fi
-
-if [ "$FILETYPE" = "doc" ] 
-then
-	DOC_TYPE_NUMBER=5
-	DOC_TYPE="doc"
-fi
 
 sed s@{ABS_PATH}@$ABS_PATH@ manifest.template/filesender.manifest.template | \
 sed s@{DOCNUMBER}@$DOCNUMBER@ | \

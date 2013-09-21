@@ -8,5 +8,11 @@ channel=/dev/mount/index,  mountpoint=/, access=ro
 channel=/dev/mount/config,  mountpoint=/, access=ro
 
 [args]
-args=search --config index/zsphinx.conf --stdin -i mainindex
+args=search -c index/zsphinx.conf -i deltaindex -w -m --stdin
+#CONTENT LENGTH 140057 -j CONTENT_LENGTH 140057
+#CONTENT LENGTH 1000 -j CONTENT_LENGTH 140057
+#-j fname /home/volodymyr/disk/tf/manifest.pdf
+#args=search --config index/zsphinx.conf --stdin -i deltaindex -w
 
+#[debug]
+#verbosity=3

@@ -12,11 +12,14 @@ else
 	FILE_NAME=$2
 fi
 
+TEMP=$(stat -c %s $FILE_NAME)
+
 #echo nvram generator 
 #echo docname $DOCNUMBER
 #echo 'file name' $FILE_NAME
 
 sed s@{DOCNUMBER}@$DOCNUMBER@ nvram.template/filesender.nvram.template | \
+sed s@{CONTETNLENGTH}@"$TEMP"@g | \
 sed s@{FILE_NAME}@"$FILE_NAME"@g > nvram/filesender$DOCNUMBER.nvram
 
 #sed s@{TYPENUMBER}@$TYPENUMBER@ nvram.template/$FILETYPE.nvram.template | \

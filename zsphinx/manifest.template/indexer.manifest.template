@@ -6,8 +6,9 @@ Channel = {ABS_PATH}data/out/indexer_stdout.data,  /dev/stdout, 0, 0, 0, 0, 9999
 Channel = {ABS_PATH}data/out/indexer_stderr.data,  /dev/stderr, 0, 0, 0, 0, 9999999, 9999999
 Channel = {ABS_PATH}data/out/indexer_debug.log,  /dev/debug, 0, 0, 0, 0, 99999999, 99999999
 Channel = /dev/null,         /dev/stdin, 0, 0, 99999999, 99999999, 0, 0
-Channel = {ABS_PATH}data/rwindex,  /dev/input, 3, 0, 99999999999, 99999999999, 99999999999, 99999999999
-Channel = {ABS_PATH}data/rwindex_,  /dev/output, 3, 0, 99999999999, 99999999999, 99999999999, 99999999999
+Channel = {ABS_PATH}data/rwindex,  /dev/input, 3, 0, 99999999999, 99999999999, 0, 0
+==Channel = {ABS_PATH}data/rwindex___test,  /dev/input, 3, 0, 99999999999, 99999999999, 0, 0
+Channel = {ABS_PATH}data/rwindex_,  /dev/output, 3, 0, 0, 0, 99999999999, 99999999999
 =====================================================================
 
 =====================================================================

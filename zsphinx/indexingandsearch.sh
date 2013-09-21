@@ -29,17 +29,16 @@ rm -f data/out/*
 rm -f nvram/*.nvram
 
 #echo generate zsphinx.conf from template
-./rwgenerator_.sh
+#./rwgenerator_.sh
 echo copy nexes
 cp ../src/xmlpipecreator 	xmlpipecreator.nexe
-#cp ../src/text 			txt.nexe
 cp ../src/indexer 		indexer.nexe
 cp ../src/filesender 		filesender.nexe
 cp ../src/search 		search.nexe
 cp ../zxpdf-3.03/xpdf/pdftotext pdf.nexe
-cp ../docxextract/docxtotext txt.nexe
-#cp ../docxextract/docxtotext odt.nexe
-cp ../antiword-0.37/antiword doc.nexe
+cp ../docxextract/docxtotext 	txt.nexe
+cp ../antiword-0.37/antiword 	doc.nexe
+cp ../src/other			other.nexe
 
 #Extract from entire directory the list of filenames by extension and
 #associate every matched file with filesender node. Also create
@@ -58,7 +57,7 @@ done
 ./ns_start.sh $NODECOUNT
 
 
-#1 - indexer, 2-xmlpipecreator, 3, search, 4 - нод первого документа, 5 - и т.д.  
+#1-indexer, 2-xmlpipecreator, 3-pdf, 4-txt, 5-doc, 6-other, 10-нод первого документа - и т.д.  
 TEMPNODECOUNT=0
 for file in manifest/*.manifest
 do

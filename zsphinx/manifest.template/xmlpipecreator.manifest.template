@@ -3,14 +3,15 @@ Channel = /dev/null, 				/dev/stdin, 0, 0, 99999999, 99999999, 0, 0
 Channel = {ABS_PATH}data/out/xml_stdout.data, 	/dev/stdout, 0, 0, 0, 0, 99999999, 99999999
 Channel = {ABS_PATH}data/out/xml_stderr.data, 	/dev/stderr, 0, 0, 0, 0, 99999999, 99999999
 Channel = {ABS_PATH}data/out/xml_debug.data, 	/dev/debug, 0, 0, 0, 0, 99999999, 99999999
-Channel = {ABS_PATH}data/xml_maxindex.data, 	/dev/input, 3, 0, 99999999, 99999999, 99999999, 99999999
-Channel = {ABS_PATH}data/xml_maxindex.data, 	/dev/output, 3, 0, 99999999, 99999999, 99999999, 999999999
+==Channel = {ABS_PATH}data/xml_maxindex.data, 	/dev/input, 3, 0, 99999999, 99999999, 99999999, 99999999
+==Channel = {ABS_PATH}data/xml_maxindex.data, 	/dev/output, 3, 0, 99999999, 99999999, 99999999, 999999999
 =====================================================================
 Channel = tcp:2:, 				/dev/out/indexer, 0, 0, 0, 0, 99999999999, 999999999999
-==Channel = {ABS_PATH}indexer.out, 		/dev/out/indexer, 0, 0, 0, 0, 99999999999, 999999999999
+==Channel = {ABS_PATH}data/indexer.out, 		/dev/out/indexer, 0, 0, 0, 0, 99999999999, 999999999999
 Channel = tcp:3:, 				/dev/in/pdf, 0, 0, 9999999999, 9999999999, 0, 0
 Channel = tcp:4:, 				/dev/in/txt, 0, 0, 999999999999, 999999999999, 0, 0
 Channel = tcp:5:, 				/dev/in/doc, 0, 0, 9999999999, 9999999999, 0, 0
+Channel = tcp:6:, 				/dev/in/other, 0, 0, 9999999999, 9999999999, 0, 0
 =====================================================================
 Channel = {ABS_PATH}nvram/xml.nvram, 		/dev/nvram, 0, 0, 99999999, 99999999, 0, 0
 =====================================================================

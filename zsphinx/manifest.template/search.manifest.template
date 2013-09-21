@@ -4,7 +4,7 @@ Channel = {ABS_PATH}data/search_stdin.data, 	/dev/stdin, 0, 0, 999999, 999999, 0
 Channel = {ABS_PATH}data/out/search_stdout.data,	/dev/stdout, 0, 0, 0, 0, 999999, 999999
 Channel = {ABS_PATH}data/out/search_stderr.data, 	/dev/stderr, 0, 0, 0, 0, 9999999, 9999999
 Channel = {ABS_PATH}data/rwindex, 			/dev/input, 3, 0, 99999999999, 99999999999, 99999999999, 99999999999
-==Channel = {ABS_PATH}data/out/search_debug.log, 		/dev/debug, 0, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/search_debug.log, 		/dev/debug, 0, 0, 0, 0, 99999999, 99999999
 =====================================================================
 
 =====================================================================
@@ -17,7 +17,7 @@ Version = 20130611
 Program = {ABS_PATH}search.nexe
 Memory = 4294967296, 0
 ==NodeName = search, 1
-Timeout = 30
+Timeout = 1000
 ==CommandLine = --config index/zsphinx.conf --stdin
 =={COMMANDLINE}
 ==Environment=VERBOSITY, 0
