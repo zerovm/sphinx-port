@@ -95,12 +95,12 @@ long getfilesize_fd (int fd, char *filename, int sizebyfilename)
 /*
 * write to indexer file document header for sphinx xml format
 */
-void printdochead (int fd, char *realfilename, int docID)
+void printdochead (int fd, char *realfilename, unsigned long docID)
 {
 	char str[strlen (realfilename) + 50]; // 50 - stock
 	int bwrite;
 
-	sprintf (str, "<sphinx:document id=\"%d\">\n", docID);
+	sprintf (str, "<sphinx:document id=\"%lu\">\n", docID);
 	bwrite = write (fd, str, strlen (str));
 
 	sprintf (str, "<filename>%s</filename>\n", realfilename);

@@ -13,3 +13,4 @@ cp ../../zxpdf-3.03/xpdf/pdftotext 	search/sys/pdf.nexe
 cp ../../docxextract/docxtotext 	search/sys/txt.nexe
 cp ../../antiword-0.37/antiword 	search/sys/doc.nexe
 
+

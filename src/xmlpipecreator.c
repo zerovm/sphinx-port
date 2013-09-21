@@ -152,13 +152,21 @@ int main(int argc, char **argv)
 	printf ("*** output device is %d \n", outf);
 	printf ("*** start transfer to indexer\n");
 #endif
+/*	switch to generate ID as crc32 number
+
 	docID = getmaxid (MAXID_DEV_NAME_IN);
+
+*/
 	printf ("*** ZVM start search incoming devices\n");
 	createxmlpipe (fd);
 	mylistdir_xmlpipe (fd, p);
 	closexmlpipe (fd);
 	close (fd);
+/*	switch to generate ID as crc32 number
+
 	setmaxid (MAXID_DEV_NAME_OUT, docID);
+
+*/
 #ifdef ZVMDEBUG
 	printf ("*** transfer to indexer Complete!\n");
 #endif

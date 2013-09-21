@@ -15,3 +15,4 @@ sed s@{my_account}@$ACCOUNTID@g json.templates/indexing.json.template > search/i
 sed s@{my_account}@$ACCOUNTID@g json.templates/merge.json.template > search/merge.json
 sed s@{my_account}@$ACCOUNTID@g json.templates/search.json.template > search/search.json
 
+

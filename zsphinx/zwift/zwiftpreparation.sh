@@ -24,10 +24,6 @@ echo "mkdir search/sys"
 mkdir search/sys
 echo ======================================================================
 
-echo 'manifest' > search/sys/search_request.txt
-echo '1' > search/sys/xml_maxindex.data
-
-
 echo 
 echo ======================================================================
 ./jsongenerator.sh $ACCOUNTID
@@ -40,7 +36,7 @@ echo ======================================================================
 
 echo 
 echo ======================================================================
-./rwgenerator_swift.sh
+./rwgenerator_swift_new.sh
 echo ======================================================================
 
 echo 
