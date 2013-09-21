@@ -39,7 +39,7 @@
 		"exec" : {"path" : "swift://{my_account}/search/sys/txt.nexe"},
 		"file_list" : 
 		[
-			{"device" : "stderr",  	"path" : "swift://{my_account}/search/outputfiles/pdf_stderr.txt"}
+			{"device" : "stderr",  	"path" : "swift://{my_account}/search/outputfiles/txt_stderr.txt"}
 		],
 		"connect" : ["xmlpipecreator"],
         "replicate" : 0

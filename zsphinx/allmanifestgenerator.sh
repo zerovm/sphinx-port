@@ -75,14 +75,12 @@ do
 		then
 			./filesendermanifestgenerator.sh $FILECOUNT "$filename" $TXTDOCXODTCOUNT
 			./filesendernvramgenerator.sh $FILECOUNT "$filename" 
-			echo "to txt"
 			echo $CHANNELNAME >> manifest/txt.manifest
 			let TXTCOUNT=TXTCOUNT+1
 			let TXTDOCXODTCOUNT=TXTDOCXODTCOUNT+1
 		else
 			./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
 			./filesendernvramgenerator.sh $FILECOUNT "$filename"
-			echo "to other"
 			let OTHERCOUNT=OTHERCOUNT+1
 			echo $CHANNELNAME >> manifest/other.manifest
 		fi
@@ -98,13 +96,11 @@ do
 			then
 				./filesendermanifestgenerator.sh $FILECOUNT "$filename" $PDFCOUNT
 				./filesendernvramgenerator.sh $FILECOUNT "$filename"
-				echo "to pdf"
 				let PDFCOUNT=PDFCOUNT+1
 				echo $CHANNELNAME >> manifest/pdf.manifest
 			else
 				./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
 				./filesendernvramgenerator.sh $FILECOUNT "$filename"
-				echo "to other"
 				let OTHERCOUNT=OTHERCOUNT+1
 				echo $CHANNELNAME >> manifest/other.manifest
 			fi
@@ -120,13 +116,11 @@ do
 				then
 					./filesendermanifestgenerator.sh $FILECOUNT "$filename" $DOCCOUNT
 					./filesendernvramgenerator.sh $FILECOUNT "$filename"
-					echo "to doc"
 					let DOCCOUNT=DOCCOUNT+1
 					echo $CHANNELNAME >> manifest/doc.manifest
 				else
 					./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
 					./filesendernvramgenerator.sh $FILECOUNT "$filename"
-					echo "to other"
 					let OTHERCOUNT=OTHERCOUNT+1
 					echo $CHANNELNAME >> manifest/other.manifest
 				fi
@@ -138,7 +132,6 @@ do
 				./filesendernvramgenerator.sh $FILECOUNT "$filename"
 				DEVICENAME=/dev/in/filesender
 				CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
-				echo "to other"
 				let FILECOUNT=FILECOUNT+1
 				let OTHERCOUNT=OTHERCOUNT+1
 				echo $CHANNELNAME >> manifest/other.manifest

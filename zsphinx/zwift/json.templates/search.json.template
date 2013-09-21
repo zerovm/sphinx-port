@@ -4,7 +4,7 @@
 		"exec" : 
         {
         	"path" : "swift://{my_account}/search/sys/search.nexe",
-            "args" : "-c index/zsphinx.conf -stdin -i mainindex -w -m manifest"
+            "args" : "-c index/zsphinx.conf -i mainindex -w -m manifest"
         },
 		"file_list" : 
 		[
