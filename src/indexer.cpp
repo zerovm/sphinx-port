@@ -1597,11 +1597,7 @@ int main ( int argc, char ** argv )
 
 	int i;
 
-	unpackindex_fd( (char *) I_DEVINPUTDATA);
-	//mylistdir ("/");
-
-
-
+	newbufferedunpack( (char *) I_DEVINPUTDATA);
 
 	FILE *test;
 
@@ -1968,7 +1964,7 @@ int main ( int argc, char ** argv )
 	//mylistdir ("/");
 
 	if (bIndexedOk)
-		bufferedpackindexfd((char *)I_DEVOUTPUTDATA);
+		newbufferedpack((char *)I_DEVOUTPUTDATA, (char *) INDEXDIRNAME);
 
 	printf ("*** ZVM indexer works OK!\n");
 

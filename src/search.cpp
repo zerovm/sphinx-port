@@ -348,8 +348,10 @@ int mystrindex (const char *s, const char *t)
 int main ( int argc, char ** argv )
 {
 //	mylistdir("/");
-	unpackindex_fd( (char *)S_DEVINPUTDATA);
-//	mylistdir("/");
+//	exit (0);
+
+	newbufferedunpack( (char *)S_DEVINPUTDATA);
+
 #ifdef TEST
 	fprintf ( stdout, SPHINX_BANNER );
 #endif
@@ -365,6 +367,8 @@ int main ( int argc, char ** argv )
 			"-b, --boolean\t\tmatch in boolean mode\n"
 			"-p, --phrase\t\tmatch exact phrase\n"
 			"-e, --extended\t\tmatch in extended mode\n"
+			"-w, --wordpos\t\do not show position of the searched words in text\n"
+			"-m, --meta\t\increase weight of field meta in search result\n"
 			"-j, --json <key> <v>\tonly match if key in JSON attr value is v\n"
 			"-f, --filter <attr> <v>\tonly match if attribute attr value is v\n"
 			"-s, --sortby <CLAUSE>\tsort matches by 'CLAUSE' in sort_extended mode\n"
@@ -388,8 +392,8 @@ int main ( int argc, char ** argv )
 	///////////////////////////////////////////
 	// get query and other commandline options
 	///////////////////////////////////////////
-
 	CSphQuery tQuery;
+
 	char sQuery [ 1024 ];
 	sQuery[0] = '\0';
 
@@ -397,9 +401,10 @@ int main ( int argc, char ** argv )
 	const char * sIndex = NULL;
 	bool bNoInfo = false;
 	bool bStdin = false;
+	bool bWordPos = true;
+	bool bMetaWeight = false;
 	int iStart = 0;
 	int iLimit = 20;
-
 	/////
 	//max param length
 	////
@@ -431,6 +436,8 @@ int main ( int argc, char ** argv )
 			OPT ( "-e", "--ext" )		tQuery.m_eMode = SPH_MATCH_EXTENDED;
 			OPT ( "-e2", "--ext2" )		tQuery.m_eMode = SPH_MATCH_EXTENDED2;
 			OPT ( "-q", "--noinfo" )	bNoInfo = true;
+			OPT ( "-w", "--wordpos" )	bWordPos = false;
+			OPT ( "-m", "--meta" )		bMetaWeight = true;
 			OPT1 ( "--sort=date" )		tQuery.m_eSort = SPH_SORT_ATTR_DESC;
 			OPT1 ( "--rsort=date" )		tQuery.m_eSort = SPH_SORT_ATTR_ASC;
 			OPT1 ( "--sort=ts" )		tQuery.m_eSort = SPH_SORT_TIME_SEGMENTS;
@@ -470,7 +477,6 @@ int main ( int argc, char ** argv )
 				pFilter->m_dValues.Uniq ();
 				i += 2;
 			}
-			/*this snippet must be copied in to new version*/
 			OPT ("-j", "--json")
 			{
 				// json filter settings
@@ -483,7 +489,6 @@ int main ( int argc, char ** argv )
 				strncpy (pJSONFilterVal [iJSONFilterCount - 1], argv[i+2], strlen (argv[i+2]) + 1);
 				i += 2;
 			}
-			/*this snippet must be copied in to new version*/
 			else
 				break; // unknown option
 
@@ -495,8 +500,27 @@ int main ( int argc, char ** argv )
 		}
 	}
 
+	if (bMetaWeight)
+	{
+		CSphNamedInt *pFieldWeights;
+		pFieldWeights = &tQuery.m_dFieldWeights.Add();
+		pFieldWeights->m_sName = "metatags"; // name of field with meta attributes
+		pFieldWeights->m_iValue = 1000;
+	}
+
+
 	iStart = Max ( iStart, 0 );
 	iLimit = Max ( iLimit, 0 );
+
+	//
+	for (int a = 0; a < iJSONFilterCount; a++)
+	{
+		for (int b = 0; b < strlen (pJSONFilterKey[a]); b++)
+		{
+			pJSONFilterKey[a][b] =  tolower (pJSONFilterKey[a][b]);
+			pJSONFilterVal[a][b] =  tolower (pJSONFilterVal[a][b]);
+		}
+	}
 
 	// test input parameters
 //	printf ("test input parameters\n");
@@ -512,6 +536,8 @@ int main ( int argc, char ** argv )
 	}
 
 	#undef OPT
+
+
 
 	tzset();
 
@@ -538,6 +564,14 @@ int main ( int argc, char ** argv )
 		sQuery[iPos] = '\0';
 	}
 
+/*
+	int b;
+	for ( b = 0; b < 3; b++)
+	{
+		printf ("%d  %s\n", tQuery.m_dFieldWeights[b].m_iValue, tQuery.m_dFieldWeights[b].m_sName);
+	}
+*/
+
 	/////////////
 	// configure
 	/////////////
@@ -547,6 +581,7 @@ int main ( int argc, char ** argv )
 	CSphConfigParser cp;
 	CSphConfig & hConf = cp.m_tConf;
 	sphLoadConfig ( sOptConfig, false, cp );
+
 
 	/////////////////////
 	// get word list from string query
@@ -561,6 +596,7 @@ int main ( int argc, char ** argv )
 	/////////////////////
 
 	hConf["index"].IterateStart ();
+
 	while ( hConf["index"].IterateNext () )
 	{
 		const CSphConfigSection & hIndex = hConf["index"].IterateGet ();
@@ -623,6 +659,7 @@ int main ( int argc, char ** argv )
 		//////////
 		// search
 		//////////
+
 
 		tQuery.m_sQuery = sQuery;
 		CSphQueryResult * pResult = NULL;
@@ -761,45 +798,40 @@ int main ( int argc, char ** argv )
 
 				cStr[b] = '\0';
 
+				for (a = 0; a < b; a++)
+					cStr[a] = tolower (cStr[a]);
+
+
+
 				for ( int l = 0; l < iJSONFilterCount; l++)
 				{
-					//printf ("key=%s val=%s, _pStr=%s \n", pJSONFilterKey [l], pJSONFilterVal [l], cStr);
 					if ( (pKey = strstr ((char *) cStr, pJSONFilterKey [l] )) == NULL)
 					{
-						//printf ("*1\n");
 						continue;
 					}
 					else
 					{
 						if ( (pVal = strstr ((char*) cStr, pJSONFilterVal[l] )) == NULL)
 						{
-							//printf ("*2\n");
 							continue;
 						}
 						else
 						{
-							//printf ("*3\n");
 							if ((strlen (pJSONFilterKey [l]) - (pVal - pKey) + 1) > 2)
 							{
-								//printf("*4 %d,  %d\n",strlen (pJSONFilterKey [l]), pVal - pKey);
 								continue;
 							}
 							else
 							{
-								//printf ("find match key + value\n");
 								iMatchKeys++;
 							}
 						}
 					}
 				}
-				//printf ("iMatchKeys=%d, iJSONFilterCount=%d\n", iMatchKeys, iJSONFilterCount);
 				if (iMatchKeys != iJSONFilterCount)
 					continue;
 				else
 					iFilteredCount++;
-				//printf ("start print result\n");
-
-				//printf ("iFilteredCount = %d\n", iFilteredCount);
 				fprintf ( stdout, "%d. document=" DOCID_FMT ", weight=%d", 1+i, tMatch.m_iDocID, tMatch.m_iWeight );
 
 				for ( int j=0; j<pResult->m_tSchema.GetAttrsCount(); j++ )
@@ -855,21 +887,21 @@ int main ( int argc, char ** argv )
 							fprintf ( stdout, "(unknown-type-%d)", tAttr.m_eAttrType );
 					}
 				}
-
-				int *hitcount = (int *) malloc (sizeof (int) * wordcount);
-
-				Hitpos_t **pHits = (Hitpos_t **) malloc (sizeof (Hitpos_t *) * wordcount);
-				int ii = 0;
-				for (ii =0; ii < wordcount; ii++)
+				if (bWordPos)
 				{
-					hitcount[ii] = 0;
-					pHits[ii] = pIndex->ZGetHitlist(stdout, res[ii] , false, &hitcount[ii], tMatch.m_iDocID);
+					int *hitcount = (int *) malloc (sizeof (int) * wordcount);
+					Hitpos_t **pHits = (Hitpos_t **) malloc (sizeof (Hitpos_t *) * wordcount);
+					int ii = 0;
+					for (ii =0; ii < wordcount; ii++)
+					{
+						hitcount[ii] = 0;
+						pHits[ii] = pIndex->ZGetHitlist(stdout, res[ii] , false, &hitcount[ii], tMatch.m_iDocID);
 
+					}
+					range tSnippetRange = GetSnippetRange(pHits, hitcount, wordcount);
+					printf ("; start=%d; end=%d", tSnippetRange.tStartPos, tSnippetRange.tEndPos);
 				}
-				range tSnippetRange = GetSnippetRange(pHits, hitcount, wordcount);
-				printf ("; start=%d; end=%d\n", tSnippetRange.tStartPos, tSnippetRange.tEndPos);
-
-				//fprintf ( stdout, "\n" );
+				fprintf ( stdout, ";\n" );
 
 				#if USE_MYSQL
 				if ( sQueryInfo )

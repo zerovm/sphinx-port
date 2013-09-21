@@ -116,7 +116,8 @@ void createxmlpipe (int fd)
 <sphinx:docset>\n\
 <sphinx:schema>\n\
 <sphinx:field name=\"content\"/> \n\
-<sphinx:attr name=\"filename\" type=\"string\"/> \n\
+<sphinx:field name=\"metatags\" type=\"string\" />\n\
+<sphinx:attr name=\"filename\" type=\"string\" />\n\
 <sphinx:attr name=\"meta\" type=\"json\"/> \n\
 </sphinx:schema>\n\
 \n";
@@ -141,6 +142,7 @@ int main(int argc, char **argv)
 	char p[] = "/dev/in";
 	int fd;
 	fd = open (DEV_OUTPUT_NAME, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+
 	if (fd <= 0)
 	{
 		printf ("*** ZVM. Error open %s deivce\n", DEV_OUTPUT_NAME);

@@ -18,8 +18,7 @@
 		"exec" : {"path" : "swift://{my_account}/search/sys/pdf.nexe"},
 		"file_list" : 
 		[
-			{"device" : "image", 	"path" : "swift://{my_account}/search/sys/confpdf.tar"},
-			{"device" : "stderr"}
+			{"device" : "image", 	"path" : "swift://{my_account}/search/sys/confpdf.tar"}
 		],
 		"connect" : ["xmlpipecreator"],
         "replicate" : 0
@@ -29,7 +28,7 @@
 		"exec" : {"path" : "swift://{my_account}/search/sys/txt.nexe"},
 		"file_list" : 
 		[
-			{"device" : "stderr"}
+			{"device" : "stdout", 	"path" : "swift://{my_account}/search/outputfiles/txt_stdout.txt"}
 		],
 		"connect" : ["xmlpipecreator"],
         "replicate" : 0
@@ -43,8 +42,7 @@
 		},
 		"file_list" : 
 		[
-			{"device" : "image", "path" :  "swift://{my_account}/search/sys/antiword.tar"},
-			{"device" : "stderr"}
+			{"device" : "image", "path" :  "swift://{my_account}/search/sys/antiword.tar"}
 		],
 		"connect" : ["xmlpipecreator"],
         "replicate" : 0

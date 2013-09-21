@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <dirent.h>
+#include <zlib.h>
 
 /*
  * reverse null-terminated string
@@ -92,7 +93,7 @@ long getfilesize_fd (int fd, char *filename, int sizebyfilename)
 
 
 /*
-* write to indexer file documet header for sphinx xml format
+* write to indexer file document header for sphinx xml format
 */
 void printdochead (int fd, char *realfilename, int docID)
 {
@@ -150,6 +151,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 	if (docID <= 0)
 		docID = 1;
 	printf ("%s\n", chname);
+	unsigned long crc = crc32(0L, Z_NULL, 0);
 	while ( bread > 0 )
 	{
 		char textsizebuff [50];
@@ -188,12 +190,15 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		}
 
 		realfilename[realfilenamelen-2] = '\0';
+
+
 ///////////////////
 //get json
 ///////////////////
 		bread = read (fdin, &c, 1);
 		lastc = '\0';
-		while ( !(c == '/' && lastc == '/') && bread > 0)
+
+		while ( !(c == '~' && lastc == '~') && bread > 0)
 		{
 			json [jsonlen++] = c;
 			lastc = c;
@@ -201,6 +206,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		}
 
 		json[jsonlen-1] = '\0';
+
 ///////////////////
 // end read json
 ///////////////////
@@ -217,20 +223,98 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		 * write to xml pipe readed data
 		*/
 
-		printdochead (fd, realfilename, docID);
+		//
 
-		printf ("%s\n", json);
+		crc = crc32(crc, (const Bytef*) realfilename, strlen (realfilename));
 
+		printdochead (fd, realfilename, crc);
+
+		//printf ("%s\n", json);
 		printjson (fd, json);
 
-//		printf ("printdochead OK!\n");
-		//buff[textsize] ='\0';
+		char *metawords = (char *) malloc (sizeof (char) * strlen (json));
+
+		int a = 0;
+		// filtering json
+		for (a = 0; a < strlen (json); a++)
+		{
+			if (json [a] != '"' && json [a] != ':' && json [a] != ',' && json [a] != '{' && json [a] != '}' )
+			{
+				metawords[a] = json [a];
+				//printf ("json = %c metawords %c\n", json [a], metawords [a]);
+			}
+			else
+			{
+				//printf ("**** %c \n", json [a]);
+				metawords[a] = ' ';
+			}
+			if (json [a] == '}')
+				metawords[a] = '\0';
+
+			if ((json [a] == '"') || (json [a] == '{') || (json [a] == '}') || (json [a] == ':') || (json [a] == ',') || (json [a] == '/') || (json [a] == '_'))
+				json [a] = ' ';
+		}
+
+
+		//printf ("%s\n\n\n %s\n",json,metawords);
+
+/*
+		size_t jsonstrlen = 1024;
+		char *jsonstr = (char *) malloc (sizeof (char) * jsonstrlen);
+		char *mvastr = (char *) malloc (sizeof (char) * strlen (json));
+		size_t mvapos = 0;
+		int a = 0, b =0;
+		for (a = 0; a < strlen (json); a++)
+		{
+			if ( (json [a] == ',') || (json [a] == '}') )
+			{
+				jsonstr [b] = '\0';
+				// разбираем строку. отбираем key && value
+				int k =0, l =0;
+				int last;
+				char tempstr1 [b]; // stores key or value
+				char tempstr2 [b]; // stores single words in key or value
+				for (k = 0; k <= b; k++)
+				{
+					if (jsonstr [k] != '"')
+						tempstr1 [l++] = jsonstr [k];
+					if ((jsonstr [k] == ':') || (jsonstr [k] == ',') || (jsonstr [k] == '\0'))
+					{
+						crc = crc32(crc, (const Bytef*) tempstr1, l);
+						printf ("%lu \n", crc);
+						sprintf (mvastr + mvapos, " %lu,\n", crc);
+						mvapos = strlen (mvastr);
+						l = 0;
+					}
+				}
+				b = 0;
+				continue;
+			}
+			jsonstr [b++] = json [a];
+		}
+*/
+		//
 		int bwrite;
+		//write json indexed field
+		bwrite = write (fd, "<metatags>", 10);
+		bwrite = write (fd, json, strlen (json));
+		bwrite = write (fd, metawords, strlen (metawords));
+		bwrite = write (fd, "</metatags>", 11);
+																																																																																																																																																																																																																																																									//write json indexed field
+		//printf ("printdochead OK!\n");
+		//buff[textsize] ='\0';
 
 		bwrite = write (fd, "<content>", 9);
 		bwrite = write (fd, buff, textsize);
 		bwrite = write (fd, "</content>", 10);
+
 		free(buff);
+		free(metawords);
+/*
+		free (mvastr);
+		free (jsonstr);
+*/
+
 		printdocfooter (fd);
 //		printf ("printdocfooter  OK!\n");
 		docID++;
@@ -335,7 +419,6 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 		return fmap;
 	}
 
-
 	// FIX if an incorrect format of the readed data
 	i = 0;
 	while (isdigit (buff[i]))
@@ -358,17 +441,13 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	fmap.realfilename[j-1] = '\0';
 	i += 2; //rewind space and //
 
-
-
-
-
 	// json data size = total size - header size - file size
 	size_t jsonsize = totalreadsize - realfilesize - i + 10; // 10 - stock :)
 	char *json = (char *) malloc (jsonsize * sizeof (char));
 
 	for (j = 0;i < totalreadsize - 1;i++, j++)
 	{
-		if (buff [i] == '/' && buff [i + 1] == '/')
+		if (buff [i] == '~' && buff [i + 1] == '~')
 			break;
 		json[j] = buff[i];
 	}
@@ -393,6 +472,12 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 
 void putfile2channel (char * inputchname, char * outputchname, char *realfilename, char *json)
 {
+
+/*
+	if (tContentLength > FS_MAX_FILE_LENGTH)
+		printf ("Too big file. File %s skiped\n", filename);
+*/
+
 	int fin, fout;
 	fin = open (inputchname, O_RDONLY); // open input channel
 	fout = open (outputchname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR); //open output channel
@@ -401,24 +486,52 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 		printf("error open file (), fdin=%d, fdout=%d\n", fin, fout);
 		return;
 	}
+
 	long fsize = getfilesize_fd (fin, NULL, 0);
 
-	if (fsize >= MAX_FILE_LENGTH)
+	char ext[strlen (realfilename)];
+	getext(realfilename, ext);
+
+
+	char bMetaOnly = 0;
+	if ((strncmp (ext, "txt", 3) == 0) && fsize > FS_MAX_TEXT_FILE_LENGTH)
 	{
-		printf ("Too big file\n");
-		return;
+		printf("Too big txt file ( > 2MB). Skipping content indexing for file %s. Indexing meta tags only.\n", realfilename);
+		bMetaOnly = 1;
+	}
+
+	else if ((strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0 || strncmp (ext, "pdf", 3) == 0 || strncmp (ext, "doc", 3) == 0) &&  fsize > FS_MAX_FILE_LENGTH)
+	{
+		printf("Too big odt, doc, docx, pdf file ( > 10MB). Skipping content indexing for file %s. Indexing meta tags only.\n", realfilename);
+		bMetaOnly = 1;
 	}
 
 	char *buff;
 	char *headbuf = (char *) malloc (strlen (realfilename) + 20 + strlen (json));
-	sprintf (headbuf,"%d %s //%s //", (int) fsize, realfilename, json);
+	//check for max file length
+	if (fsize > FS_MAX_TEXT_FILE_LENGTH)
+	{
+		sprintf (headbuf,"%d %s //%s ~~", 5, realfilename, json);
+	}
+	else
+		sprintf (headbuf,"%d %s //%s ~~", (int) fsize, realfilename, json);
+
 	buff = (char *) malloc (fsize + strlen (headbuf));
 	long bwrite = 0;
 
 	//= write (fout, headbuf, strlen (headbuf)); // write header of file -
 	strncpy (buff, headbuf, strlen (headbuf));
 
-	long bread = read (fin, buff + strlen (headbuf), fsize);
+	long bread = 0;
+	//check for max file length
+	if (fsize > FS_MAX_TEXT_FILE_LENGTH)
+	{
+		sprintf (buff + strlen (headbuf), "other");
+		fsize = 5;
+	}
+	else
+		bread = read (fin, buff + strlen (headbuf), fsize);
+
 	bwrite += write (fout, buff, bread + strlen (headbuf));
 
 	close (fin);
@@ -469,7 +582,7 @@ int puttext2channel (char *bufftext, long size, char *realfilename, char *json, 
 		}
 	totalbytewrite += bytewrite;
 
-	bytewrite = write (channelfd, "//", 2); // write "//"
+	bytewrite = write (channelfd, "~~", 2); // write "//"
 	if (bytewrite == 0)
 		{
 			printf("*** ZVM error write data to file\n");
@@ -522,6 +635,8 @@ void printstat (long mainbytes, long deltabytes, int filecount, const char * mai
 	printf ("file count = %d\n", filecount);
 	return;
 }
+
+
 
 
 void unpackindex_fd (char *	devname)
@@ -720,9 +835,252 @@ void unpackindex_fd (char *	devname)
 	close (fdinfile);
 }
 
+
+/*
+ *
+ * unpacking files data from pack file
+ *
+ * */
+void newbufferedunpack (char *	devname)
+{
+#ifdef TEST
+	printf ("*** ZVM (unpackindexfd) start unpack from %s\n", devname);
+#endif
+	int fdinfile;
+	char *dirName = (char*)INDEXDIRNAME;
+  	DIR *dir;
+	dir = opendir(dirName);
+	if (dir == NULL)
+	{
+		int result=mymakedir(dirName);
+		if (result != 0)
+			printf ("*** ZVM Error can`t create directory %s\n", dirName);
+	}
+	else
+		closedir (dir);
+	int MAXREAD = 1024;
+	char readbuf [MAXREAD];
+	int letcount;
+	letcount = 0;
+	fdinfile = open (devname, O_RDONLY);
+	if (fdinfile <= 0)
+	{
+		printf ("*** ZVM error input indexpack file\n");
+		return;
+	}
+	char c;
+	int bread = 1;
+	long deltabytes = 0;
+	long mainbytes = 0;
+	int filecount = 0;
+
+	char blocksizestr [10];
+	size_t blocksize;
+	while (bread > 0)
+	{
+		if (filecount > 50)
+		{
+			printf ("Error unpack index files\n");
+			break;
+		}
+		// получение количества байт в имени сохраненного файла
+		bread = read(fdinfile, blocksizestr, 10);
+		if (bread <= 0)
+		{
+			break;
+		}
+		blocksizestr[10] = '\0';
+		blocksize = atoi (blocksizestr);
+#ifdef TEST
+		printf("\nfile name length %s\n", blocksizestr);
+#endif
+		// read file name
+		bread = read (fdinfile, readbuf, blocksize);
+		readbuf [blocksize] = '\0';
+#ifdef TEST
+		printf("filename %s\n", readbuf);
+#endif
+		// получение количества байт в сохраненном файле
+		bread = read(fdinfile, blocksizestr, 10);
+		blocksizestr[10] = '\0';
+#ifdef TEST
+		printf("filesize %s\n", blocksizestr);
+#endif
+		blocksize = atoi (blocksizestr);
+
+		size_t filelen = 0;
+		filelen = blocksize;
+
+		int fdefile;
+		fdefile = open (readbuf, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+		if (fdefile <= 0)
+		{
+			printf ("*** ZVM Error open %s file for write. Increasing the current offset of the file descriptor on %zu bytes  and skip save this file.\n", readbuf, filelen);
+			// add check type of device. If we can use lseek
+			bread = lseek (fdinfile, filelen, SEEK_CUR);
+			continue;
+		}
+
+		// readind and save data file
+		char *buff = NULL;
+		int blockreadsize = READWRITEBUFFSIZE;
+		int readb = 0;//read(fdinfile, buff,filelen);
+		int writeb = 0;//write(fdefile, buff,readb);
+
+		long countreadbytes = 0;
+		long countwritebytes = 0;
+
+		buff = (char *) malloc (blockreadsize * sizeof (char));
+		if (filelen > 0)
+		{
+
+			if (blockreadsize > filelen)
+				blockreadsize = filelen;
+			int i=filelen / blockreadsize + 1;
+			for (; i > 0; i--)
+			{
+
+				if (filelen < blockreadsize)
+					blockreadsize = filelen;
+				if (i == 1)
+					blockreadsize = filelen - countreadbytes;
+				readb = read(fdinfile, buff, blockreadsize);
+				if (readb > 0)
+					writeb = write(fdefile, buff, readb);
+				else
+					writeb = readb;
+				countreadbytes += readb;
+				countwritebytes += writeb;
+			}
+			readb = countreadbytes;
+			writeb = countwritebytes;
+		}
+
+		// statistic
+		char *indexnameptr = NULL;
+		if ((indexnameptr = strstr (readbuf,DELTAINDEX)) != NULL )
+			deltabytes += filelen;
+
+		indexnameptr = NULL;
+		if ((indexnameptr = strstr (readbuf,MAININDEX)) != NULL )
+			mainbytes += filelen;
+		filecount++;
+
+		free (buff);
+		close (fdefile);
+		if (readb != writeb)
+			printf ("*** Warning while unpacking index file, readb = %d, writeb = %d\n", readb, writeb);
+
+#ifdef TEST
+		else
+			printf ("*** ZVM unpack file %s (%d bytes)  - OK!\n", readbuf, writeb);
+#endif
+	}
+#ifdef TEST
+	printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char* ) DELTAINDEX);
+#endif
+	close (fdinfile);
+}
+
 /*
  ZVM Function for packing all index files from directory in ZeroVM FS, specified in Zsphinx.conf to /dev/output device
 */
+
+void newbufferedpack (char *devname, char *dirname)
+{
+#ifdef TEST
+	printf("*** ZVM (bufferedpackindexfd_) start pack index to %s \n", devname);
+#endif
+	int fdpackfile;
+
+	fdpackfile = open (devname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+
+
+	if ( fdpackfile  <= 0 )
+	{
+		printf ("*** ZVM Error open packfile (write)%s\n", devname);
+		return;
+	}
+
+	char *indexpath;//deirectory with  index files and zspfinx.conf
+	indexpath = dirname;
+  	DIR *dir;
+	struct dirent *entry;
+	dir = opendir(indexpath);
+	char *newpath;
+
+	if (!dir)
+		printf ("*** ZVM Error open DIR %s\n", indexpath);
+	int blocksize = READWRITEBUFFSIZE; // 10 Mb
+#ifdef TEST
+	printf ("blocksize = %d\n", blocksize);
+#endif
+	char *buff = NULL;
+	buff = (char *) malloc (blocksize);
+
+	long deltabytes = 0;
+	long mainbytes = 0;
+	int filecount = 0;
+
+	while((entry = readdir(dir)))
+	{
+		if(entry->d_type != DT_DIR)
+		{
+			size_t size;
+			size_t bread = 0;
+			size_t bwrite;
+			size_t bytecount;
+			bytecount = 0;
+
+			newpath = (char *) malloc (strlen (entry->d_name) + strlen(indexpath) + 2);
+			sprintf(newpath, "%s/%s", indexpath, entry->d_name);
+			int fd;
+
+			fd = open (newpath, O_RDONLY);
+			size = getfilesize_fd(fd, NULL, 0);
+
+			char tempstr [strlen (newpath) + 12];
+			// write header (10 bytes size of filename + filename + 10 bytes size of filedata)
+			sprintf(tempstr, "%10zu%s%10zu", strlen (newpath), newpath, size);
+			bwrite = write (fdpackfile, tempstr, strlen (tempstr));
+			// write header (10 bytes size of filename + filename)
+
+
+			//read and write file data
+			if (size > 0)
+			{
+				while ((bread = read(fd, buff, blocksize)) > 0)
+				{
+					//bread = read (fd, buff, blocksize);
+					bytecount += bread;
+					bwrite = write(fdpackfile, buff, bread);
+				}
+			} else
+				bytecount = 0;
+
+			close (fd);
+#ifdef TEST
+			printf ("file %s (%d bytes) packed - OK!\n", newpath, (int) size);
+#endif
+			// for statistic data
+			char *indexnameptr = NULL;
+			if ((indexnameptr = strstr (newpath,DELTAINDEX)) != NULL )
+				deltabytes += size;
+
+			indexnameptr = NULL;
+			if ((indexnameptr = strstr (newpath,MAININDEX)) != NULL )
+				mainbytes += size;
+			filecount++;
+			//statistic
+		}
+	}
+	free (buff);
+	close (fdpackfile);
+#ifdef TEST
+	printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char *) DELTAINDEX);
+	printf ("*** ZVM pack completed successfully!\n");
+#endif
+}
 
 void bufferedpackindexfd (char * devname)
 {
@@ -763,7 +1121,6 @@ void bufferedpackindexfd (char * devname)
 	{
 		if(entry->d_type != DT_DIR)
 		{
-
 			size_t size;
 			size_t bread = 0;
 			size_t bwrite;
@@ -791,16 +1148,8 @@ void bufferedpackindexfd (char * devname)
 				}
 			} else
 				bytecount = 0;
-//			if (bread < 0)
-//			{
-//				close (fd);
-//				continue;
-//			}
-//			bwrite = write (fdpackfile, buff, size);
-			//bwrite = write (1, buff, size);
 			sprintf (tempstr, "{%s}\n", newpath);
 			bwrite = write (fdpackfile, tempstr, strlen (tempstr));
-			//bwrite = write (1, tempstr, strlen (tempstr));
 			close (fd);
 #ifdef TEST
 			printf ("file %s (%d bytes) packed - OK!\n", newpath, (int) size);

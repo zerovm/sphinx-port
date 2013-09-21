@@ -997,8 +997,10 @@ int main(argc,argv)
 			int i;
 			printf ("*** real file name %s, filteredbufflen = %d\n", fmap.realfilename, filteredbufflen);
 
+#ifdef TEST
 			for (i = 0; i < filteredbufflen; i++)
 				printf ("%c", filteredbuff[i]);
+#endif TEST
 
 			int tempwritebytes2channel;
 

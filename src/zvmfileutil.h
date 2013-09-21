@@ -18,6 +18,8 @@
 #define SERVERSOFT "zerocloud"
 
 #define FS_DEVINPUTDATA "/dev/input" // file sender input channel
+#define FS_MAX_TEXT_FILE_LENGTH 1024 * 1024 * 2
+#define FS_MAX_FILE_LENGTH 1024 * 1024 * 10
 
 #define I_DEVINPUTDATA "/dev/input"// indexer input
 #define I_DEVOUTPUTDATA "/dev/output" // indexer output
@@ -57,6 +59,10 @@ int getdatafromchannel (int, char *, int);
 int getfilteredbuffer (const char *, long , char *);
 void unpackindex_fd (char *);
 void bufferedpackindexfd (char *);
+
+void newbufferedunpack (char *);
+void newbufferedpack (char *, char *);
+
 int mymakedir (char *);
 void mylistdir (char *);
 

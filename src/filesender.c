@@ -37,6 +37,17 @@ char * generateJson ()
 	size_t jsonsize = 0;
 	char *json = (char *) malloc (sizeof (char) * jsonmaxsize);
 
+	char *tagfilters [] = {
+			"CONTENT_LENGTH",
+			"CONTENT_TYPE",
+			"HTTP_X_OBJECT_META",
+			"HTTP_ETAG",
+			"HTTP_X_TIMESTAMP",
+			"PATH_INFO",
+			"SERVER_PROTOCOL",
+			"HTTP_ACCEPT_ENCODING"
+	};
+
 	sprintf (json, "{\n");
 	jsonsize = strlen (json) - 1;
 
@@ -63,6 +74,25 @@ char * generateJson ()
 		strncpy ( pVal, environ[i] + eqPos + 1, envsize - eqPos );
 
 		pKey [eqPos] = '\0';
+
+
+
+		char *pFilterOK;
+		int iFind = 0;
+		int j = 0;
+		for ( j = 0; tagfilters[j]; j++ )
+		{
+			if ( (pFilterOK = strstr (pKey, tagfilters[j])) != NULL )
+			{
+				iFind = 1;
+			}
+		}
+		if (iFind == 0)
+		{
+			free (pKey);
+			free (pVal);
+			continue;
+		}
 
 		size_t addsize = strlen (pKey) +  strlen (pVal) + 8; //8 symbols plus -------  1 '\t' + 1 '=' + 4 '"' + 1 ',' + 1 '\n'
 
@@ -94,6 +124,10 @@ int main (int argc, char *argv[])
 
 	char *json = NULL;
 
+	char *cContentLength = NULL;
+	size_t tContentLength = 0;
+
+
 	printf ("serversoft=%s\n", serversoft);
 
 	if (serversoft)
@@ -102,6 +136,10 @@ int main (int argc, char *argv[])
 		{
 			printf ("path info=%s\n", getenv("PATH_INFO"));
 			filename = getenv("PATH_INFO");
+
+			cContentLength = getenv("CONTENT_LENGTH");
+			tContentLength = atoi (cContentLength);
+
 		}
 		else
 		{
@@ -113,6 +151,8 @@ int main (int argc, char *argv[])
 	{
 		printf ("fname=%s\n", getenv("fname"));
 		filename = getenv("fname");
+
+		tContentLength = (size_t) getfilesize_fd(0, filename, 1 );
 	}
 
 	json = generateJson();
@@ -121,10 +161,15 @@ int main (int argc, char *argv[])
 
 	char ext[strlen (filename)];
 	getext(filename, ext);
-	if (strncmp (ext, "txt", 3) == 0 || strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0)
+	if ((strncmp (ext, "txt", 3) == 0 || strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0) && tContentLength <= FS_MAX_TEXT_FILE_LENGTH)
 		sprintf (devnameout, "/dev/out/txt");
-	else
+	else if ((strncmp (ext, "pdf", 3) == 0 || strncmp (ext, "doc", 3) == 0) && tContentLength <= FS_MAX_FILE_LENGTH)
 		sprintf (devnameout, "/dev/out/%s", ext);
+	else
+	{
+		sprintf (devnameout, "/dev/out/other");
+	}
+
 	putfile2channel (devnamein, devnameout, filename, json);
 #ifdef TEST
 	struct filemap fmap = getfilefromchannel ("/home/volodymyr/data_test/txt", "/home/volodymyr/data_test"); ///
