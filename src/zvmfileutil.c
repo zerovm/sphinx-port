@@ -250,8 +250,11 @@ int getdatafromchannel (int fd, char *chname, int docID)
 			}
 			if (json [a] == '}')
 				metawords[a] = '\0';
-
+/*
 			if ((json [a] == '"') || (json [a] == '{') || (json [a] == '}') || (json [a] == ':') || (json [a] == ',') || (json [a] == '/') || (json [a] == '_'))
+				json [a] = ' ';
+*/
+			if (!isalnum (json [a]) )
 				json [a] = ' ';
 		}
 
@@ -419,6 +422,13 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 		return fmap;
 	}
 
+	if (totalreadsize <= 1024 * 1024)
+	{
+		printf ("test readed data if size <= 1024");
+		fwrite (buff, sizeof (char), totalreadsize, stdout);
+		printf ("**\n");
+	}
+
 	// FIX if an incorrect format of the readed data
 	i = 0;
 	while (isdigit (buff[i]))
@@ -508,13 +518,26 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 
 	char *buff;
 	char *headbuf = (char *) malloc (strlen (realfilename) + 20 + strlen (json));
-	//check for max file length
+	//check for max file length or nont text format
+/*
 	if (fsize > FS_MAX_TEXT_FILE_LENGTH)
 	{
 		sprintf (headbuf,"%d %s //%s ~~", 5, realfilename, json);
 	}
 	else
 		sprintf (headbuf,"%d %s //%s ~~", (int) fsize, realfilename, json);
+*/
+
+	if (bMetaOnly == 1)
+	{
+		sprintf (headbuf,"%d %s //%s ~~", 5, realfilename, json);
+	}
+	else
+	{
+		sprintf (headbuf,"%d %s //%s ~~", (int) fsize, realfilename, json);
+	}
+
+
 
 	buff = (char *) malloc (fsize + strlen (headbuf));
 	long bwrite = 0;
@@ -524,6 +547,7 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 
 	long bread = 0;
 	//check for max file length
+/*
 	if (fsize > FS_MAX_TEXT_FILE_LENGTH)
 	{
 		sprintf (buff + strlen (headbuf), "other");
@@ -531,6 +555,17 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 	}
 	else
 		bread = read (fin, buff + strlen (headbuf), fsize);
+*/
+
+	if (bMetaOnly == 1)
+	{
+		sprintf (buff + strlen (headbuf), "other");
+		fsize = 5;
+	}
+	else
+	{
+		bread = read (fin, buff + strlen (headbuf), fsize);
+	}
 
 	bwrite += write (fout, buff, bread + strlen (headbuf));
 

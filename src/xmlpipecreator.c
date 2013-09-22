@@ -141,7 +141,19 @@ int main(int argc, char **argv)
 	char c = '0';
 	char p[] = "/dev/in";
 	int fd;
-	fd = open (DEV_OUTPUT_NAME, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+
+	int iOptindexer = 1;
+	int i = 0;
+	char deviceoutputname[250];
+	for ( i = 0; i < argc; i++)
+	{
+		if ((strncmp(argv[i], "--savexml", strlen (argv[i]))) == 0)
+			sprintf (deviceoutputname, "/dev/output");
+		else
+			sprintf (deviceoutputname, "%s", DEV_OUTPUT_NAME);
+	}
+
+	fd = open (deviceoutputname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 
 	if (fd <= 0)
 	{
