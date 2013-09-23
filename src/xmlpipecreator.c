@@ -145,12 +145,11 @@ int main(int argc, char **argv)
 	int iOptindexer = 1;
 	int i = 0;
 	char deviceoutputname[250];
+	sprintf (deviceoutputname, "%s", DEV_OUTPUT_NAME);
 	for ( i = 0; i < argc; i++)
 	{
 		if ((strncmp(argv[i], "--savexml", strlen (argv[i]))) == 0)
 			sprintf (deviceoutputname, "/dev/output");
-		else
-			sprintf (deviceoutputname, "%s", DEV_OUTPUT_NAME);
 	}
 
 	fd = open (deviceoutputname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);

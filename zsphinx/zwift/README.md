@@ -1,8 +1,8 @@
 ##How to run sphinx search on swift.
 
 #Preinstalation:
-1. Make all nexe files as specified in the instructions `https://github.com/zerovm/sphinx-port/blob/master/README.md`
-2. cd zwift; ./zwiftpreparation.sh {you_account} (for example - g_103319691787805482239)
+1. Make all nexe files as specified in the instructions https://github.com/zerovm/sphinx-port/blob/master/README.md
+2. cd zsphinx/zwift; ./zwiftpreparation.sh {you_account} (for example - g_103319691787805482239)
 3. Craete container `"search"` on https://z.litestack.com/js
 4. In container `"search"` create next directories: `sys`, `outputfiles`, `doc`(test data).
 5. Upload files from local directories ~search/sys, ~search/doc, ~search into same directories on swift.

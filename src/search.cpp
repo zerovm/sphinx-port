@@ -752,6 +752,7 @@ int main ( int argc, char ** argv )
 		/////////
 		// print
 		/////////
+		int iDocCounter = 0;
 
 		if ( !pResult )
 		{
@@ -832,7 +833,8 @@ int main ( int argc, char ** argv )
 					continue;
 				else
 					iFilteredCount++;
-				fprintf ( stdout, "%d. document=" DOCID_FMT ", weight=%d", 1+i, tMatch.m_iDocID, tMatch.m_iWeight );
+
+				fprintf ( stdout, "%d. document=" DOCID_FMT ", weight=%d", ++iDocCounter, tMatch.m_iDocID, tMatch.m_iWeight );
 
 				for ( int j=0; j<pResult->m_tSchema.GetAttrsCount(); j++ )
 				{
@@ -959,7 +961,8 @@ int main ( int argc, char ** argv )
 			fprintf ( stdout, "%d. '%s': "INT64_FMT" documents, "INT64_FMT" hits\n",
 				iWord,
 				pResult->m_hWordStats.IterateGetKey().cstr(),
-				tStat.m_iDocs,
+				iDocCounter,
+				/*tStat.m_iDocs,*/
 				tStat.m_iHits );
 			iWord++;
 		}

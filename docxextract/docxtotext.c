@@ -910,7 +910,7 @@ int main(argc,argv)
     byteswrite2text = 0;
     totalbyteswrite2text = 0;
 
-    fdout = open (DEVOUTNAME, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+    fdout = open (DEVOUTNAME, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
     if (fdout < 0 )
     {
     	printf ("*** ZVM Error open % output device\n", DEVOUTNAME);

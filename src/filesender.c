@@ -127,6 +127,7 @@ int main (int argc, char *argv[])
 	char *cContentLength = NULL;
 	size_t tContentLength = 0;
 
+	char bPlainText = 0;
 
 	printf ("serversoft=%s\n", serversoft);
 
@@ -161,6 +162,9 @@ int main (int argc, char *argv[])
 
 	char ext[strlen (filename)];
 	getext(filename, ext);
+
+
+
 	if ((strncmp (ext, "txt", 3) == 0 || strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0) && tContentLength <= FS_MAX_TEXT_FILE_LENGTH)
 		sprintf (devnameout, "/dev/out/txt");
 	else if ((strncmp (ext, "pdf", 3) == 0 || strncmp (ext, "doc", 3) == 0) && tContentLength <= FS_MAX_FILE_LENGTH)

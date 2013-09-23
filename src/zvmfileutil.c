@@ -216,7 +216,10 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		char *buff;
 
 		buff = (char *) malloc (textsize + 1);
+
 		bread = read (fdin, buff, textsize);
+
+
 //		printf ("bread = %d\n", bread);
 
 		/*
@@ -353,7 +356,7 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 	int fdin, fdout, i;
 	struct filemap fmap;
 	char nbytes[20]; //
-	char *buff;
+	char *buff = NULL;
 	char *resizebuff;
 	long buffsize;
 	char ext[strlen (chname)];
@@ -381,7 +384,15 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 		return fmap;
 	}
 
-	fdout = open (tempfilename, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+
+////////////////////////////////////////////////////////////////////////
+//	int remretcode = remove (tempfilename);
+//	if (remretcode == 1)
+//		printf ("error deleting previous temp file\n");
+////////////////////////////////////////////////////////////////////////
+
+
+	fdout = open (tempfilename, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 	if (fdout < 0)
 	{
 		printf ("*** ZVM Error create temp file %s\n", tempfilename);
@@ -490,7 +501,7 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 
 	int fin, fout;
 	fin = open (inputchname, O_RDONLY); // open input channel
-	fout = open (outputchname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR); //open output channel
+	fout = open (outputchname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR); //open output channel
 	if ((fin < 0) || (fout < 0))
 	{
 		printf("error open file (), fdin=%d, fdout=%d\n", fin, fout);
@@ -504,6 +515,7 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 
 
 	char bMetaOnly = 0;
+/*
 	if ((strncmp (ext, "txt", 3) == 0) && fsize > FS_MAX_TEXT_FILE_LENGTH)
 	{
 		printf("Too big txt file ( > 2MB). Skipping content indexing for file %s. Indexing meta tags only.\n", realfilename);
@@ -515,6 +527,11 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 		printf("Too big odt, doc, docx, pdf file ( > 10MB). Skipping content indexing for file %s. Indexing meta tags only.\n", realfilename);
 		bMetaOnly = 1;
 	}
+*/
+	if (strstr(outputchname,"other") == NULL)
+		bMetaOnly = 0;
+	else
+		bMetaOnly = 1;
 
 	char *buff;
 	char *headbuf = (char *) malloc (strlen (realfilename) + 20 + strlen (json));
@@ -530,6 +547,7 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 
 	if (bMetaOnly == 1)
 	{
+		printf ("meta only\n");
 		sprintf (headbuf,"%d %s //%s ~~", 5, realfilename, json);
 	}
 	else
@@ -560,12 +578,15 @@ void putfile2channel (char * inputchname, char * outputchname, char *realfilenam
 	if (bMetaOnly == 1)
 	{
 		sprintf (buff + strlen (headbuf), "other");
-		fsize = 5;
+		fsize = 5; // length of text "other"
+		bread = fsize;
 	}
 	else
 	{
 		bread = read (fin, buff + strlen (headbuf), fsize);
 	}
+
+
 
 	bwrite += write (fout, buff, bread + strlen (headbuf));
 
@@ -779,7 +800,7 @@ void unpackindex_fd (char *	devname)
 		readbuf [--letcount] = '\0';
 		//printf ("readbuf=%s\n", readbuf);
 		int fdefile;
-		fdefile = open (readbuf, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+		fdefile = open (readbuf, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 		if (fdefile <= 0)
 		{
 			printf ("*** ZVM Error open %s file for write\n", readbuf);
@@ -947,7 +968,7 @@ void newbufferedunpack (char *	devname)
 		filelen = blocksize;
 
 		int fdefile;
-		fdefile = open (readbuf, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+		fdefile = open (readbuf, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 		if (fdefile <= 0)
 		{
 			printf ("*** ZVM Error open %s file for write. Increasing the current offset of the file descriptor on %zu bytes  and skip save this file.\n", readbuf, filelen);
@@ -1028,7 +1049,7 @@ void newbufferedpack (char *devname, char *dirname)
 #endif
 	int fdpackfile;
 
-	fdpackfile = open (devname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+	fdpackfile = open (devname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 
 
 	if ( fdpackfile  <= 0 )
@@ -1124,7 +1145,7 @@ void bufferedpackindexfd (char * devname)
 #endif
 	int fdpackfile;
 
-	fdpackfile = open (devname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+	fdpackfile = open (devname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 
 
 	if ( fdpackfile  <= 0 )
