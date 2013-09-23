@@ -33,7 +33,7 @@ char *myrealloc (char * buff, size_t *buffsize)
 
 char * generateJson ()
 {
-	size_t jsonmaxsize = 1024; // initial lengt of JSON data
+	size_t jsonmaxsize = 1024; //1024 - initial lengt of JSON data
 	size_t jsonsize = 0;
 	char *json = (char *) malloc (sizeof (char) * jsonmaxsize);
 
@@ -48,6 +48,11 @@ char * generateJson ()
 			"HTTP_ACCEPT_ENCODING"
 	};
 
+	char *tagfilters_remove_prefix [] = {
+			"HTTP_X_OBJECT_META_",
+			"HTTP_"
+	};
+
 	sprintf (json, "{\n");
 	jsonsize = strlen (json) - 1;
 
@@ -57,6 +62,7 @@ char * generateJson ()
 		int envsize = strlen (environ[i]);
 		char *pKey = (char *) malloc (envsize * sizeof (char));
 		char *pVal = (char *) malloc (envsize * sizeof (char));
+
 		char *pEq;
 		int eqPos = 0;//
 
@@ -76,7 +82,6 @@ char * generateJson ()
 		pKey [eqPos] = '\0';
 
 
-
 		char *pFilterOK;
 		int iFind = 0;
 		int j = 0;
@@ -85,6 +90,31 @@ char * generateJson ()
 			if ( (pFilterOK = strstr (pKey, tagfilters[j])) != NULL )
 			{
 				iFind = 1;
+			}
+		}
+		for ( j = 0; tagfilters_remove_prefix[j]; j++)
+		{
+			if ( (pFilterOK = strstr (pKey, tagfilters_remove_prefix[j])) != NULL )
+			{
+				char * pKeyTrim = (char *) malloc ( sizeof (char) * strlen (pKey) );
+				//char * pValTrim = (char *) malloc ( sizeof (char) * strlen (pVal) );
+#ifdef TEST
+				printf("* test ***********\n pKey=%s, strlen (filters) = %d, copyied length = %d",  pKey,   strlen (tagfilters_remove_prefix[j]) , strlen (pKey) - strlen (tagfilters_remove_prefix[j]) + 1);
+#endif
+				strncpy ( pKeyTrim, pKey + strlen (tagfilters_remove_prefix[j]) , strlen (pKey) - strlen (tagfilters_remove_prefix[j]) + 1);
+				// test
+#ifdef TEST
+				printf ("printf pKeyTrim = %s \n", pKeyTrim);
+#endif
+
+				size_t addsize = strlen (pKeyTrim) +  strlen (pVal) + 8; //8 symbols plus -------  1 '\t' + 1 '=' + 4 '"' + 1 ',' + 1 '\n'
+
+				if ((jsonsize + addsize) > jsonmaxsize )
+					json = myrealloc (json, &jsonmaxsize);
+
+				sprintf (json + jsonsize + 1, "\t\"%s\":\"%s\",\n",pKeyTrim, pVal);
+				jsonsize += addsize;
+				free (pKeyTrim);
 			}
 		}
 		if (iFind == 0)

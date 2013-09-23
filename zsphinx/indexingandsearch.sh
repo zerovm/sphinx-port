@@ -28,8 +28,14 @@ rm -f manifest/*.manifest
 rm -f data/out/*
 rm -f nvram/*.nvram
 
-#echo generate zsphinx.conf from template
-#./rwgenerator_.sh
+if [ -a data/rwindex ]
+then
+	echo skip index template generating
+else
+	echo generate zsphinx.conf from template
+	./rwgenerator_.sh
+fi
+
 echo copy nexes
 cp ../src/xmlpipecreator 	xmlpipecreator.nexe
 cp ../src/indexer 		indexer.nexe

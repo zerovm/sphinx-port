@@ -14,4 +14,3 @@
 #Search
 1. For search execute `search.json`. Searched word can be specified in `sys/search_request.txt` object.
 
-
