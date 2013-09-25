@@ -112,12 +112,15 @@ int getmaxid (char *fname)
 // заголовок XML потока
 void createxmlpipe (int fd)
 {
-	char *xmldochead = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\
+	char *xmldochead = "\
+<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\
 <sphinx:docset>\n\
 <sphinx:schema>\n\
 <sphinx:field name=\"content\"/> \n\
 <sphinx:field name=\"metatags\" type=\"string\" />\n\
 <sphinx:attr name=\"filename\" type=\"string\" />\n\
+<sphinx:attr name=\"timestamp\" type=\"timestamp\" />\n\
+<sphinx:attr name=\"filecontentlength\" type=\"int\" />\n\
 <sphinx:attr name=\"meta\" type=\"json\"/> \n\
 </sphinx:schema>\n\
 \n";

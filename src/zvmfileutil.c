@@ -132,6 +132,22 @@ void printdocfooter (int fd)
 	return;
 }
 
+/*
+ * get value from "key":"value"
+ * */
+
+char * getValue (const char * pKeyVal)
+{
+	char *pValue = NULL;
+
+	char *pPosColon = strstr (pKeyVal, ":") + 1;
+
+	pValue = (char *) malloc ( strlen (pPosColon));
+	strncpy (pValue, pPosColon + 1, strlen (pPosColon) - 1);
+	pValue[strlen (pPosColon) - 2] = '\0';
+
+	return pValue;
+}
 
 /*
  * get text data from network in format size of text, real filename, text data
@@ -219,7 +235,6 @@ int getdatafromchannel (int fd, char *chname, int docID)
 
 		bread = read (fdin, buff, textsize);
 
-
 //		printf ("bread = %d\n", bread);
 
 		/*
@@ -235,9 +250,48 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		//printf ("%s\n", json);
 		printjson (fd, json);
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// get tag CONTENT_LENGTH
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		unsigned int a = 0;
+		int linesymcount =0;
+		char *startline = strstr (json, "{") + 1;
+		char *pContentLength = NULL;
+		char *pTimeStamp = NULL;
+		for (a = 0; a < strlen (json); a++)
+		{
+			linesymcount++;
+			if (json[a]  == '\n')
+			{
+				char *jsonline = (char *) malloc (sizeof (char) * linesymcount + 1);
+				strncpy (jsonline, startline, linesymcount);
+				if (jsonline[linesymcount - 1] == ',')
+					jsonline[linesymcount - 1] = '\0';
+				else
+					jsonline[linesymcount] = '\0';
+				printf ("jsonline = %s\n", jsonline);
+				startline = json + a;
+
+				if (strstr ( jsonline,"CONTENT_LENGTH") != NULL)
+				{
+					pContentLength = getValue (jsonline);
+				}
+
+				if (strstr ( jsonline,"X_TIMESTAMP") != NULL)
+				{
+					pTimeStamp = getValue (jsonline);
+				}
+				linesymcount = 0;
+			}
+		}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// end get tag CONTENT_LENGTH
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 		char *metawords = (char *) malloc (sizeof (char) * strlen (json));
 
-		int a = 0;
 		// filtering json
 		for (a = 0; a < strlen (json); a++)
 		{
@@ -260,67 +314,29 @@ int getdatafromchannel (int fd, char *chname, int docID)
 			if (!isalnum (json [a]) )
 				json [a] = ' ';
 		}
-
-
-		//printf ("%s\n\n\n %s\n",json,metawords);
-
-/*
-		size_t jsonstrlen = 1024;
-		char *jsonstr = (char *) malloc (sizeof (char) * jsonstrlen);
-		char *mvastr = (char *) malloc (sizeof (char) * strlen (json));
-		size_t mvapos = 0;
-		int a = 0, b =0;
-		for (a = 0; a < strlen (json); a++)
-		{
-			if ( (json [a] == ',') || (json [a] == '}') )
-			{
-				jsonstr [b] = '\0';
-				// разбираем строку. отбираем key && value
-				int k =0, l =0;
-				int last;
-				char tempstr1 [b]; // stores key or value
-				char tempstr2 [b]; // stores single words in key or value
-				for (k = 0; k <= b; k++)
-				{
-					if (jsonstr [k] != '"')
-						tempstr1 [l++] = jsonstr [k];
-					if ((jsonstr [k] == ':') || (jsonstr [k] == ',') || (jsonstr [k] == '\0'))
-					{
-						crc = crc32(crc, (const Bytef*) tempstr1, l);
-						printf ("%lu \n", crc);
-						sprintf (mvastr + mvapos, " %lu,\n", crc);
-						mvapos = strlen (mvastr);
-						l = 0;
-					}
-				}
-				b = 0;
-				continue;
-			}
-			jsonstr [b++] = json [a];
-		}
-*/
 		//
 		int bwrite;
 		//write json indexed field
 		bwrite = write (fd, "<metatags>", 10);
 		bwrite = write (fd, json, strlen (json));
 		bwrite = write (fd, metawords, strlen (metawords));
-		bwrite = write (fd, "</metatags>", 11);
-																																																																																																																																																																																																																																																									//write json indexed field
-		//printf ("printdochead OK!\n");
-		//buff[textsize] ='\0';
+		bwrite = write (fd, "</metatags>\n", 12);
 
-		bwrite = write (fd, "<content>", 9);
+		bwrite = write (fd, "<filecontentlength>", 19);
+		bwrite = write (fd, pContentLength, strlen (pContentLength));
+		bwrite = write (fd, "</filecontentlength>\n", 21);
+
+		bwrite = write (fd, "<timestamp>", 11);
+		bwrite = write (fd, pTimeStamp, strlen (pTimeStamp));
+		bwrite = write (fd, "</timestamp>\n", 13);
+																																																																																																																																																																																																																																																									//write json indexed field
+		bwrite = write (fd, "<content>\n", 10);
 		bwrite = write (fd, buff, textsize);
-		bwrite = write (fd, "</content>", 10);
+		bwrite = write (fd, "</content>\n", 11);
 
 		free(buff);
 		free(metawords);
-/*
-		free (mvastr);
-		free (jsonstr);
-*/
-
+		free (pContentLength);
 		printdocfooter (fd);
 //		printf ("printdocfooter  OK!\n");
 		docID++;
@@ -979,7 +995,7 @@ void newbufferedunpack (char *	devname)
 
 		// readind and save data file
 		char *buff = NULL;
-		int blockreadsize = READWRITEBUFFSIZE;
+		size_t blockreadsize = READWRITEBUFFSIZE;
 		int readb = 0;//read(fdinfile, buff,filelen);
 		int writeb = 0;//write(fdefile, buff,readb);
 

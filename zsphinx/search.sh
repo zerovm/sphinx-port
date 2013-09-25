@@ -19,7 +19,9 @@ cp ../src/search 		search.nexe
 sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/search.manifest.template > manifest/search.manifest
 
 #генерация nvram для search
-cp nvram.template/search.nvram.template nvram/search.nvram
+#cp nvram.template/search.nvram.template nvram/search.nvram
+sed s@{command}@"$query"@g nvram.template/search.nvram.template > nvram/search.nvram
+
 
 time ${ZVM_PREFIX}/zerovm -P -Mmanifest/search.manifest 
 cat data/out/search_stdout.data

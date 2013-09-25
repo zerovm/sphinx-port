@@ -35,7 +35,6 @@ const char * myctime ( DWORD uStamp )
 	static char sBuf[256];
 	time_t tStamp = uStamp; // for 64-bit
 	strncpy ( sBuf, ctime ( &tStamp ), sizeof(sBuf) );
-
 	char * p = sBuf;
 	while ( (*p) && (*p)!='\n' && (*p)!='\r' ) p++;
 	*p = '\0';
@@ -408,7 +407,7 @@ int main ( int argc, char ** argv )
 	/////
 	//max param length
 	////
-	int MaxParamLen = 0; //max command line parameter length
+	unsigned int MaxParamLen = 0; //max command line parameter length
 	for (int i =0; i < argc; i++)
 	{
 		if ( MaxParamLen < strlen (argv[i]))
@@ -536,8 +535,6 @@ int main ( int argc, char ** argv )
 	}
 
 	#undef OPT
-
-
 
 	tzset();
 
