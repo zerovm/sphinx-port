@@ -13,7 +13,6 @@ else
 	TYPENUMBER=$3
 fi
 
-
 echo "Filesender manifest is Node #$DOCNUMBER for indexing file: $FILE_NAME"
 
 SCRIPT=$(readlink -f "$0")

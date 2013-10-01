@@ -50,21 +50,21 @@ sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/indexer.manifest.template > mani
 sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/search.manifest.template > manifest/search.manifest
 
 #Generate nvram files for indexer, search, xmlpipecreator, extractors
-cp nvram.template/txt.nvram.template nvram/txt.nvram
-cp nvram.template/pdf.nvram.template nvram/pdf.nvram
-cp nvram.template/doc.nvram.template nvram/doc.nvram
-cp nvram.template/other.nvram.template nvram/other.nvram
-cp nvram.template/xml.nvram.template nvram/xml.nvram
-cp nvram.template/search.nvram.template nvram/search.nvram
-cp nvram.template/indexer.nvram.template nvram/indexer.nvram
+cp nvram.template/txt.nvram.template 		nvram/txt.nvram
+cp nvram.template/pdf.nvram.template 		nvram/pdf.nvram
+cp nvram.template/doc.nvram.template 		nvram/doc.nvram
+cp nvram.template/other.nvram.template 		nvram/other.nvram
+cp nvram.template/xml.nvram.template 		nvram/xml.nvram
+cp nvram.template/search.nvram.template 	nvram/search.nvram
+cp nvram.template/indexer.nvram.template 	nvram/indexer.nvram
 
 #extrace files from directory which can contain spaces in name
 for file in "$directory"/*
 do
         file="$file"
-	filename=${file%.}
+	filename="${file%.}"
 	fileext="${file##*.}"
-	TEMP=$(stat -c %s $file)
+	TEMP=$(stat -c %s "$file")
 	if [ "$fileext" = "txt" ] || [ "$fileext" = "docx" ] || [ "$fileext" = "odt" ]
 	then
 		#echo "test all manifest generator **txt** " $FILECOUNT $filename $TXTCOUNT

@@ -12,7 +12,7 @@ else
 	FILE_NAME=$2
 fi
 
-TEMP=$(stat -c %s $FILE_NAME)
+TEMP=$(stat -c %s "$FILE_NAME")
 
 #echo nvram generator 
 #echo docname $DOCNUMBER
