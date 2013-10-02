@@ -48,7 +48,7 @@
 #define CHAR_BIT		8
 #endif /* CHAR_BIT */
 
-#define TEMP_FILE_FOR_EXTRACTED_TEXT "tempextracted.txt"
+#define DOC_TEMP_FILE_FOR_EXTRACTED_TEXT "tempextracted.txt"
 
 #if !defined(TIME_T_MIN)
 #define TIME_T_MIN		((time_t)0 < (time_t)-1 ?\

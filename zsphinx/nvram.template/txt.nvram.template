@@ -7,3 +7,6 @@ args=txt
 
 #[debug]
 #verbosity=3
+
+[env]
+name=ZVM_LogLevel, value=1

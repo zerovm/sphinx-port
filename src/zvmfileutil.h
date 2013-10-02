@@ -17,6 +17,17 @@
 
 #define SERVERSOFT "zerocloud"
 
+#define DOC_DEVICE_IN "/dev/in"
+#define DOC_PREFIX ""
+#define DOC_TEMP_DOC_FILE_NAME "temp.doc"
+
+#define PDF_DEVICE_IN "/dev/in"
+#define PDF_PREFIX ""
+#define PDF_TEMP_PDF_FILE_NAME "temp.pdf"
+#define PDF_TEMP_TXT_FILE_NAME "temp.txt"
+
+
+
 #define FS_DEVINPUTDATA "/dev/input" // file sender input channel
 #define FS_MAX_TEXT_FILE_LENGTH 1024 * 1024 * 2
 #define FS_MAX_FILE_LENGTH 1024 * 1024 * 10
@@ -38,6 +49,9 @@
 //#define INDEXDIRNAME "f1"
 //#define INDEXDIRNAME "/home/volodymyr/disk/f1"
 
+
+#define PACKET_NUMBER_BLOCK_SIZE 10
+
 //#define TEST
 #undef TEST
 
@@ -48,9 +62,35 @@ struct filemap {
 	long realfilesize;
 };
 
+
+int getZVMLogLevel ();
+
+#define LOG_SERVER_SOFT 																	\
+	if (getZVMLogLevel() > 0) 																\
+	{																						\
+		printf ("***ZVMLOG [LogLevel>0] [serversoft], \t%s\n", serversoft);					\
+	}
+
+
+#define LOG_NODE_NAME 																		\
+	if (getZVMLogLevel() > 0)																\
+	{																						\
+		printf ("***ZVMLOG [LogLevel>0] [nodename], \t%s\n", argv[0]);						\
+	}
+
+#define LOG_ZVM(message, valuename, valuetype, value, level) 											\
+		if (getZVMLogLevel () >= level)																	\
+		{																								\
+				printf("%s [LogLevel=%d] [%s], \t%"valuetype" \n", message, level, valuename, value);	\
+		}
+
+
+void filesender2extractor (char *, char *, char *, char *);
+struct filemap extractorfromfilesender (char *, char *);
+
 void reverse (char *);
 void getext (const char *, char *);
-long getfilesize_fd (int, char *, int );
+unsigned long getfilesize_fd (int, char *, int );
 struct filemap getfilefromchannel (char *, char *);
 void putfile2channel (char *, char *, char *, char *);
 int puttext2channel (char *, long , char *, char *, int);

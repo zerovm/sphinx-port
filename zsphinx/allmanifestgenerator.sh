@@ -58,46 +58,33 @@ cp nvram.template/xml.nvram.template 		nvram/xml.nvram
 cp nvram.template/search.nvram.template 	nvram/search.nvram
 cp nvram.template/indexer.nvram.template 	nvram/indexer.nvram
 
-#extrace files from directory which can contain spaces in name
-for file in "$directory"/*
-do
-        file="$file"
-	filename="${file%.}"
-	fileext="${file##*.}"
-	TEMP=$(stat -c %s "$file")
-	if [ "$fileext" = "txt" ] || [ "$fileext" = "docx" ] || [ "$fileext" = "odt" ]
+scan() {
+  local x;
+  for file in "$1"/*; do
+#    filename=${e##*\/};
+    if [ -d "$file" -a ! -L "$file" ]
+    then
+      scan "$file";
+    else
+	if [ -f "$file" ]
 	then
-		#echo "test all manifest generator **txt** " $FILECOUNT $filename $TXTCOUNT
-		#echo $filename $fileext
-		DEVICENAME=/dev/in/filesender
-		CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
-		if [ "$TEMP" -lt 2097152 ]
+		file="$file"
+		filename="${file%.}"
+		fileext="${file##*.}"
+		TEMP=$(stat -c %s "$file")
+		if [ "$fileext" = "txt" ] || [ "$fileext" = "docx" ] || [ "$fileext" = "odt" ]
 		then
-			./filesendermanifestgenerator.sh $FILECOUNT "$filename" $TXTDOCXODTCOUNT
-			./filesendernvramgenerator.sh $FILECOUNT "$filename" 
-			echo $CHANNELNAME >> manifest/txt.manifest
-			let TXTCOUNT=TXTCOUNT+1
-			let TXTDOCXODTCOUNT=TXTDOCXODTCOUNT+1
-		else
-			./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
-			./filesendernvramgenerator.sh $FILECOUNT "$filename"
-			let OTHERCOUNT=OTHERCOUNT+1
-			echo $CHANNELNAME >> manifest/other.manifest
-		fi
-		let FILECOUNT=FILECOUNT+1
-	else
-		if [ "$fileext" = "pdf" ] 
-		then 
-			#echo "test all manifest generator **pdf** " $FILECOUNT $filename $TXTCOUNT
+			#echo "test all manifest generator **txt** " $FILECOUNT $filename $TXTCOUNT
 			#echo $filename $fileext
 			DEVICENAME=/dev/in/filesender
 			CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
-			if [ "$TEMP" -lt 10485760 ]
+			if [ "$TEMP" -lt 2097152 ]
 			then
-				./filesendermanifestgenerator.sh $FILECOUNT "$filename" $PDFCOUNT
-				./filesendernvramgenerator.sh $FILECOUNT "$filename"
-				let PDFCOUNT=PDFCOUNT+1
-				echo $CHANNELNAME >> manifest/pdf.manifest
+				./filesendermanifestgenerator.sh $FILECOUNT "$filename" $TXTDOCXODTCOUNT
+				./filesendernvramgenerator.sh $FILECOUNT "$filename" 
+				echo $CHANNELNAME >> manifest/txt.manifest
+				let TXTCOUNT=TXTCOUNT+1
+				let TXTDOCXODTCOUNT=TXTDOCXODTCOUNT+1
 			else
 				./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
 				./filesendernvramgenerator.sh $FILECOUNT "$filename"
@@ -106,18 +93,18 @@ do
 			fi
 			let FILECOUNT=FILECOUNT+1
 		else
-			if [ "$fileext" = "doc" ]
+			if [ "$fileext" = "pdf" ] 
 			then 
-				#echo "test all manifest generator **doc** " $FILECOUNT $filename $TXTCOUNT
+				#echo "test all manifest generator **pdf** " $FILECOUNT $filename $TXTCOUNT
 				#echo $filename $fileext
 				DEVICENAME=/dev/in/filesender
 				CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
 				if [ "$TEMP" -lt 10485760 ]
 				then
-					./filesendermanifestgenerator.sh $FILECOUNT "$filename" $DOCCOUNT
+					./filesendermanifestgenerator.sh $FILECOUNT "$filename" $PDFCOUNT
 					./filesendernvramgenerator.sh $FILECOUNT "$filename"
-					let DOCCOUNT=DOCCOUNT+1
-					echo $CHANNELNAME >> manifest/doc.manifest
+					let PDFCOUNT=PDFCOUNT+1
+					echo $CHANNELNAME >> manifest/pdf.manifest
 				else
 					./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
 					./filesendernvramgenerator.sh $FILECOUNT "$filename"
@@ -125,18 +112,51 @@ do
 					echo $CHANNELNAME >> manifest/other.manifest
 				fi
 				let FILECOUNT=FILECOUNT+1
-			else	
-				#echo "test all manifest generator **doc** " $FILECOUNT $filename $TXTCOUNT
-				#echo $filename $fileext
-				./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
-				./filesendernvramgenerator.sh $FILECOUNT "$filename"
-				DEVICENAME=/dev/in/filesender
-				CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
-				let FILECOUNT=FILECOUNT+1
-				let OTHERCOUNT=OTHERCOUNT+1
-				echo $CHANNELNAME >> manifest/other.manifest
+			else
+				if [ "$fileext" = "doc" ]
+				then 
+					#echo "test all manifest generator **doc** " $FILECOUNT $filename $TXTCOUNT
+					#echo $filename $fileext
+					DEVICENAME=/dev/in/filesender
+					CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
+					if [ "$TEMP" -lt 10485760 ]
+					then
+						./filesendermanifestgenerator.sh $FILECOUNT "$filename" $DOCCOUNT
+						./filesendernvramgenerator.sh $FILECOUNT "$filename"
+						let DOCCOUNT=DOCCOUNT+1
+						echo $CHANNELNAME >> manifest/doc.manifest
+					else
+						./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
+						./filesendernvramgenerator.sh $FILECOUNT "$filename"
+						let OTHERCOUNT=OTHERCOUNT+1
+						echo $CHANNELNAME >> manifest/other.manifest
+					fi
+					let FILECOUNT=FILECOUNT+1
+				else	
+					#echo "test all manifest generator **doc** " $FILECOUNT $filename $TXTCOUNT
+					#echo $filename $fileext
+					./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
+					./filesendernvramgenerator.sh $FILECOUNT "$filename"
+					DEVICENAME=/dev/in/filesender
+					CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
+					let FILECOUNT=FILECOUNT+1
+					let OTHERCOUNT=OTHERCOUNT+1
+					echo $CHANNELNAME >> manifest/other.manifest
+				fi
 			fi
 		fi
 	fi
-done
+    fi
+  done
+}
+
+if [ -d "$directory" ]
+then
+  scan "$directory";
+fi
+
+#extrace files from directory which can contain spaces in name
+#for file in "$directory"/*
+#do
+
 

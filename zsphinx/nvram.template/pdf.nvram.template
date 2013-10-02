@@ -8,3 +8,6 @@ channel=/dev/mount/import, mountpoint=/, access=ro
 
 [args]
 args=pdf
+
+[env]
+name=ZVM_LogLevel, value=1

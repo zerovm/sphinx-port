@@ -21,7 +21,7 @@ cp nvram.template/indexer_merge.nvram.template nvram/indexer_merge.nvram
 
 #запускаем
 echo run manifest/indexer_merge.manifest
-time ${ZVM_PREFIX}/zerovm -P -Mmanifest/indexer_merge.manifest
+time ${ZVM_PREFIX}/bin/zerovm -P -Mmanifest/indexer_merge.manifest
 
 sleep 1
 

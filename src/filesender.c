@@ -15,6 +15,7 @@
 
 extern char **environ;
 
+
 char *myrealloc (char * buff, size_t *buffsize)
 {
 	char *newbuff;
@@ -35,6 +36,8 @@ char * generateJson ()
 {
 	size_t jsonmaxsize = 1024; //1024 - initial lengt of JSON data
 	size_t jsonsize = 0;
+	int keycount = 0;
+
 	char *json = (char *) malloc (sizeof (char) * jsonmaxsize);
 
 	char *tagfilters [] = {
@@ -48,10 +51,19 @@ char * generateJson ()
 			"HTTP_ACCEPT_ENCODING"
 	};
 
+
 	char *tagfilters_remove_prefix [] = {
 			"HTTP_X_OBJECT_META_",
 			"HTTP_"
 	};
+
+
+	char *tagfilters_skip [] = {
+			"ZVM_LogLevel"
+	};
+
+	int tagfilterscount = sizeof (tagfilters) / sizeof (char *);
+	int tagfilters_remove_prefix_count = sizeof (tagfilters_remove_prefix) / sizeof (char *);
 
 	sprintf (json, "{\n");
 	jsonsize = strlen (json) - 1;
@@ -75,37 +87,31 @@ char * generateJson ()
 			free (pVal);
 			continue;
 		}
+
 		//copy key && value
 		strncpy ( pKey, environ[i], eqPos );
 		strncpy ( pVal, environ[i] + eqPos + 1, envsize - eqPos );
 
 		pKey [eqPos] = '\0';
 
-
 		char *pFilterOK;
 		int iFind = 0;
 		int j = 0;
-		for ( j = 0; tagfilters[j]; j++ )
+
+		for ( j = 0; j < tagfilterscount; j++ )
 		{
 			if ( (pFilterOK = strstr (pKey, tagfilters[j])) != NULL )
 			{
 				iFind = 1;
 			}
 		}
-		for ( j = 0; tagfilters_remove_prefix[j]; j++)
+		for ( j = 0; j < tagfilters_remove_prefix_count; j++)
 		{
 			if ( (pFilterOK = strstr (pKey, tagfilters_remove_prefix[j])) != NULL )
 			{
 				char * pKeyTrim = (char *) malloc ( sizeof (char) * strlen (pKey) );
-				//char * pValTrim = (char *) malloc ( sizeof (char) * strlen (pVal) );
-#ifdef TEST
-				printf("* test ***********\n pKey=%s, strlen (filters) = %d, copyied length = %d",  pKey,   strlen (tagfilters_remove_prefix[j]) , strlen (pKey) - strlen (tagfilters_remove_prefix[j]) + 1);
-#endif
+
 				strncpy ( pKeyTrim, pKey + strlen (tagfilters_remove_prefix[j]) , strlen (pKey) - strlen (tagfilters_remove_prefix[j]) + 1);
-				// test
-#ifdef TEST
-				printf ("printf pKeyTrim = %s \n", pKeyTrim);
-#endif
 
 				size_t addsize = strlen (pKeyTrim) +  strlen (pVal) + 8; //8 symbols plus -------  1 '\t' + 1 '=' + 4 '"' + 1 ',' + 1 '\n'
 
@@ -113,8 +119,14 @@ char * generateJson ()
 					json = myrealloc (json, &jsonmaxsize);
 
 				sprintf (json + jsonsize + 1, "\t\"%s\":\"%s\",\n",pKeyTrim, pVal);
+
+				char *pKeyVal [strlen(pKey) + strlen (pVal) + 2];
+				sprintf (pKeyVal, "%s:%s", pKey, pVal);
+				LOG_ZVM ("***ZVMLog", "Key:Val", "s", pKeyVal, 3);
+
 				jsonsize += addsize;
 				free (pKeyTrim);
+				keycount++;
 			}
 		}
 		if (iFind == 0)
@@ -139,6 +151,9 @@ char * generateJson ()
 		json = myrealloc (json, &jsonmaxsize);
 	sprintf (json + jsonsize - 1, "\n}");
 	jsonsize += 2;
+
+	LOG_ZVM ("***ZVMLog", "json key count", "d", keycount, 1);
+
 	return json;
 }
 
@@ -157,20 +172,22 @@ int main (int argc, char *argv[])
 	char *cContentLength = NULL;
 	size_t tContentLength = 0;
 
-	char bPlainText = 0;
+	char bPlainText = 0; //
 
-	printf ("serversoft=%s\n", serversoft);
+	LOG_SERVER_SOFT;
+	LOG_NODE_NAME;
 
 	if (serversoft)
 	{
 		if (strncmp (SERVERSOFT ,serversoft, strlen (serversoft)) == 0)
 		{
-			printf ("path info=%s\n", getenv("PATH_INFO"));
 			filename = getenv("PATH_INFO");
-
+			if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
+			{
+				bPlainText = 1;
+			}
 			cContentLength = getenv("CONTENT_LENGTH");
 			tContentLength = atoi (cContentLength);
-
 		}
 		else
 		{
@@ -180,20 +197,25 @@ int main (int argc, char *argv[])
 	}
 	else
 	{
-		printf ("fname=%s\n", getenv("fname"));
 		filename = getenv("fname");
-
 		tContentLength = (size_t) getfilesize_fd(0, filename, 1 );
 	}
 
+
+
+	LOG_ZVM ("***ZVMLog", "content type", "s", filename, 2);
+	LOG_ZVM ("***ZVMLog", "content length", "zu", tContentLength, 1);
+	LOG_ZVM ("***ZVMLog", "file name", "s", filename, 1);
+
 	json = generateJson();
 
-	printf ("%s", json);
+	LOG_ZVM ("***ZVMLog", "json length", "ld", strlen (json), 2);
+	LOG_ZVM ("***ZVMLog", "json", "s", json, 3);
 
 	char ext[strlen (filename)];
 	getext(filename, ext);
 
-
+	LOG_ZVM ("***ZVMLog", "extension", "s", ext, 2);
 
 	if ((strncmp (ext, "txt", 3) == 0 || strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0) && tContentLength <= FS_MAX_TEXT_FILE_LENGTH)
 		sprintf (devnameout, "/dev/out/txt");
@@ -201,15 +223,19 @@ int main (int argc, char *argv[])
 		sprintf (devnameout, "/dev/out/%s", ext);
 	else
 	{
-		sprintf (devnameout, "/dev/out/other");
+		if ( bPlainText == 1 && tContentLength <= FS_MAX_TEXT_FILE_LENGTH)
+			sprintf (devnameout, "/dev/out/txt");
+		else
+			sprintf (devnameout, "/dev/out/other");
 	}
 
-	putfile2channel (devnamein, devnameout, filename, json);
+	LOG_ZVM ("***ZVMLog", "output device", "s", devnameout, 1);
+	filesender2extractor (devnamein, devnameout, filename, json);
 #ifdef TEST
 	struct filemap fmap = getfilefromchannel ("/home/volodymyr/data_test/txt", "/home/volodymyr/data_test"); ///
 	printf ("tmp name - %s; real file name - %s; size %d\n", fmap.tempfilename, fmap.realfilename, (int) fmap.realfilesize);
 #endif
 
-
+	LOG_ZVM ("***ZVMLog", "OK!", "s", "", "");
 	return 0;
 }

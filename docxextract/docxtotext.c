@@ -432,7 +432,7 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
 
         if (fout!=NULL)
         {
-            printf(" extracting: %s\n",write_filename);
+        	LOG_ZVM ("***ZVMLog", "extracting", "s", write_filename, 1);
 
             do
             {
@@ -534,55 +534,6 @@ int do_extract_onefile(uf,filename,opt_extract_without_path,opt_overwrite,passwo
         return 1;
 }
 
-void wprintheader (FILE *f)
-{
-	char *externalfilename = getenv("fname");
-	//printf ("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"); // заголовок XML файла, генерируется в xmlpipecreator
-	//printf ("<sphinx:document id=\"%d\">\n", docID); // заголовок документа в потоке, генерируется в xmlpipecreator
-	fwprintf (f, L"<filename>%s</filename>\n", (wchar_t) externalfilename); //
-	fwprintf (f, L"<content>\n");
-
-}
-
-void printheader (FILE *f)
-{
-	char *externalfilename = getenv("fname");
-	//printf ("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n"); // заголовок XML файла, генерируется в xmlpipecreator
-	//printf ("<sphinx:document id=\"%d\">\n", docID); // заголовок документа в потоке, генерируется в xmlpipecreator
-	fprintf (f, "<filename>%s</filename>\n", externalfilename); //
-	fprintf (f, "<content>\n");
-
-}
-
-void sprintheader (FILE *f, char *s)
-{
-	char *externalfilename = getenv("fname");
-	sprintf (s, "<filename>%s</filename>\n", externalfilename); //
-	sprintf (s, "<content>\n");
-
-}
-
-
-void wprintfooter (FILE *f)
-{
-	  fwprintf (f, L"</content>\n");
-	  fwprintf (f, L"</sphinx:document>\n \n");
-}
-
-void printfooter (FILE *f)
-{
-	  fprintf (f, "</content>\n");
-	  fprintf (f, "</sphinx:document>\n \n");
-}
-
-
-
-void writebuffer2channel ()
-{
-
-	return;
-}
-
 /*
  * takes the text between the text docx tags, fills the buffer with the filtered text. Return size of filtered text in buffer,
  * */
@@ -657,8 +608,7 @@ int gettextfromxml (char *filteredbuff)
 
 	int filteredbuffsize;
 	filteredbuffsize = getfilteredbuffer (textbuff, ei, filteredbuff);
-
-	printf ("*** ZVM extracted from xml (docx format) %d bytes OK!\n", filteredbuffsize);
+	LOG_ZVM ("***ZVMLog", "extracted from xml(docx)", "d", filteredbuffsize, 1);
 	return filteredbuffsize;
 }
 
@@ -733,8 +683,7 @@ int gettextfromxmlodt (char *filteredbuff)
 
 	int filteredbuffsize;
 	filteredbuffsize = getfilteredbuffer (textbuff, ei, filteredbuff);
-
-	printf ("*** ZVM extracted form xml (docx format) %d bytes OK!\n", filteredbuffsize);
+	LOG_ZVM ("***ZVMLog", "extracted from xml(odt)", "d", filteredbuffsize, 1);
 	free(textbuff);
 	return filteredbuffsize;
 }
@@ -773,7 +722,7 @@ int getdoctype (char *filename)
 		return 2;
 	if (strncmp (doctypename, "txt", 3) == 0)
 		return 3;
-	return 0;
+	return 3;
 }
 
 int extractfile (char *zipfilename)
@@ -854,8 +803,6 @@ int extractfile (char *zipfilename)
 
 int getbufffromtxt (char *filename, char *buffer)
 {
-	printf ("*** getbufffromtxt start extract text from txt %s\n", filename);
-
 	long txtbuffsize;
 	int fd = open (filename, O_RDONLY);
 	if (fd < 0)
@@ -869,12 +816,10 @@ int getbufffromtxt (char *filename, char *buffer)
 		close (fd);
 		return -1;
 	}
-	printf ("*** getbufffromtxt file size detected = %d\n", txtbuffsize);
 	int bread = read (fd, buffer, txtbuffsize);
 	if (bread < 0 || bread != txtbuffsize)
 		printf ("***ZVM Error read data fron txt file %s\n", filename);
 	close (fd);
-	printf ("*** getbufffromtxt end extract text from txt\n");
 	return txtbuffsize;
 }
 
@@ -895,13 +840,16 @@ int main(argc,argv)
     char *chname; //
     int fdout;
 
+	char *serversoft = getenv ("SERVER_SOFTWARE");
+	LOG_SERVER_SOFT;
+	LOG_NODE_NAME;
+
 
     char *path = "/dev/in";
-    //char *path = "/home/volodymyr/git/sphinx-port/zsphinx/data/fsout";
-
     char *prefix = "/temp";
-    //char *prefix = "/home/volodymyr/temp";
     long totalbyteswrite2text, byteswrite2text;
+
+	LOG_ZVM ("***ZVMLog", "dir with incoming channels", "s", path, 1);
 
   	DIR *dir;
 	struct dirent *entry;
@@ -930,6 +878,11 @@ int main(argc,argv)
 	char *filteredbuff; // buffer for filtered text extracted from file of any format
 	char *buff; 		// temp buffer for readed data trom txt file.
 	long buffsize = 1024 * 1024 * 10;// 10 Mb
+
+	LOG_ZVM ("***ZVMLog", "output device name", "s", DEVOUTNAME, 1);
+
+	LOG_ZVM ("***ZVMLog", "buffer size for incoming files", "ld", buffsize, 2);
+
 	filteredbuff = (char *) malloc (buffsize);
 	buff = (char *) malloc (buffsize);
 
@@ -939,15 +892,27 @@ int main(argc,argv)
 		int temp;
 		int filteredbufflen;
 		filteredbufflen =0;
+		LOG_ZVM ("***ZVMLog", "incoming channel name", "s", entry->d_name, 1);
+
 		if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
 		{
 			long txtbufflen;
 			long filteredbufflen = 0;
-
 			struct filemap fmap;
 			chname = malloc (strlen(path) + strlen (entry->d_name) + 2);
 			sprintf (chname, "%s/%s", path, entry->d_name);
-			fmap = getfilefromchannel(chname, prefix);
+			LOG_ZVM ("***ZVMLog", "incoming channel name", "s", chname, 1);
+
+			// add logging
+			fmap = extractorfromfilesender(chname, prefix);
+
+			LOG_ZVM ("***ZVMLog", "real filename", "s", fmap.realfilename, 2);
+			LOG_ZVM ("***ZVMLog", "real filesize", "ld", fmap.realfilesize, 2);
+
+			LOG_ZVM ("***ZVMLog", "json size", "d", strlen (fmap.json), 2);
+			LOG_ZVM ("***ZVMLog", "json", "s", fmap.json, 3);
+
+
 			if (fmap.realfilesize <= 0)
 			{
 				printf ("***get from channel error fmap.realfilesize = %ld\n", fmap.realfilesize);
@@ -962,40 +927,42 @@ int main(argc,argv)
 			switch (dt) {
 			case 1://docx
 				renameretcode = rename (fmap.tempfilename, ZIPBASED_TEMP_FILEANME);
-				printf ("fmap.tmp = %s const= %s, retcode = %d\n", fmap.tempfilename, ZIPBASED_TEMP_FILEANME, renameretcode);
+				LOG_ZVM ("***ZVMLog", "document type", "s", "docx", 1);
 				if (renameretcode != 0)
 					continue;
 				retextractcode = extractfile (ZIPBASED_TEMP_FILEANME); // unzip incoming file place xml contents on file document.xml
-				printf ("docx\n");
+				LOG_ZVM ("***ZVMLog", "unzip return code", "d", retextractcode, 1);
 				if (retextractcode != 0)
 				{
 					continue;
 				}
 				filteredbufflen = gettextfromxml (filteredbuff); // extracting and filtering text data from content.xml file
-
+				LOG_ZVM ("***ZVMLog", "filtered buff length", "d", filteredbufflen, 1);
 				break;
 			case 2://odt
 				renameretcode = rename (fmap.tempfilename, ZIPBASED_TEMP_FILEANME);
 				if (renameretcode != 0)
 					continue;
+				LOG_ZVM ("***ZVMLog", "document type", "s", "odt", 1);
 				retextractcode = extractfile (ZIPBASED_TEMP_FILEANME); // unzip incoming file
-				printf ("odt\n");
+				LOG_ZVM ("***ZVMLog", "unzip return code", "d", retextractcode, 1);
 				if (retextractcode != 0)
 				{
 					continue;
 				}
 		    	filteredbufflen = gettextfromxmlodt (filteredbuff); // extracting and filtering text data from document.xml file
+				LOG_ZVM ("***ZVMLog", "filtered buff length", "d", filteredbufflen, 1);
 		    	break;
 			case 3://txt
 				txtbufflen = getbufffromtxt (fmap.tempfilename , buff);
+				LOG_ZVM ("***ZVMLog", "document type", "s", "txt", 1);
 				filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
-				printf ("txt\n");
+				LOG_ZVM ("***ZVMLog", "filtered buff length", "d", filteredbufflen, 1);
 		    	break;
 			}
-			printf ("after extract\n");
 
 			int i;
-			printf ("*** real file name %s, filteredbufflen = %d\n", fmap.realfilename, filteredbufflen);
+
 
 #ifdef TEST
 			for (i = 0; i < filteredbufflen; i++)
@@ -1006,8 +973,9 @@ int main(argc,argv)
 
 			if (filteredbufflen > 0)
 			{
-				printf ("filename = %s json %s\n", fmap.realfilename, fmap.json);
 				tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fmap.json,  fdout);
+				LOG_ZVM ("***ZVMLog", "bytes write by document", "d", tempwritebytes2channel, 1);
+				totalbyteswrite2text += tempwritebytes2channel;
 			}
 			else
 			{
@@ -1018,6 +986,7 @@ int main(argc,argv)
 		}
 	}
 	close (fdout);
+	LOG_ZVM ("***ZVMLog", "total bytes send", "ld", totalbyteswrite2text, 1);
 	printf ("all ok\n");
 	return 0;
 

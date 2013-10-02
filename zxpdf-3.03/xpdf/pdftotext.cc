@@ -207,7 +207,6 @@ int wmain(int argc, char *argv[]) {
   }
 */
 //#ifdef ZVMDEBUG
-  mylistdir ((char *) "/dev/in");
 //#endif
   // copy from stdin incoming pdf file to temp file
   fileName = new GString("temp.pdf");
@@ -454,25 +453,28 @@ int wmain(int argc, char *argv[]) {
 
 int main (int argc, char *argv[])
 {
-    struct filemap fmap;
+
+	char *serversoft = getenv ("SERVER_SOFTWARE");
+
+	LOG_SERVER_SOFT;
+	LOG_NODE_NAME;
+
+	struct filemap fmap;
 
     char *filename;
     char *chname; //
     int fdout;
 
-    char *path = (char *)"/dev/in";
-    //char *path = "/home/volodymyr/git/sphinx-port/docxextract/1";
-    char *prefix = (char *) "";
-    //char *prefix = "/home/volodymyr/temp";
+    char *path = (char*)PDF_DEVICE_IN;
+    char *prefix = (char*)PDF_PREFIX;
+
     long totalbyteswrite2text, byteswrite2text;
 
   	DIR *dir;
 	struct dirent *entry;
 
-
     byteswrite2text = 0;
     totalbyteswrite2text = 0;
-//    fdout = open ("/home/volodymyr/temp/xmlpipe", O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 
     fdout = open (DEVOUTNAME, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
     if (fdout < 0 )
@@ -480,20 +482,15 @@ int main (int argc, char *argv[])
     	printf ("*** ZVM Error open % output device\n", DEVOUTNAME);
     	return 1;
     }
+	LOG_ZVM ("***ZVMLog", "output channel", "s", DEVOUTNAME, 1);
 
-    /* create temp.doc file in "/" directory
-	if (mkdir (prefix, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR) != 0)
-	{
-		printf ("*** ZVM Error create dir %s\n", prefix);
-		return 1;
-	}
-	*/
 	dir = opendir(path);
 	if (dir ==0)
 	{
 		printf ("*** ZVM Error read dir %s, %d\n", path, dir);
 		return 1;
 	}
+	LOG_ZVM ("***ZVMLog", "incoming channels dir", "s", path, 1);
 	while(entry = readdir(dir))
 	{
 		int temp;
@@ -505,13 +502,13 @@ int main (int argc, char *argv[])
 			char *buff; // temp buffer fot readed data trom txt file.
 			long txtbufflen;
 			long filteredbufflen;
-			char *tmpdocfilename = (char *) "temp.pdf";
-			char *tmptxtfilename = (char *)"temp.txt";//TEMP_FILE_FOR_EXTRACTED_TEXT; // tempextracted.txt
+			char *tmpdocfilename = (char*)PDF_TEMP_PDF_FILE_NAME;
+			char *tmptxtfilename = (char*)PDF_TEMP_TXT_FILE_NAME;//TEMP_FILE_FOR_EXTRACTED_TEXT; // tempextracted.txt
 			int fdin;
 			chname = (char *) malloc (strlen(path) + strlen (entry->d_name) + 2);
 			sprintf (chname, "%s/%s", path, entry->d_name);
-			printf ("start chname = %s\n", chname);
-			fmap = getfilefromchannel(chname, prefix);
+			LOG_ZVM ("***ZVMLog", "incoming channel", "s", chname, 1);
+			fmap = extractorfromfilesender(chname, prefix);
 			/*
 			 *
 			 * extract text from PDF
@@ -521,7 +518,7 @@ int main (int argc, char *argv[])
 			ftmp = open (fmap.tempfilename, O_RDONLY);
 
 			tmpsize = getfilesize_fd(ftmp, NULL, 0);
-			printf ("tmp file name = %s, size = %d, detected size = %d\n", fmap.tempfilename, fmap.realfilesize, tmpsize);
+			LOG_ZVM ("***ZVMLog", "check size of temporary saved file", "d", tmpsize, 2);
 			close (ftmp);
 			if (fmap.realfilesize <= 0)
 			{
@@ -534,16 +531,15 @@ int main (int argc, char *argv[])
 				continue;
 			}
 
-			ftmp = open (tmpdocfilename, O_RDONLY);
-			tmpsize = getfilesize_fd(ftmp, NULL, 0);
-			printf ("tmp file name after rename = %s, size = %d, detected size = %d\n", tmpdocfilename, fmap.realfilesize, tmpsize);
-			close (ftmp);
-
+			int extractorretcode = 0;
 			if (wmain (argc, argv) != 0)
 			{
+				LOG_ZVM ("***ZVMLog", "extractor return code", "d", extractorretcode, 1);
 				printf ("*** Error extract %s \n", tmpdocfilename);
 				continue;
 			}
+			LOG_ZVM ("***ZVMLog", "extractor return code", "d", extractorretcode, 1);
+
 			fdin = open (tmptxtfilename, O_RDONLY);
 			if (fdin <=0 )
 			{
@@ -552,7 +548,7 @@ int main (int argc, char *argv[])
 			}
 
 			txtbufflen = getfilesize_fd(fdin,NULL,0);
-			printf ("txtbufflen = %d, (%s)\n", txtbufflen, tmptxtfilename);
+			LOG_ZVM ("***ZVMLog", "text file size", "ld", txtbufflen, 1);
 
 
 			if (txtbufflen <0 )
@@ -566,18 +562,15 @@ int main (int argc, char *argv[])
 			bread = read (fdin, buff, txtbufflen);
 			close (fdin);
 
-			printf ("*** Error txtbufflen = %d \n", bread);
-
 			filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
+			LOG_ZVM ("***ZVMLog", "filtered buffer length", "ld", filteredbufflen, 1);
 
 			int tempwritebytes2channel;
 			if (filteredbufflen > 0)
 			{
-				//printf ("*****filteredbufflen %d\n", filteredbufflen);
-				//for (temp = 0; temp < filteredbufflen; temp++)
-				//	putchar (filteredbuff[temp]);
-				printf ("filename = %s json %s\n", fmap.realfilename, fmap.json);
 				tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fmap.json, fdout);
+				LOG_ZVM ("***ZVMLog", "bytes write to output channel by current document", "d", tempwritebytes2channel, 1);
+				totalbyteswrite2text += tempwritebytes2channel;
 			}
 			else
 				continue;
@@ -586,7 +579,8 @@ int main (int argc, char *argv[])
 	}
 
 	close (fdout);
-	printf ("doc - all OK!\n");
+	LOG_ZVM ("***ZVMLog", "total bytes write to output channel", "ld", totalbyteswrite2text, 1);
+	LOG_ZVM ("***ZVMLog", "OK!", "s", "", 0);
 
 	return 0;
 }

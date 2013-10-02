@@ -15,6 +15,8 @@ Timeout=500
 Node = 5
 =====================================================================
 Channel = tcp:1:, 	/dev/out/xmlpipecreator, 0, 0, 0, 0, 99999999, 99999999
+==Channel = {ABS_PATH}data/out/doc_text.txt, 	/dev/out/xmlpipecreator, 0, 0, 0, 0, 99999999, 99999999
+==Channel = {ABS_PATH}data/out/doc_testsave.txt, 	/dev/out/test, 0, 0, 0, 0, 99999999, 99999999
 =====================================================================
 == incoming nodes with *.doc files
 =====================================================================

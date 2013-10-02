@@ -1581,7 +1581,11 @@ bool SendRotate ( const CSphConfig & hConf, bool bForce )
 
 int main ( int argc, char ** argv )
 {
-	printf ("*** start indexer\n");
+
+	char *serversoft = getenv ("SERVER_SOFTWARE");
+	LOG_SERVER_SOFT;
+	LOG_NODE_NAME;
+
 
 	const char * sOptConfig = NULL;
 
@@ -1960,7 +1964,7 @@ int main ( int argc, char ** argv )
 #if SPH_DEBUG_LEAKS
 	sphAllocsStats ();
 #endif
-	printf ("*** ZVM indexing is OK!\n");
+	LOG_ZVM ("***ZVMLog", "indexing", "s", "OK", 1);
 	//mylistdir ("/");
 
 	if (bIndexedOk)

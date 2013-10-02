@@ -163,11 +163,11 @@ pCreateDiagram(const char *szTask, const char *szFilename)
 
 	FILE *f;
 
-	f = fopen (TEMP_FILE_FOR_EXTRACTED_TEXT, "w");
+	f = fopen (DOC_TEMP_FILE_FOR_EXTRACTED_TEXT, "w");
 
 	if (!f)
 	{
-		printf ("*** ZVM warning unable to open %s file for write. By default use stdout\n", TEMP_FILE_FOR_EXTRACTED_TEXT);
+		printf ("*** ZVM warning unable to open %s file for write. By default use stdout\n", DOC_TEMP_FILE_FOR_EXTRACTED_TEXT);
 		f = stdout;
 	}
 

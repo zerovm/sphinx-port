@@ -17,6 +17,8 @@
 #include <dirent.h>
 #include <zlib.h>
 
+
+
 /*
  * reverse null-terminated string
 */
@@ -62,7 +64,7 @@ void getext (const char *fname, char *ext)
  *
  * return size of file in bytes by file name if sizebyfilename=1
 */
-long getfilesize_fd (int fd, char *filename, int sizebyfilename)
+unsigned long getfilesize_fd (int fd, char *filename, int sizebyfilename)
 {
 	if (sizebyfilename == 1)
 		fd = open (filename, O_RDONLY);
@@ -91,6 +93,18 @@ long getfilesize_fd (int fd, char *filename, int sizebyfilename)
 	return fsize;
 }
 
+int getZVMLogLevel ()
+{
+	int iLocalZVMLogLevel = 0;
+	if (getenv("ZVM_LogLevel") != NULL)
+	{
+		iLocalZVMLogLevel = atoi (getenv("ZVM_LogLevel"));
+	}
+	else
+		iLocalZVMLogLevel = 0;
+	//printf (" !!! ");
+	return iLocalZVMLogLevel;
+}
 
 /*
 * write to indexer file document header for sphinx xml format
@@ -166,7 +180,6 @@ int getdatafromchannel (int fd, char *chname, int docID)
 	bread = read (fdin, &c, 1);
 	if (docID <= 0)
 		docID = 1;
-	printf ("%s\n", chname);
 	unsigned long crc = crc32(0L, Z_NULL, 0);
 	while ( bread > 0 )
 	{
@@ -190,8 +203,11 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		}
 
 		textsizebuff[textsizebufflen++] = '\0';
-		printf ("textsizebufflen = %d\n", textsizebufflen);
+
 		textsize = atoi (textsizebuff);
+
+		LOG_ZVM ("***ZVMLog", "text size", "ld", textsize, 1);
+
 
 		if (textsize <= 0 || bread <=0)
 			break;
@@ -204,54 +220,38 @@ int getdatafromchannel (int fd, char *chname, int docID)
 			lastc = c;
 			bread = read (fdin, &c, 1);
 		}
-
 		realfilename[realfilenamelen-2] = '\0';
-
-
+		LOG_ZVM ("***ZVMLog", "real file name", "s", realfilename, 1);
 ///////////////////
 //get json
 ///////////////////
 		bread = read (fdin, &c, 1);
 		lastc = '\0';
-
 		while ( !(c == '~' && lastc == '~') && bread > 0)
 		{
 			json [jsonlen++] = c;
 			lastc = c;
 			bread = read (fdin, &c, 1);
 		}
-
 		json[jsonlen-1] = '\0';
-
 ///////////////////
 // end read json
 ///////////////////
+		LOG_ZVM ("***ZVMLog", "json length", "zu", strlen (json), 2);
+		LOG_ZVM ("***ZVMLog", "json", "s", json, 3);
 
 		//read text data.
-		printf ("read data\n");
 		char *buff;
-
 		buff = (char *) malloc (textsize + 1);
-
 		bread = read (fdin, buff, textsize);
-
-//		printf ("bread = %d\n", bread);
-
-		/*
-		 * write to xml pipe readed data
-		*/
-
-		//
-
 		crc = crc32(crc, (const Bytef*) realfilename, strlen (realfilename));
+		LOG_ZVM ("***ZVMLog", "crc23", "lu", crc, 1);
 
 		printdochead (fd, realfilename, crc);
-
-		//printf ("%s\n", json);
 		printjson (fd, json);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// get tag CONTENT_LENGTH
+// get tags CONTENT_LENGTH && X_TIMESTAMP
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		unsigned int a = 0;
 		int linesymcount =0;
@@ -269,7 +269,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 					jsonline[linesymcount - 1] = '\0';
 				else
 					jsonline[linesymcount] = '\0';
-				printf ("jsonline = %s\n", jsonline);
+				LOG_ZVM ("***ZVMLog", "json line", "s", jsonline, 2);
 				startline = json + a;
 
 				if (strstr ( jsonline,"CONTENT_LENGTH") != NULL)
@@ -285,10 +285,8 @@ int getdatafromchannel (int fd, char *chname, int docID)
 			}
 		}
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// end get tag CONTENT_LENGTH
+// end get tag CONTENT_LENGTH && X_TIMESTAMP
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 
 		char *metawords = (char *) malloc (sizeof (char) * strlen (json));
 
@@ -298,11 +296,9 @@ int getdatafromchannel (int fd, char *chname, int docID)
 			if (json [a] != '"' && json [a] != ':' && json [a] != ',' && json [a] != '{' && json [a] != '}' )
 			{
 				metawords[a] = json [a];
-				//printf ("json = %c metawords %c\n", json [a], metawords [a]);
 			}
 			else
 			{
-				//printf ("**** %c \n", json [a]);
 				metawords[a] = ' ';
 			}
 			if (json [a] == '}')
@@ -338,25 +334,12 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		free(metawords);
 		free (pContentLength);
 		printdocfooter (fd);
-//		printf ("printdocfooter  OK!\n");
 		docID++;
-		/*
-		 *
-		*/
-		//test
-/*
-		int i;
-		printf ("realfilename - %s\n", realfilename);
-		printf ("realfilename size - %d\n buffer : \n", textsize);
-		for (i = 0; i < textsize; i++)
-		{
-			printf ("%c", buff[i]);
-		}
-		printf ("\n");
-*/
+
+		LOG_ZVM ("***ZVMLog", "doc count", "d", docID, 1);
+
 		bread = read (fdin, &c, 1);
 	}
-	printf ("chname = %s\n", chname);
 	return docID;
 }
 
@@ -504,118 +487,239 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 
 
 /*
- * put incoming file into channel in format filesize, real filename, json, file data
- */
-
-void putfile2channel (char * inputchname, char * outputchname, char *realfilename, char *json)
+ * get data (file doc, txt, docx, pdf ... etc.) from channel and save file data to temporary file in zerovm FS
+ * return struct - tempfilename, realfilename, size of file, json
+ *
+ * packet size 			10 bytes
+ * real filename size 	10 bytes
+ * file name 			N  bytes
+ * json size			10 bytes
+ * json 				N  bytes
+ * filecontetn size		10 bytes
+ * file contetnt		N bytes
+*/
+struct filemap extractorfromfilesender (char * chname, char *prefix)
 {
+	int fdIN, fdOUT;
+	struct filemap fmap;
+	char tempfilename[strlen (prefix) + 12]; // prefix + temp.tmp
 
-/*
-	if (tContentLength > FS_MAX_FILE_LENGTH)
-		printf ("Too big file. File %s skiped\n", filename);
-*/
+	int iNumBuffSize = PACKET_NUMBER_BLOCK_SIZE;
 
-	int fin, fout;
-	fin = open (inputchname, O_RDONLY); // open input channel
-	fout = open (outputchname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR); //open output channel
-	if ((fin < 0) || (fout < 0))
+
+	fmap.realfilesize = 0;
+	fdIN = open (chname, O_RDONLY);
+	if (fdIN < 0)
 	{
-		printf("error open file (), fdin=%d, fdout=%d\n", fin, fout);
-		return;
+		printf ("***ZVM Error open channel %s\n", chname);
+		return fmap;
 	}
 
-	long fsize = getfilesize_fd (fin, NULL, 0);
+	sprintf (tempfilename, "%s/temp.tmp", prefix);
+	strcpy (fmap.tempfilename, tempfilename);
 
-	char ext[strlen (realfilename)];
-	getext(realfilename, ext);
-
-
-	char bMetaOnly = 0;
-/*
-	if ((strncmp (ext, "txt", 3) == 0) && fsize > FS_MAX_TEXT_FILE_LENGTH)
+	fdOUT = open (tempfilename, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+	if (fdOUT < 0)
 	{
-		printf("Too big txt file ( > 2MB). Skipping content indexing for file %s. Indexing meta tags only.\n", realfilename);
-		bMetaOnly = 1;
+		printf ("*** ZVM Error create temp file %s\n", tempfilename);
+		return fmap;
 	}
 
-	else if ((strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0 || strncmp (ext, "pdf", 3) == 0 || strncmp (ext, "doc", 3) == 0) &&  fsize > FS_MAX_FILE_LENGTH)
+////////////////////////////////////////////////////////////////////
+// read data from channel
+////////////////////////////////////////////////////////////////////
+
+	char *buff = NULL;
+	char *resizebuff = NULL;
+	long buffsize;
+	long bread, readcount, blockreadsize, totalreadsize;
+
+	blockreadsize = READWRITEBUFFSIZE;
+	totalreadsize = 0;
+	readcount = 0;
+	buffsize = blockreadsize;
+	totalreadsize = 0;
+	bread = 0;
+	buff = (char *) malloc (blockreadsize);
+
+	while ((bread = (long)read (fdIN, buff + readcount * blockreadsize, blockreadsize)) > 0)
 	{
-		printf("Too big odt, doc, docx, pdf file ( > 10MB). Skipping content indexing for file %s. Indexing meta tags only.\n", realfilename);
-		bMetaOnly = 1;
-	}
-*/
-	if (strstr(outputchname,"other") == NULL)
-		bMetaOnly = 0;
-	else
-		bMetaOnly = 1;
+		buffsize += blockreadsize;
+		resizebuff = (char *) realloc ((char *)buff, buffsize);
 
-	char *buff;
-	char *headbuf = (char *) malloc (strlen (realfilename) + 20 + strlen (json));
-	//check for max file length or nont text format
-/*
-	if (fsize > FS_MAX_TEXT_FILE_LENGTH)
+		if (resizebuff != NULL )
+		{
+			buff = resizebuff;
+		}
+		else
+		{
+			fmap.realfilesize = 0;
+			return fmap;
+		}
+		totalreadsize += bread;
+		readcount++;
+	}
+
+	LOG_ZVM ("***ZVMLog", "total read size", "ld", totalreadsize, 1);
+
+
+	if (totalreadsize <= 0)
 	{
-		sprintf (headbuf,"%d %s //%s ~~", 5, realfilename, json);
+		close (fdIN);
+		close (fdOUT);
+		free (buff);
+		fmap.realfilesize = 0;
+		return fmap;
 	}
-	else
-		sprintf (headbuf,"%d %s //%s ~~", (int) fsize, realfilename, json);
-*/
+////////////////////////////////////////////////////////////////////
+// END read data from channel
+////////////////////////////////////////////////////////////////////
 
-	if (bMetaOnly == 1)
-	{
-		printf ("meta only\n");
-		sprintf (headbuf,"%d %s //%s ~~", 5, realfilename, json);
-	}
-	else
-	{
-		sprintf (headbuf,"%d %s //%s ~~", (int) fsize, realfilename, json);
-	}
+///////////////////////////////////////////////////////////////////
+// parse readed data
+////////////////////////////////////////////////////////////////////
 
 
+	char numberbuff [iNumBuffSize + 1];
+	long bytesparsed = 0;
+	// read packet size 10 bytes
+	strncpy (numberbuff, buff, iNumBuffSize);
+	numberbuff [iNumBuffSize + 1]  = '\0';
+	bytesparsed += iNumBuffSize;
 
-	buff = (char *) malloc (fsize + strlen (headbuf));
+	long checkpacketsize = 0;
+	long filenamelength = 0;
+	long jsonlength = 0;
+	long filelength = 0;
+	// check packet size
+	checkpacketsize = atol (numberbuff);
+	LOG_ZVM ("***ZVMLog", "detected packet size", "ld", checkpacketsize, 1);
+
+	if (checkpacketsize != totalreadsize)
+		printf ("*** Warning conflict packet size. Real readed bytes %lu, packet size specified in header %lu\n", totalreadsize, checkpacketsize);
+
+	// read file name size
+	strncpy (numberbuff, buff + bytesparsed, iNumBuffSize);
+	numberbuff[iNumBuffSize + 1] = '\0';
+	filenamelength =  atol (numberbuff);
+	bytesparsed += iNumBuffSize;
+
+	// read filename
+	strncpy (fmap.realfilename, buff + bytesparsed, filenamelength);
+	fmap.realfilename[filenamelength] = '\0';
+	bytesparsed += filenamelength;
+	LOG_ZVM ("***ZVMLog", "real file name size", "zu", strlen (fmap.realfilename), 2);
+	LOG_ZVM ("***ZVMLog", "real filename", "s", fmap.realfilename, 1);
+
+	// read json length
+	strncpy (numberbuff, buff + bytesparsed, iNumBuffSize);
+	numberbuff[iNumBuffSize + 1] = '\0';
+	jsonlength =  atol (numberbuff);
+	bytesparsed += iNumBuffSize;
+	LOG_ZVM ("***ZVMLog", "json size", "ld", jsonlength, 2);
+
+	//read json
+	char *json = (char *) malloc (jsonlength * sizeof (char));
+	strncpy (json, buff + bytesparsed, jsonlength);
+	json [jsonlength] = '\0';
+	fmap.json = json;
+	bytesparsed += jsonlength;
+	LOG_ZVM ("***ZVMLog", "json", "s", json, 3);
+
+	// read filelength
+	strncpy (numberbuff, buff + bytesparsed, iNumBuffSize);
+	numberbuff[iNumBuffSize + 1] = '\0';
+	filelength =  atol (numberbuff);
+	bytesparsed += iNumBuffSize;
+	LOG_ZVM ("***ZVMLog", "filelength", "ld", filelength, 1);
+
+	// write file content to temp file
 	long bwrite = 0;
+	bwrite = write (fdOUT, buff + bytesparsed, filelength);
 
-	//= write (fout, headbuf, strlen (headbuf)); // write header of file -
-	strncpy (buff, headbuf, strlen (headbuf));
+	//check
+	if ( bwrite != filelength)
+		printf ("***Something wrong ... \n");
 
-	long bread = 0;
-	//check for max file length
-/*
-	if (fsize > FS_MAX_TEXT_FILE_LENGTH)
-	{
-		sprintf (buff + strlen (headbuf), "other");
-		fsize = 5;
-	}
-	else
-		bread = read (fin, buff + strlen (headbuf), fsize);
-*/
-
-	if (bMetaOnly == 1)
-	{
-		sprintf (buff + strlen (headbuf), "other");
-		fsize = 5; // length of text "other"
-		bread = fsize;
-	}
-	else
-	{
-		bread = read (fin, buff + strlen (headbuf), fsize);
-	}
-
-
-
-	bwrite += write (fout, buff, bread + strlen (headbuf));
-
-	close (fin);
-	close (fout);
-	printf ("%ld bytes writed into file %s from file %s, realfilename %s\n", bwrite, outputchname, inputchname, realfilename);
+	fmap.realfilesize = bwrite;
+	close (fdIN);
+	close (fdOUT);
 	free (buff);
-	return;
+	return fmap;
 }
 
 /*
- * put extracted text data to channel in format: size of text, real file name, extracted text
+ * read data from input file and put it in to output channel to extractor
+ * in format
+ *
+ * packet size 			10 bytes
+ * real filename size 	10 bytes
+ * file name 			N  bytes
+ * json size			10 bytes
+ * json 				N  bytes
+ * filecontetn size		10 bytes
+ * file contetnt		N bytes
  */
+void filesender2extractor (char * inputchname, char * outputchname, char *realfilename, char *json)
+{
+	int fdIN, fdOUT;
+	unsigned long uPacketSize = 0;
+	unsigned long fsize = 0;
+	char bMetaOnly = 0;
+	long bwrite, bread;
+
+	fdIN = open (inputchname, O_RDONLY);
+	fdOUT = open (outputchname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+
+	if (fdIN < 0)
+	{
+		printf("*** Error open input channel %s, fdIN=%d\n", inputchname, fdIN);
+	}
+
+	if (fdOUT < 0)
+	{
+		printf("*** Error open output channel %s, fdOUT=%d\n", inputchname, fdOUT);
+	}
+
+	fsize = getfilesize_fd (fdIN, NULL, 0);
+
+	if (strstr(outputchname,"other") == NULL)
+		bMetaOnly = 0;
+	else
+	{
+		bMetaOnly = 1;
+	}
+
+	uPacketSize = 10;							// 10 packet length
+	uPacketSize += strlen (realfilename) + 10;	// real file name + length
+	uPacketSize += strlen (json) + 10; 			// json length + length
+	if (bMetaOnly == 1)
+		uPacketSize += 15; 						// 10 size  + "other"
+	else
+		uPacketSize += fsize + 10; 				// 10 size  + file content
+
+	char *buff = (char *) malloc (sizeof (char) * uPacketSize);
+
+	if (bMetaOnly == 1)
+	{
+		sprintf (buff, "expects%10lu%10zu%s%10zu%s%10zu%s",uPacketSize, strlen (realfilename), realfilename, strlen (json), json, 5, "other");
+	}
+	else
+	{
+		sprintf (buff, "%10lu%10zu%s%10zu%s%10lu",uPacketSize, strlen (realfilename), realfilename, strlen (json), json, fsize);
+		bread = read (fdIN, buff + strlen (buff), fsize);
+	}
+
+	bwrite = write (fdOUT, buff, uPacketSize);
+
+	close (fdIN);
+	close (fdOUT);
+
+	LOG_ZVM ("***ZVMLog", "bytes write to output channel", "ld", bwrite, 1);
+
+	free (buff);
+	return;
+}
 
 int puttext2channel (char *bufftext, long size, char *realfilename, char *json, int channelfd)
 {
@@ -701,15 +805,14 @@ void printstat (long mainbytes, long deltabytes, int filecount, const char * mai
 	float konvdeltabytes = (deltabytes / 1024) > 0 ? (deltabytes / (1024 * 1024)) > 0 ? (deltabytes / (1024 * 1024 * 1024)) > 0 ? (deltabytes / (1024.0 * 1024.0 * 1024.0)) : (deltabytes / (1024.0 * 1024.0)) : (deltabytes / 1024.0) : deltabytes;
 	const char *strmain = (mainbytes / 1024) > 0 ? (mainbytes / (1024 * 1024)) > 0 ? (mainbytes / (1024 * 1024 * 1024)) > 0 ? "Gb" : "Mb" : "Kb" : "B";
 	const char *strdelta = (deltabytes / 1024) > 0 ? (deltabytes / (1024 * 1024)) > 0 ? (deltabytes / (1024 * 1024 * 1024)) > 0 ? "Gb" : "Mb" : "Kb" : "B";
-
-	printf ("%s = %ld, (%5.2f %s)\n", mainindexname, mainbytes, konvmainbytes, strmain);
-	printf ("%s = %ld, (%5.2f %s)\n", deltaindexname, deltabytes, konvdeltabytes, strdelta);
-	printf ("file count = %d\n", filecount);
+	if ( getZVMLogLevel() == 1 )
+	{
+		printf ("***ZVMLog [LogLevel>0] [%s] \t %ld \tbytes, \t(%5.2f %s)\n", mainindexname, mainbytes, konvmainbytes, strmain);
+		printf ("***ZVMLog [LogLevel>0] [%s] \t %ld \tbytes, \t(%5.2f %s)\n", deltaindexname, deltabytes, konvdeltabytes, strdelta);
+		printf ("***ZVMLog [LogLevel>0] [file count] \t %d\n", filecount);
+	}
 	return;
 }
-
-
-
 
 void unpackindex_fd (char *	devname)
 {
@@ -915,11 +1018,12 @@ void unpackindex_fd (char *	devname)
  * */
 void newbufferedunpack (char *	devname)
 {
-#ifdef TEST
-	printf ("*** ZVM (unpackindexfd) start unpack from %s\n", devname);
-#endif
+
+	LOG_ZVM ("***ZVMLog", "index pack device (input)", "s", devname, 2);
 	int fdinfile;
 	char *dirName = (char*)INDEXDIRNAME;
+	LOG_ZVM ("***ZVMLog", "index directory name", "s", dirName, 2);
+
   	DIR *dir;
 	dir = opendir(dirName);
 	if (dir == NULL)
@@ -940,7 +1044,6 @@ void newbufferedunpack (char *	devname)
 		printf ("*** ZVM error input indexpack file\n");
 		return;
 	}
-	char c;
 	int bread = 1;
 	long deltabytes = 0;
 	long mainbytes = 0;
@@ -948,6 +1051,7 @@ void newbufferedunpack (char *	devname)
 
 	char blocksizestr [10];
 	size_t blocksize;
+	LOG_ZVM ("***ZVMLog", "read and write buff size", "zu", READWRITEBUFFSIZE, 2);
 	while (bread > 0)
 	{
 		if (filecount > 50)
@@ -963,22 +1067,17 @@ void newbufferedunpack (char *	devname)
 		}
 		blocksizestr[10] = '\0';
 		blocksize = atoi (blocksizestr);
-#ifdef TEST
-		printf("\nfile name length %s\n", blocksizestr);
-#endif
+
 		// read file name
 		bread = read (fdinfile, readbuf, blocksize);
 		readbuf [blocksize] = '\0';
-#ifdef TEST
-		printf("filename %s\n", readbuf);
-#endif
+		LOG_ZVM ("***ZVMLog", "file name", "s", readbuf, 2);
+
 		// получение количества байт в сохраненном файле
 		bread = read(fdinfile, blocksizestr, 10);
 		blocksizestr[10] = '\0';
-#ifdef TEST
-		printf("filesize %s\n", blocksizestr);
-#endif
 		blocksize = atoi (blocksizestr);
+		LOG_ZVM ("***ZVMLog", "file size", "zu", blocksize, 2);
 
 		size_t filelen = 0;
 		filelen = blocksize;
@@ -996,6 +1095,7 @@ void newbufferedunpack (char *	devname)
 		// readind and save data file
 		char *buff = NULL;
 		size_t blockreadsize = READWRITEBUFFSIZE;
+
 		int readb = 0;//read(fdinfile, buff,filelen);
 		int writeb = 0;//write(fdefile, buff,readb);
 
@@ -1011,7 +1111,6 @@ void newbufferedunpack (char *	devname)
 			int i=filelen / blockreadsize + 1;
 			for (; i > 0; i--)
 			{
-
 				if (filelen < blockreadsize)
 					blockreadsize = filelen;
 				if (i == 1)
@@ -1042,15 +1141,9 @@ void newbufferedunpack (char *	devname)
 		close (fdefile);
 		if (readb != writeb)
 			printf ("*** Warning while unpacking index file, readb = %d, writeb = %d\n", readb, writeb);
-
-#ifdef TEST
-		else
-			printf ("*** ZVM unpack file %s (%d bytes)  - OK!\n", readbuf, writeb);
-#endif
+//			LOG_ZVM ("***ZVMLog", "unpacked file size", "d", writeb, 2);
 	}
-#ifdef TEST
 	printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char* ) DELTAINDEX);
-#endif
 	close (fdinfile);
 }
 
@@ -1060,14 +1153,14 @@ void newbufferedunpack (char *	devname)
 
 void newbufferedpack (char *devname, char *dirname)
 {
-#ifdef TEST
-	printf("*** ZVM (bufferedpackindexfd_) start pack index to %s \n", devname);
-#endif
+
+	LOG_ZVM ("***ZVMLog", "start packing", "s", "OK", 2);
+	LOG_ZVM ("***ZVMLog", "device to pack (output)", "s", devname, 2);
+	LOG_ZVM ("***ZVMLog", "path to files", "s", dirname, 2);
+
 	int fdpackfile;
 
 	fdpackfile = open (devname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
-
-
 	if ( fdpackfile  <= 0 )
 	{
 		printf ("*** ZVM Error open packfile (write)%s\n", devname);
@@ -1084,9 +1177,8 @@ void newbufferedpack (char *devname, char *dirname)
 	if (!dir)
 		printf ("*** ZVM Error open DIR %s\n", indexpath);
 	int blocksize = READWRITEBUFFSIZE; // 10 Mb
-#ifdef TEST
-	printf ("blocksize = %d\n", blocksize);
-#endif
+
+	LOG_ZVM ("***ZVMLog", "read and write block size", "d", blocksize, 2);
 	char *buff = NULL;
 	buff = (char *) malloc (blocksize);
 
@@ -1123,7 +1215,6 @@ void newbufferedpack (char *devname, char *dirname)
 			{
 				while ((bread = read(fd, buff, blocksize)) > 0)
 				{
-					//bread = read (fd, buff, blocksize);
 					bytecount += bread;
 					bwrite = write(fdpackfile, buff, bread);
 				}
@@ -1131,9 +1222,9 @@ void newbufferedpack (char *devname, char *dirname)
 				bytecount = 0;
 
 			close (fd);
-#ifdef TEST
-			printf ("file %s (%d bytes) packed - OK!\n", newpath, (int) size);
-#endif
+			LOG_ZVM ("***ZVMLog", "packed file name", "s", newpath, 2);
+			LOG_ZVM ("***ZVMLog", "packed file size", "d", size, 2);
+
 			// for statistic data
 			char *indexnameptr = NULL;
 			if ((indexnameptr = strstr (newpath,DELTAINDEX)) != NULL )
@@ -1148,10 +1239,8 @@ void newbufferedpack (char *devname, char *dirname)
 	}
 	free (buff);
 	close (fdpackfile);
-#ifdef TEST
 	printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char *) DELTAINDEX);
-	printf ("*** ZVM pack completed successfully!\n");
-#endif
+	LOG_ZVM ("***ZVMLog", "packed all files", "s", "OK", 2);
 }
 
 void bufferedpackindexfd (char * devname)

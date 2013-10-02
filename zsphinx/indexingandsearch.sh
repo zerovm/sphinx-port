@@ -83,7 +83,7 @@ do
 #		then
 #			echo nodecount $NODECOUNT tempnodecount $TEMPNODECOUNT 
 	echo run $file
-	${ZVM_PREFIX}/zerovm -P -M$file &
+	${ZVM_PREFIX}/bin/zerovm -P -M$file &
 #			echo OK
 #		else
 #			echo nodecount $NODECOUNT tempnodecount $TEMPNODECOUNT q
@@ -94,7 +94,7 @@ do
     fi
 done
 echo run manifest/indexer.manifest
-time ${ZVM_PREFIX}/zerovm -P -Mmanifest/indexer.manifest
+time ${ZVM_PREFIX}/bin/zerovm -P -Mmanifest/indexer.manifest
 
 #${ZVM_PREFIX}/zerovm -Mmanifest/xmlpipecreator.manifest &
 #echo run manifest/xmlpipecreator.manifest

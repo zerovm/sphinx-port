@@ -29,6 +29,7 @@ name=HTTP_ETAG,	 		value=45d5e3b1f8fac5c20dc4af8fe8f6fb9a
 #name=HTTP_X_TIMESTAMP,		value=1380108876.06100
 name=HTTP_X_TIMESTAMP,		value=1380108877,06100
 name=HTTP_X_OBJECT_META_TYPE,	value=doc
+name=ZVM_LogLevel, 		value=1
 
 [args]
 args=filesender-{DOCNUMBER}

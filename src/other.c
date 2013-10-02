@@ -13,6 +13,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 
+int iZVMLogLevel = 1;
+
 int main (int argc, char *argv[])
 {
 
@@ -59,7 +61,7 @@ int main (int argc, char *argv[])
 
 			sprintf (chname, "%s/%s", path, entry->d_name);
 			printf ("start chname = %s\n", chname);
-			fmap = getfilefromchannel(chname, prefix);
+			fmap = extractorfromfilesender(chname, prefix);
 			free (chname);
 
 			int tmpsize, ftmp;

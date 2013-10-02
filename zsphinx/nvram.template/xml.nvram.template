@@ -7,3 +7,6 @@ args=xmlpipecreator --duplicate
 
 #[debug]
 #verbosity=4
+
+[env]
+name=ZVM_LogLevel, value=1

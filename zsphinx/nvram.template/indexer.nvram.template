@@ -9,3 +9,7 @@ args=indexer --config index/zsphinx.conf deltaindex
 
 #[debug]
 #verbosity=3
+
+
+[env]
+name=ZVM_LogLevel, value=1

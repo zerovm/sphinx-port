@@ -41,17 +41,19 @@ void mylistdir_xmlpipe (int fd, char *path)
 	}
 	while(entry = readdir(dir))
 	{	
-		printf ("%s/%s\n",path, entry->d_name);
+
 		if(!(entry->d_type == DT_DIR && (strcmp (entry->d_name, "input")) != 0))
 		{
 			char devname [strlen (path) + strlen (entry->d_name) + 5];
 			sprintf (devname, "%s/%s", path, entry->d_name);
+			LOG_ZVM ("***ZVMLog", "channel name", "s", devname, 1);
 			int doccount;
 			doccount = getdatafromchannel (fd, devname, docID);
-			printf ("read and write OK %s/%s\n",path, entry->d_name);
+			LOG_ZVM ("***ZVMLog", "doc in current channel", "d", doccount - docID, 1);
 			docID = doccount;
 		}
 	}
+	LOG_ZVM ("***ZVMLog", "total docs", "d", docID, 1);
 	closedir(dir);
 }
 
@@ -125,9 +127,7 @@ void createxmlpipe (int fd)
 </sphinx:schema>\n\
 \n";
 	int bwrite;
-	printf ("write header of xml document\n");
 	bwrite = write (fd, xmldochead, strlen (xmldochead));
-	printf ("%d bytes header writed \n", bwrite);
 	return;
 }
 
@@ -141,6 +141,10 @@ void closexmlpipe (int fd)
 
 int main(int argc, char **argv)
 {
+	char *serversoft = getenv ("SERVER_SOFTWARE");
+	LOG_SERVER_SOFT;
+	LOG_NODE_NAME;
+
 	char c = '0';
 	char p[] = "/dev/in";
 	int fd;
@@ -155,6 +159,10 @@ int main(int argc, char **argv)
 			sprintf (deviceoutputname, "/dev/output");
 	}
 
+	LOG_ZVM ("***ZVMLog", "incoming channels dir", "s", p, 1);
+
+	LOG_ZVM ("***ZVMLog", "output channel name", "s", deviceoutputname, 1);
+
 	fd = open (deviceoutputname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 
 	if (fd <= 0)
@@ -162,6 +170,7 @@ int main(int argc, char **argv)
 		printf ("*** ZVM. Error open %s deivce\n", DEV_OUTPUT_NAME);
 		return 1;
 	}
+
 #ifdef ZVMDEBUG
 	printf ("*** output device is %d \n", outf);
 	printf ("*** start transfer to indexer\n");
@@ -171,7 +180,7 @@ int main(int argc, char **argv)
 	docID = getmaxid (MAXID_DEV_NAME_IN);
 
 */
-	printf ("*** ZVM start search incoming devices\n");
+	LOG_ZVM ("***ZVMLog", "doc count", "d", docID, 1);
 	createxmlpipe (fd);
 	mylistdir_xmlpipe (fd, p);
 	closexmlpipe (fd);
