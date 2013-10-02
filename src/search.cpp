@@ -346,8 +346,11 @@ int mystrindex (const char *s, const char *t)
 
 int main ( int argc, char ** argv )
 {
-//	mylistdir("/");
-//	exit (0);
+
+	char *serversoft = getenv ("SERVER_SOFTWARE");
+	LOG_SERVER_SOFT;
+	LOG_NODE_NAME;
+
 
 	newbufferedunpack( (char *)S_DEVINPUTDATA);
 
@@ -973,7 +976,7 @@ int main ( int argc, char ** argv )
 	}
 
 	sphShutdownWordforms ();
-}
+	}
 
 //
 // $Id: search.cpp 3701 2013-02-20 18:10:18Z deogar $

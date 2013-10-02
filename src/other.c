@@ -18,14 +18,19 @@ int iZVMLogLevel = 1;
 int main (int argc, char *argv[])
 {
 
+	char *serversoft = getenv ("SERVER_SOFTWARE");
+
+	LOG_SERVER_SOFT;
+	LOG_NODE_NAME;
+
     struct filemap fmap;
 
     char *filename;
     char *chname; //
     int fdout;
 
-    char *path = "/dev/in";
-    char *prefix = "";
+    char *path = (char *) OTHER_DEVICE_IN;
+    char *prefix = (char *) OTHER_PREFIX;
     long  byteswrite2text;
 
   	DIR *dir;
@@ -41,12 +46,16 @@ int main (int argc, char *argv[])
     	return 1;
     }
 
+	LOG_ZVM ("***ZVMLog", "output device", "s", DEVOUTNAME, 1);
+
 	dir = opendir(path);
 	if (dir ==0)
 	{
 		printf ("*** ZVM Error read dir %s, %d\n", path, dir);
 		return 1;
 	}
+
+	LOG_ZVM ("***ZVMLog", "incoming channel dir", "s", path, 1);
 	while(entry = readdir(dir))
 	{
 		int temp;
@@ -60,15 +69,18 @@ int main (int argc, char *argv[])
 			chname = malloc (strlen(path) + strlen (entry->d_name) + 2);
 
 			sprintf (chname, "%s/%s", path, entry->d_name);
-			printf ("start chname = %s\n", chname);
+			LOG_ZVM ("***ZVMLog", "channel name", "s", chname, 1);
+
 			fmap = extractorfromfilesender(chname, prefix);
 			free (chname);
+			LOG_ZVM ("***ZVMLog", "real file name", "s", fmap.realfilename, 1);
 
 			int tmpsize, ftmp;
 			ftmp = open (fmap.tempfilename, O_RDONLY);
 
 			tmpsize = getfilesize_fd(ftmp, NULL, 0);
-			printf ("tmp file name = %s, size = %d, detected size = %d\n", fmap.tempfilename, fmap.realfilesize, tmpsize);
+			LOG_ZVM ("***ZVMLog", "temp file name", "s", fmap.tempfilename, 1);
+			LOG_ZVM ("***ZVMLog", "real file size", "s", fmap.realfilesize, 1);
 			close (ftmp);
 
 			if (fmap.realfilesize <= 0)
@@ -86,7 +98,8 @@ int main (int argc, char *argv[])
 
 			char *filteredbuff = "other"; //
 
-			printf ("filename = %s json %s\n", fmap.realfilename, fmap.json);
+			LOG_ZVM ("***ZVMLog", "json length", "d", strlen (fmap.json), 2);
+			LOG_ZVM ("***ZVMLog", "json length", "s", fmap.json, 3);
 			tempwritebytes2channel = puttext2channel (filteredbuff, strlen (filteredbuff), fmap.realfilename, fmap.json, fdout);
 		}
 	}

@@ -476,7 +476,7 @@ int main (int argc, char *argv[])
 
 	close (fdout);
 	LOG_ZVM ("***ZVMLog", "total bytes write to output channel", "ld", totalbyteswrite2text, 1);
-	LOG_ZVM ("***ZVMLog", "OK!", "s", "", "");
+	LOG_ZVM ("***ZVMLog", "OK!", "s", "", 1);
 
 	return 0;
 }

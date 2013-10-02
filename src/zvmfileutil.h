@@ -11,8 +11,6 @@
 #define MAXFIENAME 1024
 
 #define DEVOUTNAME "/dev/out/xmlpipecreator"
-/* #define DEVOUTNAME "/dev/output" */
-/* #define DEVOUTNAME "/home/volodymyr/temp/docxextract" */
 
 
 #define SERVERSOFT "zerocloud"
@@ -25,6 +23,9 @@
 #define PDF_PREFIX ""
 #define PDF_TEMP_PDF_FILE_NAME "temp.pdf"
 #define PDF_TEMP_TXT_FILE_NAME "temp.txt"
+
+#define OTHER_DEVICE_IN "/dev/in"
+#define OTHER_PREFIX ""
 
 
 
