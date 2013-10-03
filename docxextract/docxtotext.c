@@ -688,30 +688,6 @@ int gettextfromxmlodt (char *filteredbuff)
 	return filteredbuffsize;
 }
 
-
-int savefromstdin (void)
-{
-	FILE *f;
-	f = fopen (FILENAME, "w");
-	if (!f)
-	{
-		printf ("*** ZVM Error save file from stdin\n");
-		return 1;
-	}
-	char c;
-	int count;
-	count = 0;
-	while (!feof (stdin))
-	{
-		count++;
-		c = getchar ();
-		putc (c, f);
-	}
-	fclose (f);
-	printf ("%d bytes received form stdin\n", count);
-	return 0;
-}
-
 int getdoctype (char *filename)
 {
 	char doctypename[strlen(filename)];
@@ -839,6 +815,7 @@ int main(argc,argv)
 
     char *chname; //
     int fdout;
+	struct filemap fmap;
 
 	char *serversoft = getenv ("SERVER_SOFTWARE");
 	LOG_SERVER_SOFT;
@@ -858,10 +835,28 @@ int main(argc,argv)
     byteswrite2text = 0;
     totalbyteswrite2text = 0;
 
-    fdout = open (DEVOUTNAME, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+    char devoutname [strlen (DEVOUTNAME) * 2];
+    int bToOutput = 0;
+    int i = 0;
+
+    for (i = 0; i < argc; i++)
+    {
+    	if (strcmp (argv[i],"--save") == 0 )
+    	{
+    		bToOutput = 1;
+    	}
+    }
+
+    if (bToOutput == 1)
+    	sprintf (devoutname, "%s", "/dev/output");
+    else
+    	sprintf (devoutname, "%s", DEVOUTNAME);
+
+
+    fdout = open (devoutname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
     if (fdout < 0 )
     {
-    	printf ("*** ZVM Error open % output device\n", DEVOUTNAME);
+    	printf ("*** ZVM Error open %s output device\n", devoutname);
     	return 1;
     }
 	if (mkdir (prefix, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR) != 0)
@@ -879,8 +874,7 @@ int main(argc,argv)
 	char *buff; 		// temp buffer for readed data trom txt file.
 	long buffsize = 1024 * 1024 * 10;// 10 Mb
 
-	LOG_ZVM ("***ZVMLog", "output device name", "s", DEVOUTNAME, 1);
-
+	LOG_ZVM ("***ZVMLog", "output device name", "s", devoutname, 1);
 	LOG_ZVM ("***ZVMLog", "buffer size for incoming files", "ld", buffsize, 2);
 
 	filteredbuff = (char *) malloc (buffsize);
@@ -894,24 +888,22 @@ int main(argc,argv)
 		filteredbufflen =0;
 		LOG_ZVM ("***ZVMLog", "incoming channel name", "s", entry->d_name, 1);
 
+		fmap.json = NULL;
+
 		if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
 		{
 			long txtbufflen;
 			long filteredbufflen = 0;
-			struct filemap fmap;
 			chname = malloc (strlen(path) + strlen (entry->d_name) + 2);
 			sprintf (chname, "%s/%s", path, entry->d_name);
 			LOG_ZVM ("***ZVMLog", "incoming channel name", "s", chname, 1);
 
 			// add logging
+
 			fmap = extractorfromfilesender(chname, prefix);
 
 			LOG_ZVM ("***ZVMLog", "real filename", "s", fmap.realfilename, 2);
 			LOG_ZVM ("***ZVMLog", "real filesize", "ld", fmap.realfilesize, 2);
-
-			LOG_ZVM ("***ZVMLog", "json size", "d", strlen (fmap.json), 2);
-			LOG_ZVM ("***ZVMLog", "json", "s", fmap.json, 3);
-
 
 			if (fmap.realfilesize <= 0)
 			{
@@ -960,9 +952,7 @@ int main(argc,argv)
 				LOG_ZVM ("***ZVMLog", "filtered buff length", "d", filteredbufflen, 1);
 		    	break;
 			}
-
 			int i;
-
 
 #ifdef TEST
 			for (i = 0; i < filteredbufflen; i++)
@@ -989,5 +979,4 @@ int main(argc,argv)
 	LOG_ZVM ("***ZVMLog", "total bytes send", "ld", totalbyteswrite2text, 1);
 	printf ("all ok\n");
 	return 0;
-
 }

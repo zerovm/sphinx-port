@@ -122,6 +122,7 @@ char * generateJson ()
 
 				char *pKeyVal [strlen(pKey) + strlen (pVal) + 2];
 				sprintf (pKeyVal, "%s:%s", pKey, pVal);
+				LOG_ZVM ("***ZVMLog", "searched key", "s", tagfilters_remove_prefix[j], 3);
 				LOG_ZVM ("***ZVMLog", "Key:Val", "s", pKeyVal, 3);
 
 				jsonsize += addsize;
@@ -173,6 +174,8 @@ int main (int argc, char *argv[])
 	size_t tContentLength = 0;
 
 	char bPlainText = 0; //
+	int bToOutput = 0;
+	int i = 0;
 
 	LOG_SERVER_SOFT;
 	LOG_NODE_NAME;
@@ -203,7 +206,7 @@ int main (int argc, char *argv[])
 
 
 
-	LOG_ZVM ("***ZVMLog", "content type", "s", filename, 2);
+	LOG_ZVM ("***ZVMLog", "content type", "d", bPlainText, 2);
 	LOG_ZVM ("***ZVMLog", "content length", "zu", tContentLength, 1);
 	LOG_ZVM ("***ZVMLog", "file name", "s", filename, 1);
 
@@ -228,6 +231,12 @@ int main (int argc, char *argv[])
 		else
 			sprintf (devnameout, "/dev/out/other");
 	}
+
+	for (i = 0; i < argc; i++ )
+		if (strcmp (argv[i], "--save") == 0)
+		{
+			sprintf (devnameout, "/dev/output");
+		}
 
 	LOG_ZVM ("***ZVMLog", "output device", "s", devnameout, 1);
 	filesender2extractor (devnamein, devnameout, filename, json);

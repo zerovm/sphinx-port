@@ -368,14 +368,32 @@ int main (int argc, char *argv[])
     byteswrite2text = 0;
     totalbyteswrite2text = 0;
 
+    char devoutname [strlen (DEVOUTNAME) * 2];
+    int bToOutput = 0;
+    int i = 0;
 
-    fdout = open (DEVOUTNAME, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+    for (i = 0; i < argc; i++)
+    {
+    	if (strcmp (argv[i],"--save") == 0 )
+    	{
+    		bToOutput = 1;
+    	}
+    }
+
+    if (bToOutput == 1)
+    	sprintf (devoutname, "%s", "/dev/output");
+    else
+    	sprintf (devoutname, "%s", DEVOUTNAME);
+
+
+
+    fdout = open (devoutname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
     if (fdout < 0 )
     {
-    	printf ("*** ZVM Error open %s output device\n", DEVOUTNAME);
+    	printf ("*** ZVM Error open %s output device\n", devoutname);
     	return 1;
     }
-	LOG_ZVM ("***ZVMLog", "output channel", "s", DEVOUTNAME, 1);
+	LOG_ZVM ("***ZVMLog", "output channel", "s", devoutname, 1);
 
 
 	dir = opendir(path);

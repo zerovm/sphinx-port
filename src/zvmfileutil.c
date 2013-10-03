@@ -619,12 +619,13 @@ struct filemap extractorfromfilesender (char * chname, char *prefix)
 	LOG_ZVM ("***ZVMLog", "json size", "ld", jsonlength, 2);
 
 	//read json
-	char *json = (char *) malloc (jsonlength * sizeof (char));
+	char *json = (char *) malloc (jsonlength * sizeof (char) + 1);
 	strncpy (json, buff + bytesparsed, jsonlength);
 	json [jsonlength] = '\0';
 	fmap.json = json;
 	bytesparsed += jsonlength;
 	LOG_ZVM ("***ZVMLog", "json", "s", json, 3);
+	LOG_ZVM ("***ZVMLog", "fmap.json size", "ld", strlen (fmap.json), 2);
 
 	// read filelength
 	strncpy (numberbuff, buff + bytesparsed, iNumBuffSize);
@@ -702,7 +703,7 @@ void filesender2extractor (char * inputchname, char * outputchname, char *realfi
 
 	if (bMetaOnly == 1)
 	{
-		sprintf (buff, "expects%10lu%10zu%s%10zu%s%10zu%s",uPacketSize, strlen (realfilename), realfilename, strlen (json), json, 5, "other");
+		sprintf (buff, "%10lu%10zu%s%10zu%s%10zu%s",uPacketSize, strlen (realfilename), realfilename, strlen (json), json, 5, "other");
 	}
 	else
 	{
