@@ -120,7 +120,7 @@ char * generateJson ()
 
 				sprintf (json + jsonsize + 1, "\t\"%s\":\"%s\",\n",pKeyTrim, pVal);
 
-				char *pKeyVal [strlen(pKey) + strlen (pVal) + 2];
+				char pKeyVal [strlen(pKey) + strlen (pVal) + 2];
 				sprintf (pKeyVal, "%s:%s", pKey, pVal);
 				LOG_ZVM ("***ZVMLog", "searched key", "s", tagfilters_remove_prefix[j], 3);
 				LOG_ZVM ("***ZVMLog", "Key:Val", "s", pKeyVal, 3);
@@ -236,6 +236,6 @@ int main (int argc, char *argv[])
 	printf ("tmp name - %s; real file name - %s; size %d\n", fmap.tempfilename, fmap.realfilename, (int) fmap.realfilesize);
 #endif
 
-	LOG_ZVM ("***ZVMLog", "OK!", "s", "", "");
+	LOG_ZVM ("***ZVMLog", "OK!", "s", "", 1);
 	return 0;
 }

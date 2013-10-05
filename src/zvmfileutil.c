@@ -1561,3 +1561,54 @@ size_t SaveFileFromInput (char *sSaveName)
 	close (fdOUT);
 	return tFileLength;
 }
+
+struct p_options initOptions ()
+{
+	struct p_options popt;
+
+	popt.bToOutput = 0;
+	popt.bTextSearchMode = 0;
+	popt.tStart = 0;
+	popt.tEnd = 0;
+	popt.sWords = NULL;
+	popt.iMaxWordsLen = 1024;
+	popt.sWords = (char *) malloc (sizeof (char) * popt.iMaxWordsLen);
+	return popt;
+}
+
+struct p_options getOptions (int argc, char *argv[])
+{
+	struct p_options popt = initOptions ();;
+	int i =0;
+
+    for (i = 0; i < argc; i++)
+    {
+    	if (argv [i][0] == '-')
+    	{
+    		if (i==0)
+    			;
+    		else if (strcmp (argv[i],"--save") == 0 || strcmp (argv[i],"--savexml") == 0)
+			{
+				popt.bToOutput = 1;
+			}
+    		else if ((i + 2) >= argc)
+    			break;
+   			else if (strcmp (argv[i],"--search") == 0 )
+			{
+   				printf ("search mode\n");
+   				popt.bTextSearchMode = 1;
+   				popt.tStart = atoll (argv[i+1]);
+   				popt.tEnd = atoll (argv[i+2]);
+				i += 2;
+			}
+    	}
+    	else if  ( strlen(popt.sWords) + strlen(argv[i]) + 1 < (size_t) popt.iMaxWordsLen )
+    	{
+    		strcat (popt.sWords, argv[i]);
+    		strcat (popt.sWords, " ");
+    	}
+    }
+
+	return popt;
+}
+

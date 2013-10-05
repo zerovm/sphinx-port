@@ -74,6 +74,15 @@ struct fileTypeInfo {
 	int bSaveFile;
 };
 
+struct p_options {
+    int bToOutput;
+    int bTextSearchMode;
+    size_t tStart;
+    size_t tEnd;
+    char *sWords;
+    int iMaxWordsLen;
+};
+
 int getZVMLogLevel ();
 
 #define LOG_SERVER_SOFT 																	\
@@ -101,6 +110,7 @@ struct filemap extractorfromfilesender (char *, char *);
 char * getTextByHits (char *text, unsigned int, unsigned int);
 size_t SaveFileFromInput (char *);
 struct fileTypeInfo checkMAxFileSize (char *, size_t, int);
+struct p_options getOptions (int, char **);
 
 void reverse (char *);
 void getext (const char *, char *);
