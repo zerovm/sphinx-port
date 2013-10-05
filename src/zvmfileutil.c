@@ -625,7 +625,7 @@ struct filemap extractorfromfilesender (char * chname, char *prefix)
 	fmap.json = json;
 	bytesparsed += jsonlength;
 	LOG_ZVM ("***ZVMLog", "json", "s", json, 3);
-	LOG_ZVM ("***ZVMLog", "fmap.json size", "ld", strlen (fmap.json), 2);
+	LOG_ZVM ("***ZVMLog", "fmap.json size", "zu", strlen (fmap.json), 2);
 
 	// read filelength
 	strncpy (numberbuff, buff + bytesparsed, iNumBuffSize);
@@ -1414,4 +1414,150 @@ void mylistdir (char *path)
 		}
 	}
 	closedir(dir);
+}
+
+/*
+ *
+ * */
+
+int isNewWord (char * text, size_t pos)
+{
+	if ( isspace(text[pos]) && !isspace(text[pos + 1]))
+		return 1;
+	else
+		return 0;
+}
+
+/*
+ *
+ * Receive seeking text, Start and End positions of searched words seeking text
+ * Return pointer to text snippet with searched words
+ *
+ * */
+char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
+{
+
+	char *s = (char *) malloc (sizeof (char ) * TEXT_SNIPPET_SIZE);
+	size_t i;
+	size_t tTextLength = strlen (text);
+	size_t tCurrentWordPos =0;
+	size_t tPosCount = 0;
+	size_t tLastWordCharPos = 0, tStartCharPos = 0;
+
+	for ( i = 0; i < tTextLength - 1; i++)
+	{
+		if (isNewWord (text, i) == 1)
+		{
+			tLastWordCharPos = tCurrentWordPos;
+			tCurrentWordPos = i;
+			tPosCount++;
+		}
+		if (tPosCount == uiStart)
+		{
+			tStartCharPos = tLastWordCharPos;
+			break;
+		}
+	}
+
+	size_t tSnippetSize = 0;
+	if ((tStartCharPos + TEXT_SNIPPET_SIZE) < tTextLength)
+		tSnippetSize = TEXT_SNIPPET_SIZE;
+	else
+		tSnippetSize = tTextLength - tStartCharPos;
+	strncpy (s, text + tStartCharPos, tSnippetSize);
+	s[tSnippetSize] = '\0';
+	return s;
+}
+
+struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize, int bPlainText)
+{
+	char *ext = (char *) malloc (sizeof (char) * strlen (filename));
+	char *channelname= (char *) malloc (sizeof (char) * 50);
+	getext (filename, ext);
+	struct fileTypeInfo ft;
+	ft.tFileSize = filesize;
+	ft.sExt = ext;
+	ft.bSaveFile = 1;
+	LOG_ZVM ("***ZVMLog", "extension", "s", ext, 2);
+	if ((strncmp (ext, "txt", 3) == 0 || strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0) && filesize <= FS_MAX_TEXT_FILE_LENGTH)
+	{
+		sprintf (channelname, "/dev/out/txt");
+	}
+	else if ((strncmp (ext, "pdf", 3) == 0 || strncmp (ext, "doc", 3) == 0) && filesize <= FS_MAX_FILE_LENGTH)
+	{
+		sprintf (channelname, "/dev/out/%s", ext);
+	}
+	else
+	{
+		if ( bPlainText == 1 && filesize <= FS_MAX_TEXT_FILE_LENGTH)
+			sprintf (channelname, "/dev/out/txt");
+		else
+		{
+			sprintf (channelname, "/dev/out/other");
+			ft.bSaveFile = 0;
+		}
+	}
+	ft.sChannelname = channelname;
+	return ft;
+}
+
+
+/*
+ *
+ *
+ *
+ * */
+
+size_t SaveFileFromInput (char *sSaveName)
+{
+	size_t tFileLength = 0;
+	size_t bread = 0, bwrite = 0;
+	char buff [EX_READ_WRITE_SIZE];
+	int fdIN;
+	int fdOUT;
+	char *fileName;
+	int bPlainText = 0;
+	struct fileTypeInfo fti;
+
+
+	if (getenv ("CONTENT_LENGTH") != NULL)
+		tFileLength = atoll (getenv ("CONTENT_LENGTH"));
+	if (getenv ("PATH_INFO") != NULL)
+	{
+		fileName = (char *) malloc (sizeof (char) * strlen (getenv ("PATH_INFO")) + 1);
+		strcat (fileName, getenv ("PATH_INFO"));
+	}
+	if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
+	{
+		bPlainText = 1;
+	}
+
+	fti = checkMAxFileSize (fileName, tFileLength, bPlainText);
+
+
+	fdIN = open (EX_SEARCH_MODE_INPUT, O_RDONLY);
+	if (fdIN < 0)
+	{
+		printf ("*** ZVM Error open inut channel %s\n", EX_SEARCH_MODE_INPUT);
+		return 0;
+	}
+
+	fdOUT = open (sSaveName, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+	if (fdOUT < 0)
+	{
+		printf ("*** ZVM Error open inut channel %s\n", EX_SEARCH_MODE_INPUT);
+		return 0;
+	}
+
+
+
+	while ((bread = read (fdIN, buff, EX_READ_WRITE_SIZE)) > 0)
+	{
+		bwrite = write (fdOUT, buff, bread);
+		tFileLength += bwrite;
+	}
+
+	close (fdIN);
+	close (fdOUT);
+	return tFileLength;
 }

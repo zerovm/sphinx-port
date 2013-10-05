@@ -961,8 +961,8 @@ int main ( int argc, char ** argv )
 			fprintf ( stdout, "%d. '%s': "INT64_FMT" documents, "INT64_FMT" hits\n",
 				iWord,
 				pResult->m_hWordStats.IterateGetKey().cstr(),
-				iDocCounter,
-				/*tStat.m_iDocs,*/
+				iDocCounter + iStart,
+//				tStat.m_iDocs,
 				tStat.m_iHits );
 			iWord++;
 		}

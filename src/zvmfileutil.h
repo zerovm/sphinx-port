@@ -27,7 +27,7 @@
 #define OTHER_DEVICE_IN "/dev/in"
 #define OTHER_PREFIX ""
 
-
+#define TEXT_SNIPPET_SIZE 256
 
 #define FS_DEVINPUTDATA "/dev/input" // file sender input channel
 #define FS_MAX_TEXT_FILE_LENGTH 1024 * 1024 * 2
@@ -36,12 +36,14 @@
 #define I_DEVINPUTDATA "/dev/input"// indexer input
 #define I_DEVOUTPUTDATA "/dev/output" // indexer output
 
+#define EX_SEARCH_MODE_INPUT "/dev/input"
+#define EX_READ_WRITE_SIZE 1024 * 64
+
 #define S_DEVINPUTDATA "/dev/input" // search input
 #define S_DEVOUTPUTDATA "/dev/output" // search output
 #define DELTAINDEX "deltaindex"
 #define MAININDEX "mainindex"
 #define READWRITEBUFFSIZE 1024*1024
-#define MAX_FILE_LENGTH 1024 * 1024 * 10 // max length of file of any format 10 MB
 
 #define INDEXDIRNAME "index"
 //#define INDEXDIRNAME "/home/volodymyr/temp/index"
@@ -63,6 +65,14 @@ struct filemap {
 	long realfilesize;
 };
 
+struct fileTypeInfo {
+	char *sExt;
+	char *sChannelname;
+	int iFileType;
+	size_t tFileSize;
+	int iExtractorType;
+	int bSaveFile;
+};
 
 int getZVMLogLevel ();
 
@@ -88,6 +98,9 @@ int getZVMLogLevel ();
 
 void filesender2extractor (char *, char *, char *, char *);
 struct filemap extractorfromfilesender (char *, char *);
+char * getTextByHits (char *text, unsigned int, unsigned int);
+size_t SaveFileFromInput (char *);
+struct fileTypeInfo checkMAxFileSize (char *, size_t, int);
 
 void reverse (char *);
 void getext (const char *, char *);

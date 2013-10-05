@@ -177,8 +177,17 @@ int main (int argc, char *argv[])
 	int bToOutput = 0;
 	int i = 0;
 
+	struct fileTypeInfo fti;
+
 	LOG_SERVER_SOFT;
 	LOG_NODE_NAME;
+
+	for (i = 0; i < argc; i++ )
+		if (strcmp (argv[i], "--save") == 0)
+		{
+			bToOutput = 1;
+		}
+
 
 	if (serversoft)
 	{
@@ -204,8 +213,6 @@ int main (int argc, char *argv[])
 		tContentLength = (size_t) getfilesize_fd(0, filename, 1 );
 	}
 
-
-
 	LOG_ZVM ("***ZVMLog", "content type", "d", bPlainText, 2);
 	LOG_ZVM ("***ZVMLog", "content length", "zu", tContentLength, 1);
 	LOG_ZVM ("***ZVMLog", "file name", "s", filename, 1);
@@ -215,28 +222,12 @@ int main (int argc, char *argv[])
 	LOG_ZVM ("***ZVMLog", "json length", "ld", strlen (json), 2);
 	LOG_ZVM ("***ZVMLog", "json", "s", json, 3);
 
-	char ext[strlen (filename)];
-	getext(filename, ext);
+	fti = checkMAxFileSize (filename, tContentLength, bPlainText);
 
-	LOG_ZVM ("***ZVMLog", "extension", "s", ext, 2);
-
-	if ((strncmp (ext, "txt", 3) == 0 || strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0) && tContentLength <= FS_MAX_TEXT_FILE_LENGTH)
-		sprintf (devnameout, "/dev/out/txt");
-	else if ((strncmp (ext, "pdf", 3) == 0 || strncmp (ext, "doc", 3) == 0) && tContentLength <= FS_MAX_FILE_LENGTH)
-		sprintf (devnameout, "/dev/out/%s", ext);
+	if (bToOutput == 1 )
+		sprintf (devnameout, "/dev/output");
 	else
-	{
-		if ( bPlainText == 1 && tContentLength <= FS_MAX_TEXT_FILE_LENGTH)
-			sprintf (devnameout, "/dev/out/txt");
-		else
-			sprintf (devnameout, "/dev/out/other");
-	}
-
-	for (i = 0; i < argc; i++ )
-		if (strcmp (argv[i], "--save") == 0)
-		{
-			sprintf (devnameout, "/dev/output");
-		}
+		sprintf (devnameout, "%s", fti.sChannelname);
 
 	LOG_ZVM ("***ZVMLog", "output device", "s", devnameout, 1);
 	filesender2extractor (devnamein, devnameout, filename, json);
