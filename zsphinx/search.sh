@@ -7,7 +7,6 @@ ABS_PATH=$SCRIPT_PATH
 if [ $# -eq 1 ]
 then
 query=$1
-echo $query > data/search_stdin.data
 fi
 
 rm -f manifest/search.manifest

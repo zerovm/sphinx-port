@@ -9,4 +9,4 @@ args=other
 #verbosity=3
 
 [env]
-name=ZVM_LogLevel, value=1
+name=ZVM_LogLevel, value=2

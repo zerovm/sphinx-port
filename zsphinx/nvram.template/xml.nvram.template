@@ -3,7 +3,8 @@
 ###########################################################
 
 [args]
-args=xmlpipecreator --duplicate
+#args=xmlpipecreator --savexml
+args=xmlpipecreator
 
 #[debug]
 #verbosity=4

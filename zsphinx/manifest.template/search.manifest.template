@@ -1,5 +1,6 @@
 =====================================================================
-Channel = {ABS_PATH}data/search_stdin.data, 	/dev/stdin, 0, 0, 999999, 999999, 0, 0
+==Channel = {ABS_PATH}data/search_stdin.data, 	/dev/stdin, 0, 0, 999999, 999999, 0, 0
+Channel = /dev/null, 	/dev/stdin, 0, 0, 999999, 999999, 0, 0
 ==Channel = /dev/stdout,	/dev/stdout, 0, 0, 0, 0, 999999, 999999
 Channel = {ABS_PATH}data/out/search_stdout.data,	/dev/stdout, 0, 0, 0, 0, 999999, 999999
 Channel = {ABS_PATH}data/out/search_stderr.data, 	/dev/stderr, 0, 0, 0, 0, 9999999, 9999999

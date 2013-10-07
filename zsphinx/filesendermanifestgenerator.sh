@@ -2,9 +2,9 @@
 #{DOCNUMBER} порядковый номер документа
 #{FILE_NAME} имя подключаемого файла
 
-if [ $# -lt 3 ]
+if [ $# -lt 2 ]
 then
-	echo "Usage: `basename $0` {DOCNUMBER} {FILE_NAME} {TYPENUMBER}"
+	echo "Usage: `basename $0` {DOCNUMBER} {FILE_NAME}"
 	echo "test" $DOCNUMBER $FILE_NAME $TYPENUMBER 
  	exit $WRONG_ARGS
 else
@@ -21,33 +21,6 @@ ABS_PATH=`dirname "$SCRIPT"`/
 
 FILETYPE="${FILE_NAME##*.}"
 
-if [ $# -eq 4 ]
-then
-	DOC_TYPE_NUMBER=6
-	DOC_TYPE="other"
-else
-	if [ "$FILETYPE" = "txt" ] || [ "$FILETYPE" = "docx" ] || [ "$FILETYPE" = "odt" ]
-	then 
-		DOC_TYPE_NUMBER=4
-		DOC_TYPE="txt"
-	fi
-
-	if [ "$FILETYPE" = "pdf" ]
-	then
-		DOC_TYPE_NUMBER=3
-		DOC_TYPE="pdf"
-	fi
-
-	if [ "$FILETYPE" = "doc" ] 
-	then
-		DOC_TYPE_NUMBER=5
-		DOC_TYPE="doc"
-	fi
-fi
-
-
 sed s@{ABS_PATH}@$ABS_PATH@ manifest.template/filesender.manifest.template | \
 sed s@{DOCNUMBER}@$DOCNUMBER@ | \
-sed s@{DOC_TYPE_NUMBER}@$DOC_TYPE_NUMBER@ | \
-sed s@{DOC_TYPE}@$DOC_TYPE@ | \
 sed s@{FILE_NAME}@"$FILE_NAME"@g > manifest/filesender$DOCNUMBER.manifest

@@ -13,13 +13,6 @@ fi
 #2 - indexer; 1-xmlpipecreator; 3 - pdf extractor; 4 - docx, txt, odt extractors; 5 doc extractor
 #  11 - node ID for first fiesender in cluster
 FILECOUNT=11
-PDFCOUNT=1
-OTHERCOUNT=1
-TXTDOCXODTCOUNT=1
-TXTCOUNT=1
-DOCCOUNT=1
-DOCXCOUNT=1
-ODTCOUNT=1
 SCRIPT=$(readlink -f "$0")
 SCRIPT_PATH=`dirname "$SCRIPT"`
 ABS_PATH=$SCRIPT_PATH
@@ -58,6 +51,8 @@ cp nvram.template/xml.nvram.template 		nvram/xml.nvram
 cp nvram.template/search.nvram.template 	nvram/search.nvram
 cp nvram.template/indexer.nvram.template 	nvram/indexer.nvram
 
+DEVICENAME=/dev/in/filesender
+
 scan() {
   local x;
   for file in "$1"/*; do
@@ -72,79 +67,14 @@ scan() {
 		filename="${file%.}"
 		fileext="${file##*.}"
 		TEMP=$(stat -c %s "$file")
-		if [ "$fileext" = "txt" ] || [ "$fileext" = "docx" ] || [ "$fileext" = "odt" ]
-		then
-			#echo "test all manifest generator **txt** " $FILECOUNT $filename $TXTCOUNT
-			#echo $filename $fileext
-			DEVICENAME=/dev/in/filesender
-			CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
-			if [ "$TEMP" -lt 2097152 ]
-			then
-				./filesendermanifestgenerator.sh $FILECOUNT "$filename" $TXTDOCXODTCOUNT
-				./filesendernvramgenerator.sh $FILECOUNT "$filename" 
-				echo $CHANNELNAME >> manifest/txt.manifest
-				let TXTCOUNT=TXTCOUNT+1
-				let TXTDOCXODTCOUNT=TXTDOCXODTCOUNT+1
-			else
-				./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
-				./filesendernvramgenerator.sh $FILECOUNT "$filename"
-				let OTHERCOUNT=OTHERCOUNT+1
-				echo $CHANNELNAME >> manifest/other.manifest
-			fi
-			let FILECOUNT=FILECOUNT+1
-		else
-			if [ "$fileext" = "pdf" ] 
-			then 
-				#echo "test all manifest generator **pdf** " $FILECOUNT $filename $TXTCOUNT
-				#echo $filename $fileext
-				DEVICENAME=/dev/in/filesender
-				CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
-				if [ "$TEMP" -lt 10485760 ]
-				then
-					./filesendermanifestgenerator.sh $FILECOUNT "$filename" $PDFCOUNT
-					./filesendernvramgenerator.sh $FILECOUNT "$filename"
-					let PDFCOUNT=PDFCOUNT+1
-					echo $CHANNELNAME >> manifest/pdf.manifest
-				else
-					./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
-					./filesendernvramgenerator.sh $FILECOUNT "$filename"
-					let OTHERCOUNT=OTHERCOUNT+1
-					echo $CHANNELNAME >> manifest/other.manifest
-				fi
-				let FILECOUNT=FILECOUNT+1
-			else
-				if [ "$fileext" = "doc" ]
-				then 
-					#echo "test all manifest generator **doc** " $FILECOUNT $filename $TXTCOUNT
-					#echo $filename $fileext
-					DEVICENAME=/dev/in/filesender
-					CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
-					if [ "$TEMP" -lt 10485760 ]
-					then
-						./filesendermanifestgenerator.sh $FILECOUNT "$filename" $DOCCOUNT
-						./filesendernvramgenerator.sh $FILECOUNT "$filename"
-						let DOCCOUNT=DOCCOUNT+1
-						echo $CHANNELNAME >> manifest/doc.manifest
-					else
-						./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
-						./filesendernvramgenerator.sh $FILECOUNT "$filename"
-						let OTHERCOUNT=OTHERCOUNT+1
-						echo $CHANNELNAME >> manifest/other.manifest
-					fi
-					let FILECOUNT=FILECOUNT+1
-				else	
-					#echo "test all manifest generator **doc** " $FILECOUNT $filename $TXTCOUNT
-					#echo $filename $fileext
-					./filesendermanifestgenerator.sh $FILECOUNT "$filename" $OTHERCOUNT "other"
-					./filesendernvramgenerator.sh $FILECOUNT "$filename"
-					DEVICENAME=/dev/in/filesender
-					CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
-					let FILECOUNT=FILECOUNT+1
-					let OTHERCOUNT=OTHERCOUNT+1
-					echo $CHANNELNAME >> manifest/other.manifest
-				fi
-			fi
-		fi
+		CHANNELNAME="Channel = tcp:"$FILECOUNT":,	"$DEVICENAME-$FILECOUNT", 0, 0, 99999999, 99999999, 0, 0"
+		./filesendermanifestgenerator.sh $FILECOUNT "$filename"
+		./filesendernvramgenerator.sh $FILECOUNT "$filename" 
+		echo $CHANNELNAME >> manifest/txt.manifest
+		echo $CHANNELNAME >> manifest/doc.manifest
+		echo $CHANNELNAME >> manifest/pdf.manifest
+		echo $CHANNELNAME >> manifest/other.manifest
+		let FILECOUNT=FILECOUNT+1
 	fi
     fi
   done
