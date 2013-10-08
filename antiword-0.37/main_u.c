@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #if defined(__dos)
 #include <fcntl.h>
@@ -435,7 +436,8 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 		}
 		else
 		{
-			printf ("snippet ****** \n %s\n", getTextByHits (filteredbuff, tStart, tEnd));
+			printf ("\n\nfilename <%s>\n", fmap.realfilename);
+			printf ("snippet <%s>\n", getTextByHits (filteredbuff, tStart, tEnd));
 		}
 	}
 	else
@@ -476,33 +478,29 @@ int main (int argc, char *argv[])
 
 	popt = getOptions(argc, argv);
 
-    if (popt.bToOutput == 1)
-    	sprintf (devoutname, "%s", "/dev/output");
-    else
-    	sprintf (devoutname, "%s", DEVOUTNAME);
-
-
-
-    fdout = open (devoutname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
-    if (fdout < 0 )
-    {
-    	printf ("*** ZVM Error open %s output device\n", devoutname);
-    	return 1;
-    }
-	LOG_ZVM ("***ZVMLog", "output channel", "s", devoutname, 1);
-
-
-	dir = opendir(path);
-	if (dir ==0)
-	{
-		printf ("*** ZVM Error read dir %s\n", path);
-		return 1;
-	}
-
 	int tempwritebytes2channel;
 
-	if (popt.bTextSearchMode == 0)
-	{
+    if (popt.bTextSearchMode == 0)
+    {
+        if (popt.bToOutput == 1)
+        	sprintf (devoutname, "%s", "/dev/output");
+        else
+        	sprintf (devoutname, "%s", DEVOUTNAME);
+
+		fdout = open (devoutname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+		if (fdout < 0 )
+		{
+			printf ("*** ZVM Error open %s output device\n", devoutname);
+			return 1;
+		}
+		LOG_ZVM ("***ZVMLog", "output channel", "s", devoutname, 1);
+
+		dir = opendir(path);
+		if (dir ==0)
+		{
+			printf ("*** ZVM Error read dir %s\n", path);
+			return 1;
+		}
 		LOG_ZVM ("***ZVMLog", "incoming channels dir", "s", path, 1);
 		while((entry = readdir(dir)))
 		{
@@ -510,8 +508,8 @@ int main (int argc, char *argv[])
 			filteredbufflen =0;
 			if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
 			{
-				char *filteredbuff; // buffer for filtered text extracted from file of any format
-				char *buff; // temp buffer for readed data from txt file.
+				char *filteredbuff = NULL; // buffer for filtered text extracted from file of any format
+				char *buff = NULL; // temp buffer for readed data from txt file.
 				tempwritebytes2channel = textconv (path, entry->d_name, prefix, popt.bTextSearchMode, filteredbuff, buff, fdout, popt.tStart, popt.tEnd, argc, argv);
 
 			}
@@ -519,14 +517,13 @@ int main (int argc, char *argv[])
 	}
 	else
 	{
-		char *filteredbuff; // buffer for filtered text extracted from file of any format
-		char *buff; // temp buffer for readed data from txt file.
+		char *filteredbuff = NULL; // buffer for filtered text extracted from file of any format
+		char *buff = NULL; // temp buffer for readed data from txt file.
 		tempwritebytes2channel = textconv (path, entry->d_name, prefix, popt.bTextSearchMode, filteredbuff, buff, fdout, popt.tStart, popt.tEnd, argc, argv);
 	}
 
 	close (fdout);
 	LOG_ZVM ("***ZVMLog", "total bytes write to output channel", "ld", totalbyteswrite2text, 1);
 	LOG_ZVM ("***ZVMLog", "OK!", "s", "", 1);
-
 	return 0;
 }

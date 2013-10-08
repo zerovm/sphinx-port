@@ -5,7 +5,7 @@
 [env]
 name=fname, 			value={FILE_NAME}
 name=CONTENT_LENGTH,		value={CONTETNLENGTH}
-name=CONTENT_TYPE,		value=t_ext/plain
+name=CONTENT_TYPE,		value=text/plain
 name=DOCUMENT_ROOT,		value=/dev/input
 name=HTTP_ACCEPT,		value=*/*
 name=REMOTE_USER,		value=g_103319991787805482239

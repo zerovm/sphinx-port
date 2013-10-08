@@ -817,6 +817,11 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 
 	if (bTextSearchMode == 0)
 	{
+		if (d_name == NULL || path == NULL)
+		{
+			printf ("***ZVM Error incorrect path name || d_name\n");
+			return 0;
+		}
 		chname = malloc (strlen(path) + strlen (d_name) + 2);
 		sprintf (chname, "%s/%s", path, d_name);
 		LOG_ZVM ("***ZVMLog", "incoming channel name", "s", chname, 1);
@@ -882,6 +887,7 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 		LOG_ZVM ("***ZVMLog", "document type", "s", "txt", 1);
 		filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
 		LOG_ZVM ("***ZVMLog", "filtered buff length", "d", filteredbufflen, 1);
+		//fwrite (filteredbuff, 1, filteredbufflen, stdout);
     	break;
 	}
 	int i;
@@ -897,7 +903,8 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 		}
 		else
 		{
-			printf ("snippet ****** \n %s\n", getTextByHits (filteredbuff, tStart, tEnd));
+			printf ("\n\nfilename <%s>\n", fmap.realfilename);
+			printf ("snippet <%s>\n", getTextByHits (filteredbuff, tStart, tEnd));
 		}
 	}
 	else
@@ -926,14 +933,11 @@ int main(argc,argv)
 	////////////////////////////////////////
 	// program options
 	////////////////////////////////////////
-    int bToOutput = 0;
-    int bTextSearchMode = 0;
-    size_t tStart = 0;
-    size_t tEnd = 0;
-    char sWords [1024];
+	struct p_options popt;
     ////////////////////////////////////////
     // end program options
     ////////////////////////////////////////
+	popt = getOptions(argc, argv);
 
 
     char *path = "/dev/in";
@@ -950,40 +954,10 @@ int main(argc,argv)
     totalbyteswrite2text = 0;
 
     char devoutname [strlen (DEVOUTNAME) * 2];
-    int i = 0;
 
-    for (i = 0; i < argc; i++)
+    if (popt.bTextSearchMode == 0)
     {
-    	if (argv [i][0] == '-')
-    	{
-    		if (i==0)
-    			;
-    		else if (strcmp (argv[i],"--save") == 0 )
-			{
-				bToOutput = 1;
-			}
-    		else if ((i + 2) >= argc)
-    			break;
-   			else if (strcmp (argv[i],"--search") == 0 )
-			{
-   				printf ("search mode\n");
-				bTextSearchMode = 1;
-				tStart = atoll (argv[i+1]);
-				tEnd = atoll (argv[i+2]);
-				i += 2;
-			}
-    	}
-    	else if  ( strlen(sWords) + strlen(argv[i]) + 1 < sizeof(sWords) )
-    	{
-    		strcat (sWords, argv[i]);
-    		strcat (sWords, " ");
-    	}
-    }
-
-
-    if (bTextSearchMode == 0)
-    {
-        if (bToOutput == 1)
+        if (popt.bToOutput == 1)
         	sprintf (devoutname, "%s", "/dev/output");
         else
         	sprintf (devoutname, "%s", DEVOUTNAME);
@@ -1001,8 +975,8 @@ int main(argc,argv)
 		printf ("*** ZVM Error create dir %s\n", prefix);
 		return 1;
 	}
-	char *filteredbuff; // buffer for filtered text extracted from file of any format
-	char *buff; 		// temp buffer for readed data trom txt file.
+	char *filteredbuff = NULL; // buffer for filtered text extracted from file of any format
+	char *buff = NULL; 		// temp buffer for readed data trom txt file.
 	long buffsize = 1024 * 1024 * 10;// 10 Mb
 
 //	LOG_ZVM ("***ZVMLog", "output device name", "s", devoutname, 1);
@@ -1012,8 +986,8 @@ int main(argc,argv)
 	buff = (char *) malloc (buffsize);
 
 	int tempwritebytes2channel;
-	if (bTextSearchMode == 1)
-		tempwritebytes2channel = textconv (path, NULL, prefix, bTextSearchMode, filteredbuff, buff, fdout, tStart, tEnd);
+	if (popt.bTextSearchMode == 1)
+		tempwritebytes2channel = textconv (path, NULL, prefix, popt.bTextSearchMode, filteredbuff, buff, fdout, popt.tStart, popt.tEnd);
 	else
 	{
 		dir = opendir(path);
@@ -1031,13 +1005,13 @@ int main(argc,argv)
 
 			if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
 			{
-				tempwritebytes2channel = textconv (path, entry->d_name, prefix, bTextSearchMode, filteredbuff, buff, fdout, tStart, tEnd);
+				tempwritebytes2channel = textconv (path, entry->d_name, prefix, popt.bTextSearchMode, filteredbuff, buff, fdout, popt.tStart, popt.tEnd);
 				totalbyteswrite2text += tempwritebytes2channel;
 			}
 		}
 		close (fdout);
 	}
 	LOG_ZVM ("***ZVMLog", "total bytes send", "ld", totalbyteswrite2text, 1);
-	printf ("all ok\n");
+	LOG_ZVM ("***ZVMLog", "all ok", "", "", 1);
 	return 0;
 }

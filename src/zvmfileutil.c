@@ -699,7 +699,8 @@ void filesender2extractor (char * inputchname, char * outputchname, char *realfi
 	else
 		uPacketSize += fsize + 10; 				// 10 size  + file content
 
-	char *buff = (char *) malloc (sizeof (char) * uPacketSize);
+	char *buff = NULL;
+	buff = (char *) malloc (sizeof (char) * uPacketSize);
 
 	if (bMetaOnly == 1)
 	{
@@ -718,7 +719,10 @@ void filesender2extractor (char * inputchname, char * outputchname, char *realfi
 
 	LOG_ZVM ("***ZVMLog", "bytes write to output channel", "ld", bwrite, 1);
 
-	free (buff);
+/*
+	if (buff != NULL)
+		free (buff);
+*/
 	return;
 }
 
@@ -795,6 +799,7 @@ int getfilteredbuffer (const char *buff, long bufflen, char *filteredbuff)
 		{
 			lastc = buff[i];
 			filteredbuff[filteredbuffsize++] = buff[i];
+			//printf("%c %d\n", buff[i], buff[i]);
 		}
 	}
 	return filteredbuffsize;
@@ -1444,10 +1449,14 @@ char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 	size_t tPosCount = 0;
 	size_t tLastWordCharPos = 0, tStartCharPos = 0;
 
+	if (uiStart > 1)
+		uiStart -= 2;
+
 	for ( i = 0; i < tTextLength - 1; i++)
 	{
 		if (isNewWord (text, i) == 1)
 		{
+
 			tLastWordCharPos = tCurrentWordPos;
 			tCurrentWordPos = i;
 			tPosCount++;
@@ -1512,6 +1521,7 @@ size_t SaveFileFromInput (char *sSaveName)
 {
 	size_t tFileLength = 0;
 	size_t bread = 0, bwrite = 0;
+	long NotFoundPos = 16777271; // if the sphinx cannot find position of words in text it return this magic
 	char buff [EX_READ_WRITE_SIZE];
 	int fdIN;
 	int fdOUT;
@@ -1527,12 +1537,16 @@ size_t SaveFileFromInput (char *sSaveName)
 		fileName = (char *) malloc (sizeof (char) * strlen (getenv ("PATH_INFO")) + 1);
 		strcat (fileName, getenv ("PATH_INFO"));
 	}
+/*
 	if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
 	{
 		bPlainText = 1;
 	}
+*/
 
-	fti = checkMAxFileSize (fileName, tFileLength, bPlainText);
+	//fti = checkMAxFileSize (fileName, tFileLength, bPlainText);
+
+
 
 
 	fdIN = open (EX_SEARCH_MODE_INPUT, O_RDONLY);
@@ -1548,8 +1562,6 @@ size_t SaveFileFromInput (char *sSaveName)
 		printf ("*** ZVM Error open inut channel %s\n", EX_SEARCH_MODE_INPUT);
 		return 0;
 	}
-
-
 
 	while ((bread = read (fdIN, buff, EX_READ_WRITE_SIZE)) > 0)
 	{
@@ -1595,7 +1607,7 @@ struct p_options getOptions (int argc, char *argv[])
     			break;
    			else if (strcmp (argv[i],"--search") == 0 )
 			{
-   				printf ("search mode\n");
+   				LOG_ZVM ("***ZVMLog", "search mode", "s", "ON", 1);
    				popt.bTextSearchMode = 1;
    				popt.tStart = atoll (argv[i+1]);
    				popt.tEnd = atoll (argv[i+2]);
@@ -1608,7 +1620,6 @@ struct p_options getOptions (int argc, char *argv[])
     		strcat (popt.sWords, " ");
     	}
     }
-
 	return popt;
 }
 

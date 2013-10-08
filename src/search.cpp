@@ -405,6 +405,7 @@ int main ( int argc, char ** argv )
 	bool bStdin = false;
 	bool bWordPos = true;
 	bool bMetaWeight = false;
+	bool bShowSearchStat = true;
 	int iStart = 0;
 	int iLimit = 20;
 	/////
@@ -440,6 +441,7 @@ int main ( int argc, char ** argv )
 			OPT ( "-q", "--noinfo" )	bNoInfo = true;
 			OPT ( "-w", "--wordpos" )	bWordPos = false;
 			OPT ( "-m", "--meta" )		bMetaWeight = true;
+			OPT ( "-ws", "--wordstats" )bShowSearchStat = false;
 			OPT1 ( "--sort=date" )		tQuery.m_eSort = SPH_SORT_ATTR_DESC;
 			OPT1 ( "--rsort=date" )		tQuery.m_eSort = SPH_SORT_ATTR_ASC;
 			OPT1 ( "--sort=ts" )		tQuery.m_eSort = SPH_SORT_TIME_SEGMENTS;
@@ -833,13 +835,18 @@ int main ( int argc, char ** argv )
 					continue;
 				else
 					iFilteredCount++;
-
-				fprintf ( stdout, "%d. document=" DOCID_FMT ", weight=%d", ++iDocCounter, tMatch.m_iDocID, tMatch.m_iWeight );
+				if ( bShowSearchStat )
+					fprintf ( stdout, "%d. document=" DOCID_FMT ", weight=%d", ++iDocCounter, tMatch.m_iDocID, tMatch.m_iWeight );
 
 				for ( int j=0; j<pResult->m_tSchema.GetAttrsCount(); j++ )
 				{
 					const CSphColumnInfo & tAttr = pResult->m_tSchema.GetAttr(j);
-					fprintf ( stdout, ", %s=", tAttr.m_sName.cstr() );
+					if (!bShowSearchStat && ( strcmp("filename", tAttr.m_sName.cstr()) != 0))
+						continue;
+
+					if (bShowSearchStat)
+						fprintf ( stdout,  bShowSearchStat ? ",":""" %s=", tAttr.m_sName.cstr() );
+
 
 					if ( tAttr.m_eAttrType==SPH_ATTR_UINT32SET || tAttr.m_eAttrType==SPH_ATTR_INT64SET )
 					{
@@ -952,19 +959,21 @@ int main ( int argc, char ** argv )
 			pResult->m_iQueryTime/1000, pResult->m_iQueryTime%1000 );
 #endif
 
-		fprintf ( stdout, "\nwords:\n" );
 		pResult->m_hWordStats.IterateStart();
 		int iWord = 1;
-		while ( pResult->m_hWordStats.IterateNext() )
+		if ( bShowSearchStat )
 		{
-			const CSphQueryResultMeta::WordStat_t & tStat = pResult->m_hWordStats.IterateGet();
-			fprintf ( stdout, "%d. '%s': "INT64_FMT" documents, "INT64_FMT" hits\n",
-				iWord,
-				pResult->m_hWordStats.IterateGetKey().cstr(),
-				iDocCounter + iStart,
-//				tStat.m_iDocs,
-				tStat.m_iHits );
-			iWord++;
+			while ( pResult->m_hWordStats.IterateNext() )
+			{
+				const CSphQueryResultMeta::WordStat_t & tStat = pResult->m_hWordStats.IterateGet();
+				fprintf ( stdout, "%d. '%s': "INT64_FMT" documents, "INT64_FMT" hits\n",
+					iWord,
+					pResult->m_hWordStats.IterateGetKey().cstr(),
+					iDocCounter + iStart,
+	//				tStat.m_iDocs,
+					tStat.m_iHits );
+				iWord++;
+			}
 		}
 		fprintf ( stdout, "\n" );
 

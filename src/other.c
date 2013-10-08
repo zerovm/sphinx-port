@@ -96,7 +96,7 @@ int main (int argc, char *argv[])
 
 			tmpsize = getfilesize_fd(ftmp, NULL, 0);
 			LOG_ZVM ("***ZVMLog", "temp file name", "s", fmap.tempfilename, 1);
-			LOG_ZVM ("***ZVMLog", "real file size", "s", fmap.realfilesize, 1);
+			LOG_ZVM ("***ZVMLog", "real file size", "ld", fmap.realfilesize, 1);
 			close (ftmp);
 
 			if (fmap.realfilesize <= 0)

@@ -1,0 +1,16 @@
+=====================================================================
+Channel = {FILE_NAME}, 						/dev/input, 3, 0, 9999999999, 999999999, 0, 0
+=====================================================================
+Channel = /dev/null, 						/dev/stdin, 0, 0, 9999999999, 999999999, 0, 0
+Channel = {ABS_PATH}data/out/doc_{DOCCOUNT}_stdout.txt, 	/dev/stdout, 0, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/doc_{DOCCOUNT}_stderr.txt, 	/dev/stderr, 0, 0, 0, 0, 99999999, 999999
+=====================================================================
+Channel = {ABS_PATH}nvram/doc-{DOCCOUNT}-snippet.nvram,		/dev/nvram,	0, 0, 999999999,9999999999, 0,0
+Channel = {ABS_PATH}data/antiword.tar, 		/dev/mount/import, 3, 0, 999999999,9999999999, 9999999,9999999
+=====================================================================
+Version = 20130611
+Program = {ABS_PATH}doc.nexe
+Memory = 419430400, 0
+Timeout=500
+=====================================================================
+
