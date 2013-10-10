@@ -72,6 +72,7 @@ struct fileTypeInfo {
 	size_t tFileSize;
 	int iExtractorType;
 	int bSaveFile;
+	int bPlainText;
 };
 
 struct p_options {
@@ -108,9 +109,11 @@ int getZVMLogLevel ();
 void filesender2extractor (char *, char *, char *, char *);
 struct filemap extractorfromfilesender (char *, char *);
 char * getTextByHits (char *text, unsigned int, unsigned int);
-size_t SaveFileFromInput (char *);
-struct fileTypeInfo checkMAxFileSize (char *, size_t, int);
+size_t SaveFileFromInput (char *, char **);
+struct fileTypeInfo checkMAxFileSize (char *, size_t);
 struct p_options getOptions (int, char **);
+char *generateJson (char **);
+char *generateMetaWords (char *);
 
 void reverse (char *);
 void getext (const char *, char *);

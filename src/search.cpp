@@ -272,7 +272,6 @@ char** getwordsformstr (const char *s, int *wordcount)// char **res)
 	int j = 0;
 	int wc = 0;
 
-
 	//remobe spaces from start of string
 	while (!isalnum(*str) )
 		str++;
@@ -319,9 +318,6 @@ char** getwordsformstr (const char *s, int *wordcount)// char **res)
 			temp[j++] = str[i];
 		}
 	}
-#ifdef TEST
-	printf ("OK");
-#endif
 	return res;
 }
 

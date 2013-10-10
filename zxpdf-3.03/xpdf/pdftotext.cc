@@ -62,6 +62,8 @@ static char cfgFileName[256] = "";
 static GBool printVersion = gFalse;
 static GBool printHelp = gFalse;
 
+extern char **environ;
+
 static ArgDesc argDesc[] = {
   {"-f",       argInt,      &firstPage,     0,
    "first page to convert"},
@@ -472,7 +474,7 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 	else
 	{
 		sprintf (fmap.tempfilename, "%s/temp.tmp", prefix);
-		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename);
+		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ);
 		if (getenv ("PATH_INFO") != NULL)
 			sprintf (fmap.realfilename, "%s", getenv ("PATH_INFO"));
 	}

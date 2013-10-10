@@ -16,149 +16,6 @@
 extern char **environ;
 
 
-char *myrealloc (char * buff, size_t *buffsize)
-{
-	char *newbuff;
-	char *oldbuff;
-	size_t newbuffsize = *buffsize * 2;
-	newbuff = (char *) malloc (sizeof (char) * newbuffsize);
-	if (newbuff)
-	{
-		memcpy (newbuff, buff, *buffsize);
-		free (buff);
-		buff = newbuff;
-		*buffsize = newbuffsize;
-	}
-	return buff;
-}
-
-char * generateJson ()
-{
-	size_t jsonmaxsize = 1024; //1024 - initial lengt of JSON data
-	size_t jsonsize = 0;
-	int keycount = 0;
-
-	char *json = (char *) malloc (sizeof (char) * jsonmaxsize);
-
-	char *tagfilters [] = {
-			"CONTENT_LENGTH",
-			"CONTENT_TYPE",
-			"HTTP_X_OBJECT_META",
-			"HTTP_ETAG",
-			"HTTP_X_TIMESTAMP",
-			"PATH_INFO",
-			"SERVER_PROTOCOL",
-			"HTTP_ACCEPT_ENCODING"
-	};
-
-
-	char *tagfilters_remove_prefix [] = {
-			"HTTP_X_OBJECT_META_",
-			"HTTP_"
-	};
-
-
-	char *tagfilters_skip [] = {
-			"ZVM_LogLevel"
-	};
-
-	int tagfilterscount = sizeof (tagfilters) / sizeof (char *);
-	int tagfilters_remove_prefix_count = sizeof (tagfilters_remove_prefix) / sizeof (char *);
-
-	sprintf (json, "{\n");
-	jsonsize = strlen (json) - 1;
-
-	int i;
-	for ( i = 0; environ[i] != NULL; i++)
-	{
-		int envsize = strlen (environ[i]);
-		char *pKey = (char *) malloc (envsize * sizeof (char));
-		char *pVal = (char *) malloc (envsize * sizeof (char));
-
-		char *pEq;
-		int eqPos = 0;//
-
-		if ((pEq = strstr(environ[i], "=")) != NULL)
-			eqPos = pEq - environ[i];
-
-		if (eqPos == 0)
-		{
-			free (pKey);
-			free (pVal);
-			continue;
-		}
-
-		//copy key && value
-		strncpy ( pKey, environ[i], eqPos );
-		strncpy ( pVal, environ[i] + eqPos + 1, envsize - eqPos );
-
-		pKey [eqPos] = '\0';
-
-		char *pFilterOK;
-		int iFind = 0;
-		int j = 0;
-
-		for ( j = 0; j < tagfilterscount; j++ )
-		{
-			if ( (pFilterOK = strstr (pKey, tagfilters[j])) != NULL )
-			{
-				iFind = 1;
-			}
-		}
-		for ( j = 0; j < tagfilters_remove_prefix_count; j++)
-		{
-			if ( (pFilterOK = strstr (pKey, tagfilters_remove_prefix[j])) != NULL )
-			{
-				char * pKeyTrim = (char *) malloc ( sizeof (char) * strlen (pKey) );
-
-				strncpy ( pKeyTrim, pKey + strlen (tagfilters_remove_prefix[j]) , strlen (pKey) - strlen (tagfilters_remove_prefix[j]) + 1);
-
-				size_t addsize = strlen (pKeyTrim) +  strlen (pVal) + 8; //8 symbols plus -------  1 '\t' + 1 '=' + 4 '"' + 1 ',' + 1 '\n'
-
-				if ((jsonsize + addsize) > jsonmaxsize )
-					json = myrealloc (json, &jsonmaxsize);
-
-				sprintf (json + jsonsize + 1, "\t\"%s\":\"%s\",\n",pKeyTrim, pVal);
-
-				char pKeyVal [strlen(pKey) + strlen (pVal) + 2];
-				sprintf (pKeyVal, "%s:%s", pKey, pVal);
-				LOG_ZVM ("***ZVMLog", "searched key", "s", tagfilters_remove_prefix[j], 3);
-				LOG_ZVM ("***ZVMLog", "Key:Val", "s", pKeyVal, 3);
-
-				jsonsize += addsize;
-				free (pKeyTrim);
-				keycount++;
-			}
-		}
-		if (iFind == 0)
-		{
-			free (pKey);
-			free (pVal);
-			continue;
-		}
-
-		size_t addsize = strlen (pKey) +  strlen (pVal) + 8; //8 symbols plus -------  1 '\t' + 1 '=' + 4 '"' + 1 ',' + 1 '\n'
-
-		if ((jsonsize + addsize) > jsonmaxsize )
-			json = myrealloc (json, &jsonmaxsize);
-
-		sprintf (json + jsonsize + 1, "\t\"%s\":\"%s\",\n",pKey, pVal);
-		jsonsize += addsize;
-		free (pKey);
-		free (pVal);
-	}
-
-	if (jsonsize + 2 > jsonmaxsize)
-		json = myrealloc (json, &jsonmaxsize);
-	sprintf (json + jsonsize - 1, "\n}");
-	jsonsize += 2;
-
-	LOG_ZVM ("***ZVMLog", "json key count", "d", keycount, 1);
-
-	return json;
-}
-
-
 
 int main (int argc, char *argv[])
 {
@@ -194,10 +51,7 @@ int main (int argc, char *argv[])
 		if (strncmp (SERVERSOFT ,serversoft, strlen (serversoft)) == 0)
 		{
 			filename = getenv("PATH_INFO");
-			if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
-			{
-				bPlainText = 1;
-			}
+
 			cContentLength = getenv("CONTENT_LENGTH");
 			tContentLength = atoi (cContentLength);
 		}
@@ -217,12 +71,12 @@ int main (int argc, char *argv[])
 	LOG_ZVM ("***ZVMLog", "content length", "zu", tContentLength, 1);
 	LOG_ZVM ("***ZVMLog", "file name", "s", filename, 1);
 
-	json = generateJson();
+	json = generateJson(environ);
 
 	LOG_ZVM ("***ZVMLog", "json length", "ld", strlen (json), 2);
 	LOG_ZVM ("***ZVMLog", "json", "s", json, 3);
 
-	fti = checkMAxFileSize (filename, tContentLength, bPlainText);
+	fti = checkMAxFileSize (filename, tContentLength);
 
 	if (bToOutput == 1 )
 		sprintf (devnameout, "/dev/output");

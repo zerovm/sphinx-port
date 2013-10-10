@@ -388,7 +388,7 @@ iReadOptions(int argc, char **argv)
 	strncpy(szLeafname, szGetDefaultMappingFile(), sizeof(szLeafname) - 1);
 	szLeafname[sizeof(szLeafname) - 1] = '\0';
 /* Command line */
-	while ((iChar = getopt(argc, argv, "La:fhi:m:p:rstw:x:")) != -1) {
+	while ((iChar = getopt(argc, argv, "La:fhi:m:p:rstw:x")) != -1) {
 		switch (iChar) {
 		case 'L':
 			tOptionsCurr.bUseLandscape = TRUE;

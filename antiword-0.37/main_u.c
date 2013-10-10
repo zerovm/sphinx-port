@@ -59,6 +59,8 @@
 /* The name of this program */
 static const char	*szTask = NULL;
 
+extern char **environ;
+
 
 static void
 vUsage(void)
@@ -245,6 +247,7 @@ wmain(int argc, char **argv)
 	int	iFirst, iIndex, iGoodCount;
 	BOOL	bUsage, bMultiple, bUseTXT, bUseXML;
 
+
 	if (argc <= 0) {
 		return EXIT_FAILURE;
 	}
@@ -365,7 +368,7 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 	else
 	{
 		sprintf (fmap.tempfilename, "%s/temp.tmp", prefix);
-		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename);
+		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ);
 		if (getenv ("PATH_INFO") != NULL)
 			sprintf (fmap.realfilename, "%s", getenv ("PATH_INFO"));
 	}
@@ -477,6 +480,11 @@ int main (int argc, char *argv[])
     ////////////////////////////////////////
 
 	popt = getOptions(argc, argv);
+
+	if (popt.bTextSearchMode == 1)
+	{
+		argc = 2;
+	}
 
 	int tempwritebytes2channel;
 

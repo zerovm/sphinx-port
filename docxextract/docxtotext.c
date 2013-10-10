@@ -51,7 +51,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include "../src/zvmfileutil.h"
-
+//#include <unistd.h>
 
 #ifdef _WIN32
 # include <direct.h>
@@ -78,6 +78,7 @@
  * */
 
 int dt; //dt - type of document
+extern char **environ;
 
 /*
   mini unzip, demo of unzip package
@@ -825,24 +826,33 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 		chname = malloc (strlen(path) + strlen (d_name) + 2);
 		sprintf (chname, "%s/%s", path, d_name);
 		LOG_ZVM ("***ZVMLog", "incoming channel name", "s", chname, 1);
-	}
-
-	// add logging
-	if (bTextSearchMode == 0)
 		fmap = extractorfromfilesender(chname, prefix);
+	}
 	else
 	{
 		/// add check if big file
 		sprintf (fmap.tempfilename, "%s/temp.tmp", prefix);
-		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename);
+		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ);
 		if (getenv ("PATH_INFO") != NULL)
 			sprintf (fmap.realfilename, "%s", getenv ("PATH_INFO"));
 	}
 
+
+
+//	{
+//		json = generateJson(environ);
+//		metawords = generateMetaWords(json);
+//	}
+//	else
+
 	LOG_ZVM ("***ZVMLog", "real filename", "s", fmap.realfilename, 2);
 	LOG_ZVM ("***ZVMLog", "real filesize", "ld", fmap.realfilesize, 2);
 
-	if (fmap.realfilesize <= 0)
+	struct fileTypeInfo fti;
+
+	fti = checkMAxFileSize (fmap.realfilename, fmap.realfilesize);
+
+	if (fmap.realfilesize <= 0 && fti.bSaveFile == 1)
 	{
 		printf ("***get from channel error fmap.realfilesize = %ld\n", fmap.realfilesize);
 		free (chname);
@@ -850,9 +860,12 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 	}
 
 	dt = getdoctype (fmap.realfilename);
+	if (fti.bSaveFile == 0)
+		dt = 4;
 	int retextractcode = 0; //
 	int renameretcode = 0;
 	int deletefileretcode = 0;
+	char *json = NULL;
 	switch (dt) {
 	case 1://docx
 		renameretcode = rename (fmap.tempfilename, ZIPBASED_TEMP_FILEANME);
@@ -889,6 +902,14 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 		LOG_ZVM ("***ZVMLog", "filtered buff length", "d", filteredbufflen, 1);
 		//fwrite (filteredbuff, 1, filteredbufflen, stdout);
     	break;
+	case 4: // meta only;
+		json = generateJson(environ);
+		filteredbuff = generateMetaWords(json);
+		if (filteredbuff != NULL )
+			filteredbufflen = strlen (filteredbuff);
+		else
+			filteredbufflen = 0;
+		break;
 	}
 	int i;
 
@@ -896,15 +917,39 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 
 	if (filteredbufflen > 0)
 	{
-		if (bTextSearchMode == 0)
+		if (dt == 4)
 		{
-			tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fmap.json,  fdout);
-			LOG_ZVM ("***ZVMLog", "bytes write by document", "d", tempwritebytes2channel, 1);
+			printf ("\n\nfilename <%s>\n", fmap.realfilename);
+			// FIX NULL
+			printf ("snippet <%s>\n", getTextByWords(filteredbuff, NULL));
 		}
 		else
 		{
-			printf ("\n\nfilename <%s>\n", fmap.realfilename);
-			printf ("snippet <%s>\n", getTextByHits (filteredbuff, tStart, tEnd));
+			if (bTextSearchMode == 0)
+			{
+				tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fmap.json,  fdout);
+				LOG_ZVM ("***ZVMLog", "bytes write by document", "d", tempwritebytes2channel, 1);
+			}
+			else
+			{
+				printf ("\n\nfilename <%s>\n", fmap.realfilename);
+				char *pSnippet = getTextByHits (filteredbuff, tStart, tEnd);
+				if (pSnippet != NULL)
+					printf ("snippet <%s>\n", pSnippet);
+				else
+				{
+					printf ("NULL\n");
+					json = generateJson(environ);
+					printf ("%s\n", json);
+					filteredbuff = generateMetaWords(json);
+					printf ("%s\n", filteredbuff);
+					if (filteredbuff != NULL )
+						filteredbufflen = strlen (filteredbuff);
+					else
+						filteredbufflen = 0;
+					printf ("snippet <%s>\n", getTextByWords(filteredbuff, NULL));
+				}
+			}
 		}
 	}
 	else

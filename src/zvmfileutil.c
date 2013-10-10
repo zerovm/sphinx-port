@@ -39,7 +39,6 @@ void reverse (char s[])
 void getext (const char *fname, char *ext)
 {
 	int len = strlen (fname);
-	//char ext[len];
 	int i;
 	i = 0;
 	if (len == 0)
@@ -162,6 +161,36 @@ char * getValue (const char * pKeyVal)
 
 	return pValue;
 }
+
+// filtering json
+char * generateMetaWords (char *json)
+{
+	char *metawords;
+	if (json == NULL)
+	{
+		printf ("*** ZVM Error. Wrong json\n");
+		return NULL;
+	}
+	metawords = (char *) malloc (sizeof (char) * strlen (json));
+	int a = 0;
+	for (a = 0; a < strlen (json); a++)
+	{
+		if (json [a] != '"' && json [a] != ':' && json [a] != ',' && json [a] != '{' && json [a] != '}' )
+		{
+			metawords[a] = json [a];
+		}
+		else
+		{
+			metawords[a] = ' ';
+		}
+		if (json [a] == '}')
+			metawords[a] = '\0';
+		if (!isalnum (json [a]) )
+			json [a] = ' ';
+	}
+	return metawords;
+}
+
 
 /*
  * get text data from network in format size of text, real filename, text data
@@ -288,28 +317,16 @@ int getdatafromchannel (int fd, char *chname, int docID)
 // end get tag CONTENT_LENGTH && X_TIMESTAMP
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-		char *metawords = (char *) malloc (sizeof (char) * strlen (json));
 
-		// filtering json
-		for (a = 0; a < strlen (json); a++)
-		{
-			if (json [a] != '"' && json [a] != ':' && json [a] != ',' && json [a] != '{' && json [a] != '}' )
-			{
-				metawords[a] = json [a];
-			}
-			else
-			{
-				metawords[a] = ' ';
-			}
-			if (json [a] == '}')
-				metawords[a] = '\0';
-/*
-			if ((json [a] == '"') || (json [a] == '{') || (json [a] == '}') || (json [a] == ':') || (json [a] == ',') || (json [a] == '/') || (json [a] == '_'))
-				json [a] = ' ';
-*/
-			if (!isalnum (json [a]) )
-				json [a] = ' ';
-		}
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// generate all words from META for metatags field
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		char *metawords = NULL;
+		metawords = generateMetaWords (json);
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// end generate all words from META for metatags field
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 		//
 		int bwrite;
 		//write json indexed field
@@ -1400,7 +1417,6 @@ void mylistdir (char *path)
 	{
 		return;
 	}
-
 	while((entry = readdir(dir)))
 	{
 
@@ -1441,13 +1457,21 @@ int isNewWord (char * text, size_t pos)
  * */
 char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 {
-
 	char *s = (char *) malloc (sizeof (char ) * TEXT_SNIPPET_SIZE);
 	size_t i;
 	size_t tTextLength = strlen (text);
 	size_t tCurrentWordPos =0;
 	size_t tPosCount = 0;
 	size_t tLastWordCharPos = 0, tStartCharPos = 0;
+	unsigned int NotFoundPos = 16777000; // if the sphinx cannot find position of words in the text it return this magic number
+
+	LOG_ZVM ("***ZVMLog", "start pos", "u", uiStart, 1);
+
+	if(uiStart > NotFoundPos)
+	{
+		LOG_ZVM ("***ZVMLog", "metatags only", "s", "OK", 1);
+		return NULL;
+	}
 
 	if (uiStart > 1)
 		uiStart -= 2;
@@ -1456,7 +1480,6 @@ char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 	{
 		if (isNewWord (text, i) == 1)
 		{
-
 			tLastWordCharPos = tCurrentWordPos;
 			tCurrentWordPos = i;
 			tPosCount++;
@@ -1478,7 +1501,7 @@ char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 	return s;
 }
 
-struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize, int bPlainText)
+struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize)
 {
 	char *ext = (char *) malloc (sizeof (char) * strlen (filename));
 	char *channelname= (char *) malloc (sizeof (char) * 50);
@@ -1487,7 +1510,16 @@ struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize, int bPlai
 	ft.tFileSize = filesize;
 	ft.sExt = ext;
 	ft.bSaveFile = 1;
+	ft.bPlainText = 0;
+
 	LOG_ZVM ("***ZVMLog", "extension", "s", ext, 2);
+
+	if (getenv("CONTENT_TYPE") != NULL)
+		if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
+		{
+			ft.bPlainText = 1;
+		}
+
 	if ((strncmp (ext, "txt", 3) == 0 || strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0) && filesize <= FS_MAX_TEXT_FILE_LENGTH)
 	{
 		sprintf (channelname, "/dev/out/txt");
@@ -1498,7 +1530,7 @@ struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize, int bPlai
 	}
 	else
 	{
-		if ( bPlainText == 1 && filesize <= FS_MAX_TEXT_FILE_LENGTH)
+		if ( ft.bPlainText == 1 && filesize <= FS_MAX_TEXT_FILE_LENGTH)
 			sprintf (channelname, "/dev/out/txt");
 		else
 		{
@@ -1511,24 +1543,16 @@ struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize, int bPlai
 }
 
 
-/*
- *
- *
- *
- * */
-
-size_t SaveFileFromInput (char *sSaveName)
+size_t SaveFileFromInput (char *sSaveName, char **environ)
 {
 	size_t tFileLength = 0;
 	size_t bread = 0, bwrite = 0;
-	long NotFoundPos = 16777271; // if the sphinx cannot find position of words in text it return this magic
 	char buff [EX_READ_WRITE_SIZE];
 	int fdIN;
 	int fdOUT;
 	char *fileName;
-	int bPlainText = 0;
 	struct fileTypeInfo fti;
-
+	int bPlainText = 0;
 
 	if (getenv ("CONTENT_LENGTH") != NULL)
 		tFileLength = atoll (getenv ("CONTENT_LENGTH"));
@@ -1537,40 +1561,41 @@ size_t SaveFileFromInput (char *sSaveName)
 		fileName = (char *) malloc (sizeof (char) * strlen (getenv ("PATH_INFO")) + 1);
 		strcat (fileName, getenv ("PATH_INFO"));
 	}
-/*
-	if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
+
+	if (getenv("CONTENT_TYPE") != NULL )
+		if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
+		{
+			bPlainText = 1;
+		}
+
+	fti = checkMAxFileSize (fileName, tFileLength);
+
+	if ( fti.bSaveFile == 1 )
 	{
-		bPlainText = 1;
-	}
-*/
+		fdIN = open (EX_SEARCH_MODE_INPUT, O_RDONLY);
+		if (fdIN < 0)
+		{
+			printf ("*** ZVM Error open inut channel %s\n", EX_SEARCH_MODE_INPUT);
+			return 0;
+		}
 
-	//fti = checkMAxFileSize (fileName, tFileLength, bPlainText);
+		fdOUT = open (sSaveName, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+		if (fdOUT < 0)
+		{
+			printf ("*** ZVM Error open inut channel %s\n", EX_SEARCH_MODE_INPUT);
+			return 0;
+		}
 
+		while ((bread = read (fdIN, buff, EX_READ_WRITE_SIZE)) > 0)
+		{
+			bwrite = write (fdOUT, buff, bread);
+			tFileLength += bwrite;
+		}
 
-
-
-	fdIN = open (EX_SEARCH_MODE_INPUT, O_RDONLY);
-	if (fdIN < 0)
-	{
-		printf ("*** ZVM Error open inut channel %s\n", EX_SEARCH_MODE_INPUT);
-		return 0;
-	}
-
-	fdOUT = open (sSaveName, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
-	if (fdOUT < 0)
-	{
-		printf ("*** ZVM Error open inut channel %s\n", EX_SEARCH_MODE_INPUT);
-		return 0;
-	}
-
-	while ((bread = read (fdIN, buff, EX_READ_WRITE_SIZE)) > 0)
-	{
-		bwrite = write (fdOUT, buff, bread);
-		tFileLength += bwrite;
+		close (fdIN);
+		close (fdOUT);
 	}
 
-	close (fdIN);
-	close (fdOUT);
 	return tFileLength;
 }
 
@@ -1623,3 +1648,157 @@ struct p_options getOptions (int argc, char *argv[])
 	return popt;
 }
 
+char *myrealloc (char * buff, size_t *buffsize)
+{
+	char *newbuff;
+	char *oldbuff;
+	size_t newbuffsize = *buffsize * 2;
+	newbuff = (char *) malloc (sizeof (char) * newbuffsize);
+	if (newbuff)
+	{
+		memcpy (newbuff, buff, *buffsize);
+		free (buff);
+		buff = newbuff;
+		*buffsize = newbuffsize;
+	}
+	return buff;
+}
+
+char * generateJson (char **environ)
+{
+	size_t jsonmaxsize = 1024; //1024 - initial lengt of JSON data
+	size_t jsonsize = 0;
+	int keycount = 0;
+
+	char *json = (char *) malloc (sizeof (char) * jsonmaxsize);
+
+	const char *tagfilters [] = {
+			"CONTENT_LENGTH",
+			"CONTENT_TYPE",
+			"HTTP_X_OBJECT_META",
+			"HTTP_ETAG",
+			"HTTP_X_TIMESTAMP",
+			"PATH_INFO",
+			"SERVER_PROTOCOL",
+			"HTTP_ACCEPT_ENCODING"
+	};
+
+	const char *tagfilters_remove_prefix [] = {
+			"HTTP_X_OBJECT_META_",
+			"HTTP_"
+	};
+
+	const char *tagfilters_skip [] = {
+			"ZVM_LogLevel"
+	};
+
+	int tagfilterscount = sizeof (tagfilters) / sizeof (char *);
+	int tagfilters_remove_prefix_count = sizeof (tagfilters_remove_prefix) / sizeof (char *);
+
+	sprintf (json, "{\n");
+	jsonsize = strlen (json) - 1;
+
+	int i;
+	for ( i = 0; environ[i] != NULL; i++)
+	{
+		int envsize = strlen (environ[i]);
+		char *pKey = (char *) malloc (envsize * sizeof (char));
+		char *pVal = (char *) malloc (envsize * sizeof (char));
+
+		char *pEq;
+		int eqPos = 0;//
+
+		if ((pEq = strstr(environ[i], "=")) != NULL)
+			eqPos = pEq - environ[i];
+
+		if (eqPos == 0)
+		{
+			free (pKey);
+			free (pVal);
+			continue;
+		}
+
+		//copy key && value
+		strncpy ( pKey, environ[i], eqPos );
+		strncpy ( pVal, environ[i] + eqPos + 1, envsize - eqPos );
+
+		pKey [eqPos] = '\0';
+
+		char *pFilterOK;
+		int iFind = 0;
+		int j = 0;
+
+		for ( j = 0; j < tagfilterscount; j++ )
+		{
+			if ( (pFilterOK = strstr (pKey, tagfilters[j])) != NULL )
+			{
+				iFind = 1;
+			}
+		}
+		for ( j = 0; j < tagfilters_remove_prefix_count; j++)
+		{
+			if ( (pFilterOK = strstr (pKey, tagfilters_remove_prefix[j])) != NULL )
+			{
+				char * pKeyTrim = (char *) malloc ( sizeof (char) * strlen (pKey) );
+
+				strncpy ( pKeyTrim, pKey + strlen (tagfilters_remove_prefix[j]) , strlen (pKey) - strlen (tagfilters_remove_prefix[j]) + 1);
+
+				size_t addsize = strlen (pKeyTrim) +  strlen (pVal) + 8; //8 symbols plus -------  1 '\t' + 1 '=' + 4 '"' + 1 ',' + 1 '\n'
+
+				if ((jsonsize + addsize) > jsonmaxsize )
+					json = myrealloc (json, &jsonmaxsize);
+
+				sprintf (json + jsonsize + 1, "\t\"%s\":\"%s\",\n",pKeyTrim, pVal);
+
+				char pKeyVal [strlen(pKey) + strlen (pVal) + 2];
+				sprintf (pKeyVal, "%s:%s", pKey, pVal);
+				LOG_ZVM ("***ZVMLog", "searched key", "s", tagfilters_remove_prefix[j], 3);
+				LOG_ZVM ("***ZVMLog", "Key:Val", "s", pKeyVal, 3);
+
+				jsonsize += addsize;
+				free (pKeyTrim);
+				keycount++;
+			}
+		}
+		if (iFind == 0)
+		{
+			free (pKey);
+			free (pVal);
+			continue;
+		}
+
+		size_t addsize = strlen (pKey) +  strlen (pVal) + 8; //8 symbols plus -------  1 '\t' + 1 '=' + 4 '"' + 1 ',' + 1 '\n'
+
+		if ((jsonsize + addsize) > jsonmaxsize )
+			json = myrealloc (json, &jsonmaxsize);
+
+		sprintf (json + jsonsize + 1, "\t\"%s\":\"%s\",\n",pKey, pVal);
+		jsonsize += addsize;
+		free (pKey);
+		free (pVal);
+	}
+
+	if (jsonsize + 2 > jsonmaxsize)
+		json = myrealloc (json, &jsonmaxsize);
+	sprintf (json + jsonsize - 1, "\n}");
+	jsonsize += 2;
+
+	LOG_ZVM ("***ZVMLog", "json key count", "d", keycount, 1);
+
+	return json;
+}
+
+char * getTextByWords (char *text, char *words)
+{
+	char *s = (char *) malloc (sizeof (char ) * TEXT_SNIPPET_SIZE);
+
+	if (text == NULL)
+		return NULL;
+//	if (strlen (text) > TEXT_SNIPPET_SIZE )
+
+
+	strncpy (s, text, TEXT_SNIPPET_SIZE - 1);
+	s[TEXT_SNIPPET_SIZE] = '\0';
+
+	return s;
+}
