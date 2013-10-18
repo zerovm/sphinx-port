@@ -52,6 +52,8 @@
 //#define INDEXDIRNAME "f1"
 //#define INDEXDIRNAME "/home/volodymyr/disk/f1"
 
+#define ZLOGTIT "***ZVMLog"
+
 
 #define PACKET_NUMBER_BLOCK_SIZE 10
 
@@ -108,12 +110,16 @@ int getZVMLogLevel ();
 
 void filesender2extractor (char *, char *, char *, char *);
 struct filemap extractorfromfilesender (char *, char *);
-char * getTextByHits (char *text, unsigned int, unsigned int);
+char *getTextByHits (char *text, unsigned int, unsigned int);
 size_t SaveFileFromInput (char *, char **);
 struct fileTypeInfo checkMAxFileSize (char *, size_t);
 struct p_options getOptions (int, char **);
 char *generateJson (char **);
 char *generateMetaWords (char *);
+char *getTextByWords (char *, char *);
+void PrintSnippet (char *, char *, unsigned int, unsigned int);
+void SendDelete (int );
+
 
 void reverse (char *);
 void getext (const char *, char *);
@@ -121,7 +127,6 @@ unsigned long getfilesize_fd (int, char *, int );
 struct filemap getfilefromchannel (char *, char *);
 void putfile2channel (char *, char *, char *, char *);
 int puttext2channel (char *, long , char *, char *, int);
-//int getdatafromchannel (int *, char * , long *);
 int getdatafromchannel (int, char *, int);
 int getfilteredbuffer (const char *, long , char *);
 void unpackindex_fd (char *);

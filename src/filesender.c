@@ -45,7 +45,6 @@ int main (int argc, char *argv[])
 			bToOutput = 1;
 		}
 
-
 	if (serversoft)
 	{
 		if (strncmp (SERVERSOFT ,serversoft, strlen (serversoft)) == 0)

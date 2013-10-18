@@ -41,7 +41,6 @@ void mylistdir_xmlpipe (int fd, char *path)
 	}
 	while(entry = readdir(dir))
 	{	
-
 		if(!(entry->d_type == DT_DIR && (strcmp (entry->d_name, "input")) != 0))
 		{
 			char devname [strlen (path) + strlen (entry->d_name) + 5];
@@ -139,6 +138,8 @@ void closexmlpipe (int fd)
 	bwrite = write (fd, xmldocend, strlen (xmldocend));
 }	
 
+
+
 int main(int argc, char **argv)
 {
 	char *serversoft = getenv ("SERVER_SOFTWARE");
@@ -150,6 +151,7 @@ int main(int argc, char **argv)
 	int fd;
 
 	int iOptindexer = 1;
+	int bDeleteFromIndex = 0;
 	int i = 0;
 	char deviceoutputname[250];
 	sprintf (deviceoutputname, "%s", DEV_OUTPUT_NAME);
@@ -157,12 +159,14 @@ int main(int argc, char **argv)
 	{
 		if ((strncmp(argv[i], "--savexml", strlen (argv[i]))) == 0)
 			sprintf (deviceoutputname, "/dev/output");
+		if ((strncmp(argv[i], "--delete", strlen (argv[i]))) == 0)
+			bDeleteFromIndex = 1;
 	}
 
-	LOG_ZVM ("***ZVMLog", "incoming channels dir", "s", p, 1);
+	if(bDeleteFromIndex == 0)
+		LOG_ZVM ("***ZVMLog", "incoming channels dir", "s", p, 1);
 
 	LOG_ZVM ("***ZVMLog", "output channel name", "s", deviceoutputname, 1);
-
 	fd = open (deviceoutputname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 
 	if (fd <= 0)
@@ -171,30 +175,20 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-#ifdef ZVMDEBUG
-	printf ("*** output device is %d \n", outf);
-	printf ("*** start transfer to indexer\n");
-#endif
-/*	switch to generate ID as crc32 number
-
-	docID = getmaxid (MAXID_DEV_NAME_IN);
-
-*/
 	LOG_ZVM ("***ZVMLog", "doc count", "d", docID, 1);
 	createxmlpipe (fd);
-	mylistdir_xmlpipe (fd, p);
+	if (bDeleteFromIndex == 0)
+	{
+		printf ("add\n");
+		mylistdir_xmlpipe (fd, p);
+	}
+	else
+	{
+		printf ("deelete\n");
+		SendDelete (fd);
+	}
 	closexmlpipe (fd);
 	close (fd);
-/*	switch to generate ID as crc32 number
-
-	setmaxid (MAXID_DEV_NAME_OUT, docID);
-
-*/
-#ifdef ZVMDEBUG
-	printf ("*** transfer to indexer Complete!\n");
-#endif
-	//fflush (outf);
-	//fclose (outf);
 	printf ("*** ZVM xmlpipe - OK\n");
 	return 0;
 }

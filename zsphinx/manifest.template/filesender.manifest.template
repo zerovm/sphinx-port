@@ -8,6 +8,7 @@ Channel = {ABS_PATH}data/out/fs{DOCNUMBER}_stderr.txt, 	/dev/stderr, 0, 0, 0, 0,
 Channel = {ABS_PATH}nvram/filesender{DOCNUMBER}.nvram, 	/dev/nvram, 0, 0, 99999999, 999999, 0, 0
 =====================================================================
 ==Channel = {ABS_PATH}data/out/fs{DOCNUMBER}_dev_out.txt, 	/dev/out/{DOC_TYPE}, 0, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/fs{DOCNUMBER}_dev_out.txt, 	/dev/output, 0, 0, 0, 0, 99999999, 99999999
 Channel = tcp:3:, 			/dev/out/pdf, 0, 0, 0, 0, 99999999, 99999999
 Channel = tcp:5:, 			/dev/out/doc, 0, 0, 0, 0, 99999999, 99999999
 Channel = tcp:4:, 			/dev/out/txt, 0, 0, 0, 0, 99999999, 99999999

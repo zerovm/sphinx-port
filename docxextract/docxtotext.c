@@ -837,8 +837,6 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 			sprintf (fmap.realfilename, "%s", getenv ("PATH_INFO"));
 	}
 
-
-
 //	{
 //		json = generateJson(environ);
 //		metawords = generateMetaWords(json);
@@ -849,7 +847,6 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 	LOG_ZVM ("***ZVMLog", "real filesize", "ld", fmap.realfilesize, 2);
 
 	struct fileTypeInfo fti;
-
 	fti = checkMAxFileSize (fmap.realfilename, fmap.realfilesize);
 
 	if (fmap.realfilesize <= 0 && fti.bSaveFile == 1)
@@ -932,23 +929,7 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 			}
 			else
 			{
-				printf ("\n\nfilename <%s>\n", fmap.realfilename);
-				char *pSnippet = getTextByHits (filteredbuff, tStart, tEnd);
-				if (pSnippet != NULL)
-					printf ("snippet <%s>\n", pSnippet);
-				else
-				{
-					printf ("NULL\n");
-					json = generateJson(environ);
-					printf ("%s\n", json);
-					filteredbuff = generateMetaWords(json);
-					printf ("%s\n", filteredbuff);
-					if (filteredbuff != NULL )
-						filteredbufflen = strlen (filteredbuff);
-					else
-						filteredbufflen = 0;
-					printf ("snippet <%s>\n", getTextByWords(filteredbuff, NULL));
-				}
+				PrintSnippet (filteredbuff, fmap.realfilename,  tStart, tEnd);
 			}
 		}
 	}
@@ -999,6 +980,7 @@ int main(argc,argv)
     totalbyteswrite2text = 0;
 
     char devoutname [strlen (DEVOUTNAME) * 2];
+
 
     if (popt.bTextSearchMode == 0)
     {

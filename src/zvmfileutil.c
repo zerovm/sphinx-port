@@ -18,6 +18,7 @@
 #include <zlib.h>
 
 
+extern char **environ;
 
 /*
  * reverse null-terminated string
@@ -172,7 +173,7 @@ char * generateMetaWords (char *json)
 		return NULL;
 	}
 	metawords = (char *) malloc (sizeof (char) * strlen (json));
-	int a = 0;
+	size_t a = 0;
 	for (a = 0; a < strlen (json); a++)
 	{
 		if (json [a] != '"' && json [a] != ':' && json [a] != ',' && json [a] != '{' && json [a] != '}' )
@@ -273,7 +274,9 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		char *buff;
 		buff = (char *) malloc (textsize + 1);
 		bread = read (fdin, buff, textsize);
+		crc = crc32(0L, Z_NULL, 0);
 		crc = crc32(crc, (const Bytef*) realfilename, strlen (realfilename));
+		printf ("realfilename=*%s*, crc=%lu\n", realfilename, crc);
 		LOG_ZVM ("***ZVMLog", "crc23", "lu", crc, 1);
 
 		printdochead (fd, realfilename, crc);
@@ -819,6 +822,7 @@ int getfilteredbuffer (const char *buff, long bufflen, char *filteredbuff)
 			//printf("%c %d\n", buff[i], buff[i]);
 		}
 	}
+	filteredbuff [filteredbuffsize] = '\0';
 	return filteredbuffsize;
 }
 
@@ -1459,18 +1463,36 @@ char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 {
 	char *s = (char *) malloc (sizeof (char ) * TEXT_SNIPPET_SIZE);
 	size_t i;
-	size_t tTextLength = strlen (text);
-	size_t tCurrentWordPos =0;
+	size_t tTextLength = 0;
+	size_t tCurrentWordPos = 0;
 	size_t tPosCount = 0;
 	size_t tLastWordCharPos = 0, tStartCharPos = 0;
 	unsigned int NotFoundPos = 16777000; // if the sphinx cannot find position of words in the text it return this magic number
+	unsigned int LastPosInFile = 8388000; // if the searched word is the last in the document the sphinx returns the number largest than this magic
+	size_t tSnippetSize = 0;
+	int bFind = 0;
+	if (text != NULL)
+		tTextLength = strlen (text);
+	else
+		return NULL;
 
 	LOG_ZVM ("***ZVMLog", "start pos", "u", uiStart, 1);
 
-	if(uiStart > NotFoundPos)
+	if(uiStart >= NotFoundPos)
 	{
-		LOG_ZVM ("***ZVMLog", "metatags only", "s", "OK", 1);
 		return NULL;
+	}
+	if (uiStart > LastPosInFile || uiEnd > LastPosInFile)
+	{
+		if (tTextLength >= TEXT_SNIPPET_SIZE)
+		{
+			strncpy (s, text + (tTextLength - TEXT_SNIPPET_SIZE), TEXT_SNIPPET_SIZE);
+		}
+		else
+		{
+			strncpy (s, text, tTextLength);
+		}
+		return s;
 	}
 
 	if (uiStart > 1)
@@ -1487,17 +1509,36 @@ char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 		if (tPosCount == uiStart)
 		{
 			tStartCharPos = tLastWordCharPos;
+			bFind = 1;
 			break;
 		}
 	}
 
-	size_t tSnippetSize = 0;
+	if (bFind == 0)
+		return NULL;
+
 	if ((tStartCharPos + TEXT_SNIPPET_SIZE) < tTextLength)
 		tSnippetSize = TEXT_SNIPPET_SIZE;
 	else
 		tSnippetSize = tTextLength - tStartCharPos;
 	strncpy (s, text + tStartCharPos, tSnippetSize);
 	s[tSnippetSize] = '\0';
+
+	return s;
+}
+
+char * getTextByWords (char *text, char *words)
+{
+	char *s = (char *) malloc (sizeof (char ) * TEXT_SNIPPET_SIZE);
+
+	if (text == NULL)
+		return NULL;
+//	if (strlen (text) > TEXT_SNIPPET_SIZE )
+
+
+	strncpy (s, text, TEXT_SNIPPET_SIZE - 1);
+	s[TEXT_SNIPPET_SIZE] = '\0';
+
 	return s;
 }
 
@@ -1553,17 +1594,20 @@ size_t SaveFileFromInput (char *sSaveName, char **environ)
 	char *fileName;
 	struct fileTypeInfo fti;
 	int bPlainText = 0;
+	const char *Cont_Len = "CONTENT_LENGTH";
+	const char *Cont_Typ = "CONTENT_TYPE";
+	const char *Path_info = "PATH_INFO";
 
-	if (getenv ("CONTENT_LENGTH") != NULL)
-		tFileLength = atoll (getenv ("CONTENT_LENGTH"));
-	if (getenv ("PATH_INFO") != NULL)
+	if (getenv (Cont_Len) != NULL)
+		tFileLength = atoll (getenv (Cont_Len));
+	if (getenv (Path_info) != NULL)
 	{
-		fileName = (char *) malloc (sizeof (char) * strlen (getenv ("PATH_INFO")) + 1);
-		strcat (fileName, getenv ("PATH_INFO"));
+		fileName = (char *) malloc (sizeof (char) * strlen (getenv (Path_info)) + 1);
+		sprintf  (fileName, getenv (Path_info));
 	}
 
-	if (getenv("CONTENT_TYPE") != NULL )
-		if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
+	if (getenv(Cont_Typ) != NULL )
+		if (strstr (getenv(Cont_Typ), "text/plain" ) != NULL)
 		{
 			bPlainText = 1;
 		}
@@ -1620,6 +1664,7 @@ struct p_options getOptions (int argc, char *argv[])
 
     for (i = 0; i < argc; i++)
     {
+		LOG_ZVM ("***ZVMLog", "argv", "s", argv[i], 1);
     	if (argv [i][0] == '-')
     	{
     		if (i==0)
@@ -1651,7 +1696,7 @@ struct p_options getOptions (int argc, char *argv[])
 char *myrealloc (char * buff, size_t *buffsize)
 {
 	char *newbuff;
-	char *oldbuff;
+/*	char *oldbuff;*/
 	size_t newbuffsize = *buffsize * 2;
 	newbuff = (char *) malloc (sizeof (char) * newbuffsize);
 	if (newbuff)
@@ -1688,9 +1733,11 @@ char * generateJson (char **environ)
 			"HTTP_"
 	};
 
+/*
 	const char *tagfilters_skip [] = {
 			"ZVM_LogLevel"
 	};
+*/
 
 	int tagfilterscount = sizeof (tagfilters) / sizeof (char *);
 	int tagfilters_remove_prefix_count = sizeof (tagfilters_remove_prefix) / sizeof (char *);
@@ -1762,8 +1809,6 @@ char * generateJson (char **environ)
 		}
 		if (iFind == 0)
 		{
-			free (pKey);
-			free (pVal);
 			continue;
 		}
 
@@ -1788,17 +1833,94 @@ char * generateJson (char **environ)
 	return json;
 }
 
-char * getTextByWords (char *text, char *words)
+char *FilteringSnippet (char * s)
 {
-	char *s = (char *) malloc (sizeof (char ) * TEXT_SNIPPET_SIZE);
+	char *snippet = NULL;
+	char *wordbuff = NULL;
+	int bFindText = 0;
 
-	if (text == NULL)
+	int snippetlen = 0, i = 0;
+
+	if (s != NULL)
+	{
+		snippetlen = strlen (s);
+	}
+	else
 		return NULL;
-//	if (strlen (text) > TEXT_SNIPPET_SIZE )
 
+	snippet = (char *) malloc (sizeof (char) * snippetlen);
 
-	strncpy (s, text, TEXT_SNIPPET_SIZE - 1);
-	s[TEXT_SNIPPET_SIZE] = '\0';
+	wordbuff = (char *) malloc (sizeof (char) * snippetlen);
 
-	return s;
+	int wcount = 0, totallen = 0;
+	for (i  = 0; i < snippetlen; i++)
+	{
+		if (!isspace (s[i]))
+			wordbuff [wcount++] = s[i];
+		else
+		{
+			if (wcount == 0)
+				continue;
+			wordbuff[wcount] = '\0';
+			sprintf (snippet + totallen, "%s ", wordbuff);
+			totallen = strlen (snippet);
+			wcount = 0;
+			bFindText = 1;
+		}
+		if ((bFindText == 0) && (i == (snippetlen-1)))
+		{
+			wordbuff[wcount] = '\0';
+			sprintf (snippet + totallen, "%s ", wordbuff);
+			totallen = strlen (snippet);
+		}
+	}
+	return snippet;
 }
+
+void PrintSnippet (char *text, char *realfilename, unsigned int uiStart, unsigned int uiEnd)
+{
+	printf ("\nfilename <%s>\n", realfilename);
+	char *pSnippet = getTextByHits (text, uiStart, uiEnd);
+
+	if (pSnippet != NULL)
+		printf ("snippet <%s>\n", FilteringSnippet(pSnippet));
+	else
+	{
+		char *json = generateJson(environ);
+		char *filteredbuff = generateMetaWords(json);
+		printf ("snippet <%s>\n", FilteringSnippet(getTextByWords(filteredbuff, NULL)));
+	}
+	return;
+}
+
+void SendDelete (int fd)
+{
+	unsigned long crc = crc32(0L, Z_NULL, 0);
+	printf ("crc %lu\n", crc);
+
+	char realfilename[MAXFIENAME];
+
+
+	const char *temp = "<metatags> \
+</metatags>\n \
+<meta>\n{} \
+</meta>\n \
+<filecontentlength> \
+</filecontentlength>\n \
+<timestamp> \
+</timestamp>\n \
+<content> \
+</content>\n";
+	//
+	while ( fgets (realfilename, MAXFIENAME,stdin) != NULL )
+	{
+		realfilename [strlen (realfilename) - 1] = '\0';
+		crc = crc32(0L, Z_NULL, 0);
+		crc = crc32(crc, (const Bytef*) realfilename, strlen (realfilename));
+		printdochead (fd, (char *)"", crc);
+		int bwrite = write (fd, temp, strlen(temp));
+		printdocfooter(fd);
+	}
+	return;
+}
+

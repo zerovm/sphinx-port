@@ -871,6 +871,7 @@ public:
 	{
 		assert ( !m_bHitlistOver );
 		DWORD iDelta = m_rdHitlist.UnzipInt ();
+
 		if ( iDelta )
 		{
 			m_iHitPos += iDelta;
@@ -15052,6 +15053,7 @@ Hitpos_t* CSphIndex_VLN::ZHitlist ( FILE * fp, const char * sKeyword, bool bID, 
 
 		int iHits = 0;
 		if ( tKeyword.m_bHasHitlist )
+
 			for ( Hitpos_t uHit = tKeyword.GetNextHit(); uHit!=EMPTY_HIT; uHit = tKeyword.GetNextHit() )
 			{
 				if (tDocID == tKeyword.m_tDoc.m_iDocID)

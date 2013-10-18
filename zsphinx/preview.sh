@@ -4,16 +4,18 @@
 #	echo "Usage: `basename $0` searched words"
  #	exit $WRONG_ARGS
 #then
-	REQUEST=$1
+	REQUEST="$1"
 #fi
 
 SCRIPT=$(readlink -f "$0")
 SCRIPT_PATH=`dirname "$SCRIPT"`
 ABS_PATH=$SCRIPT_PATH
 
+rm -rf /data/out/*
+
 echo "search result:" > result_preview.txt
 
-./search.sh "-ws "$REQUEST""
+./search.sh "-ws $REQUEST"
 
 FILENAME=data/out/search_stdout.data
 

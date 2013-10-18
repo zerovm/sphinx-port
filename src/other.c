@@ -12,8 +12,12 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <unistd.h>
+
+extern char **environ;
 
 int iZVMLogLevel = 1;
+
 
 int main (int argc, char *argv[])
 {
@@ -33,7 +37,6 @@ int main (int argc, char *argv[])
     char *path = (char *) OTHER_DEVICE_IN;
     char *prefix = (char *) OTHER_PREFIX;
     long  byteswrite2text;
-    int bToOutput = 0;
     int i = 0;
 
   	DIR *dir;
@@ -41,86 +44,97 @@ int main (int argc, char *argv[])
 
     byteswrite2text = 0;
 
-    for (i = 0; i < argc; i++)
-    {
-    	if (strcmp (argv[i],"--save") == 0 )
-    	{
-    		bToOutput = 1;
-    	}
-    }
+	struct p_options popt;
+    ////////////////////////////////////////
+    // end program options
+    ////////////////////////////////////////
+	popt = getOptions(argc, argv);
 
-    if (bToOutput == 1)
-    	sprintf (devoutname, "%s", "/dev/output");
-    else
-    	sprintf (devoutname, "%s", DEVOUTNAME);
+	int tempwritebytes2channel =0;
 
-
-    fdout = open (devoutname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
-    if (fdout < 0 )
-    {
-    	printf ("*** ZVM Error open % output device\n", devoutname);
-    	return 1;
-    }
-
-	LOG_ZVM ("***ZVMLog", "output device", "s", devoutname, 1);
-
-	dir = opendir(path);
-	if (dir ==0)
+	if (popt.bTextSearchMode == 1)
 	{
-		printf ("*** ZVM Error read dir %s, %d\n", path, dir);
-		return 1;
+		/// add check if big file
+		sprintf (fmap.tempfilename, "%s/temp.tmp", prefix);
+		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ);
+		if (getenv ("PATH_INFO") != NULL)
+			sprintf (fmap.realfilename, "%s", getenv ("PATH_INFO"));
+		char *filteredbuff = "other"; //
+		PrintSnippet (filteredbuff, fmap.realfilename, popt.tStart, popt.tEnd);
 	}
-
-	LOG_ZVM ("***ZVMLog", "incoming channel dir", "s", path, 1);
-	while(entry = readdir(dir))
+	else
 	{
-		int temp;
-		int filteredbufflen = 0;
-		if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
+	    if (popt.bToOutput == 1)
+	    	sprintf (devoutname, "%s", "/dev/output");
+	    else
+	    	sprintf (devoutname, "%s", DEVOUTNAME);
+
+
+	    fdout = open (devoutname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+	    if (fdout < 0 )
+	    {
+	    	printf ("*** ZVM Error open % output device\n", devoutname);
+	    	return 1;
+	    }
+
+		LOG_ZVM ("***ZVMLog", "output device", "s", devoutname, 1);
+
+		dir = opendir(path);
+		if (dir ==0)
 		{
-			int fdin;
-
-			int tempwritebytes2channel =0;
-
-			chname = malloc (strlen(path) + strlen (entry->d_name) + 2);
-
-			sprintf (chname, "%s/%s", path, entry->d_name);
-			LOG_ZVM ("***ZVMLog", "channel name", "s", chname, 1);
-
-			fmap = extractorfromfilesender(chname, prefix);
-			free (chname);
-			LOG_ZVM ("***ZVMLog", "real file name", "s", fmap.realfilename, 1);
-
-			int tmpsize, ftmp;
-			ftmp = open (fmap.tempfilename, O_RDONLY);
-
-			tmpsize = getfilesize_fd(ftmp, NULL, 0);
-			LOG_ZVM ("***ZVMLog", "temp file name", "s", fmap.tempfilename, 1);
-			LOG_ZVM ("***ZVMLog", "real file size", "ld", fmap.realfilesize, 1);
-			close (ftmp);
-
-			if (fmap.realfilesize <= 0)
+			printf ("*** ZVM Error read dir %s, %d\n", path, dir);
+			return 1;
+		}
+		LOG_ZVM ("***ZVMLog", "incoming channel dir", "s", path, 1);
+		while((entry = readdir(dir)))
+		{
+			int temp;
+			int filteredbufflen = 0;
+			if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
 			{
-				printf ("*** Error fmap.realfilesize = %d\n", fmap.realfilesize);
-				continue;
+				int fdin;
+
+
+				chname = malloc (strlen(path) + strlen (entry->d_name) + 2);
+
+				sprintf (chname, "%s/%s", path, entry->d_name);
+				LOG_ZVM ("***ZVMLog", "channel name", "s", chname, 1);
+
+				fmap = extractorfromfilesender(chname, prefix);
+				free (chname);
+				LOG_ZVM ("***ZVMLog", "real file name", "s", fmap.realfilename, 1);
+
+				int tmpsize, ftmp;
+				ftmp = open (fmap.tempfilename, O_RDONLY);
+
+				tmpsize = getfilesize_fd(ftmp, NULL, 0);
+				LOG_ZVM ("***ZVMLog", "temp file name", "s", fmap.tempfilename, 1);
+				LOG_ZVM ("***ZVMLog", "real file size", "ld", fmap.realfilesize, 1);
+				close (ftmp);
+
+				if (fmap.realfilesize <= 0)
+				{
+					printf ("*** Error fmap.realfilesize = %d\n", fmap.realfilesize);
+					continue;
+				}
+
+				fdin = open (fmap.tempfilename, O_RDONLY);
+				if (fdin <=0 )
+				{
+					printf ("*** Error fdin = %d \n", fdin);
+					continue;
+				}
+
+				char *filteredbuff = "other"; //
+
+				LOG_ZVM ("***ZVMLog", "json length", "d", strlen (fmap.json), 2);
+				LOG_ZVM ("***ZVMLog", "json length", "s", fmap.json, 3);
+				tempwritebytes2channel = puttext2channel (filteredbuff, strlen (filteredbuff), fmap.realfilename, fmap.json, fdout);
 			}
-
-			fdin = open (fmap.tempfilename, O_RDONLY);
-			if (fdin <=0 )
-			{
-				printf ("*** Error fdin = %d \n", fdin);
-				continue;
-			}
-
-			char *filteredbuff = "other"; //
-
-			LOG_ZVM ("***ZVMLog", "json length", "d", strlen (fmap.json), 2);
-			LOG_ZVM ("***ZVMLog", "json length", "s", fmap.json, 3);
-			tempwritebytes2channel = puttext2channel (filteredbuff, strlen (filteredbuff), fmap.realfilename, fmap.json, fdout);
 		}
 	}
 	close (fdout);
-	printf ("other - all OK!\n");
+	LOG_ZVM ("***ZVMLog", "all ok", "", "", 1);
 
 	return 0;
 }

@@ -104,7 +104,7 @@ time ${ZVM_PREFIX}/bin/zerovm -P -Mmanifest/indexer.manifest
 ./ns_stop.sh
 
 
-sleep 2
+#sleep 2
 
 cat data/out/indexer_stdout.data
 

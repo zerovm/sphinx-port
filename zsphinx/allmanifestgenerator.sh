@@ -36,7 +36,7 @@ sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/other.manifest.template > manife
 
 #Generate manifests for:
 #xmlpipecreator
-sed s@{ABS_PATH}@$ABS_PATH/@ manifest.template/xmlpipecreator.manifest.template > manifest/xmlpipecreator.manifest
+sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/xmlpipecreator.manifest.template > manifest/xmlpipecreator.manifest
 #indexer
 sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/indexer.manifest.template > manifest/indexer.manifest
 #search

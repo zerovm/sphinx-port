@@ -215,17 +215,7 @@ int wmain(int argc, char *argv[]) {
   if (fixedPitch) {
     physLayout = gTrue;
   }
-/*
-#ifndef ZVMSTDIN
-  FILE *tempPDF;
-  printf ("*** start saving PDF from stdin to temp PDF file \n");
-  tempPDF = fopen (fileName->getCString(), "w");
-  while ((c = getchar()) != EOF)
-	  fprintf (tempPDF, "%c", c);
-  fclose (tempPDF);
-  printf ("*** save PDF from stdin to temp PDF file complete \n");
-#endif
-*/
+
   // read config file
   globalParams = new GlobalParams(cfgFileName);
   if (textEncName[0]) {
@@ -261,13 +251,8 @@ int wmain(int argc, char *argv[]) {
   } else {
     userPW = NULL;
   }
-#ifdef ZVMDEBUG
-  printf ("***read %s file \n", fileName->getCString());
-#endif
+
   doc = new PDFDoc(fileName, ownerPW, userPW);
-#ifdef ZVMDEBUG
-  printf("***read %s file complete! \n", fileName->getCString());
-#endif
 /*
   if (userPW) {
     delete userPW;
@@ -315,51 +300,7 @@ int wmain(int argc, char *argv[]) {
   if (lastPage < 1 || lastPage > doc->getNumPages()) {
     lastPage = doc->getNumPages();
   }
-#ifdef ZVMDEBUG
-  printf ("*** getNumPaghes OK!!! \n");
-#endif
-/*
-  // write HTML header
-  if (htmlMeta) {
-    if (!textFileName->cmp("-")) {
-      f = stdout;
-    } else {
-      if (!(f = fopen(textFileName->getCString(), "wb"))) {
-	error(errIO, -1, "Couldn't open text file '{0:t}'", textFileName);
-	exitCode = 2;
-	goto err3;
-      }
-    }
-    fputs("<html>\n", f);
-    fputs("<head>\n", f);
-    doc->getDocInfo(&info);
-    if (info.isDict()) {
-      printInfoString(f, info.getDict(), "Title", "<title>", "</title>\n",
-		      uMap);
-      printInfoString(f, info.getDict(), "Subject",
-		      "<meta name=\"Subject\" content=\"", "\">\n", uMap);
-      printInfoString(f, info.getDict(), "Keywords",
-		      "<meta name=\"Keywords\" content=\"", "\">\n", uMap);
-      printInfoString(f, info.getDict(), "Author",
-		      "<meta name=\"Author\" content=\"", "\">\n", uMap);
-      printInfoString(f, info.getDict(), "Creator",
-		      "<meta name=\"Creator\" content=\"", "\">\n", uMap);
-      printInfoString(f, info.getDict(), "Producer",
-		      "<meta name=\"Producer\" content=\"", "\">\n", uMap);
-      printInfoDate(f, info.getDict(), "CreationDate",
-		    "<meta name=\"CreationDate\" content=\"%s\">\n");
-      printInfoDate(f, info.getDict(), "LastModifiedDate",
-		    "<meta name=\"ModDate\" content=\"%s\">\n");
-    }
-    info.free();
-    fputs("</head>\n", f);
-    fputs("<body>\n", f);
-    fputs("<pre>\n", f);
-    if (f != stdout) {
-      fclose(f);
-    }
-  }
-*/
+
   // write text file
   textOut = new TextOutputDev(textFileName->getCString(),
 			      physLayout, fixedPitch, rawOrder, htmlMeta);
@@ -372,26 +313,6 @@ int wmain(int argc, char *argv[]) {
     goto err3;
   }
   delete textOut;
-/*
-  // write end of HTML file
-  if (htmlMeta) {
-    if (!textFileName->cmp("-")) {
-      f = stdout;
-    } else {
-      if (!(f = fopen(textFileName->getCString(), "ab"))) {
-	error(errIO, -1, "Couldn't open text file '{0:t}'", textFileName);
-	exitCode = 2;
-	goto err3;
-      }
-    }
-    fputs("</pre>\n", f);
-    fputs("</body>\n", f);
-    fputs("</html>\n", f);
-    if (f != stdout) {
-      fclose(f);
-    }
-  }
-*/
   exitCode = 0;
   // write temp text to output device
 
@@ -400,39 +321,6 @@ int wmain(int argc, char *argv[]) {
 #ifdef ZVMDEBUG
   printf ("*** set locale to %s\n", oldlocale);
 #endif
-/*
-  FILE *devfile;
-  FILE *tempfile;
-  devfile = fopen ("/dev/out/xmlpipecreator", "w");
-  tempfile = fopen ( textFileName->getCString()  , "r");
-  if (!devfile)
-	  printf ("!*** error open dev output file\n");
-  if (!tempfile)
-	  printf ("!*** error open temp.txt file\n");
-  int cc, cc1;
-  cc = 0;
-  cc1 = 0;
-  wchar_t wc, lastsymbol;
-  wprintheader (devfile);
-  while ((wc = (wchar_t) fgetwc(tempfile))!= WEOF)
-  {
-	  cc1++;
-	  if (iswalnum(wc) || (iswspace (wc) && !iswspace (lastsymbol)))
-	  {
-		  cc++;
-		  fputwc (wc, devfile);
-	  }
-	  else
-		  fputwc (' ', devfile);
-	  lastsymbol = wc;
-  }
-  wprintfooter (devfile);
-  //fflush (stdout);
-  fclose (devfile);
-  fclose (tempfile);
-
-  printf ("***extracting %d symbols filtering %d symbols\n", cc1, cc);//, getenv ["fname"]);
-*/
 #ifdef ZVMDEBUG
   mylistdir ("/");
 #endif
@@ -475,9 +363,15 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 	{
 		sprintf (fmap.tempfilename, "%s/temp.tmp", prefix);
 		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ);
+		fmap.json = generateJson(environ);
 		if (getenv ("PATH_INFO") != NULL)
 			sprintf (fmap.realfilename, "%s", getenv ("PATH_INFO"));
+
 	}
+
+	struct fileTypeInfo fti;
+	fti = checkMAxFileSize (fmap.realfilename, fmap.realfilesize);
+
 
 	int tmpsize, ftmp;
 	ftmp = open (fmap.tempfilename, O_RDONLY);
@@ -485,53 +379,58 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 	tmpsize = getfilesize_fd(ftmp, NULL, 0);
 	LOG_ZVM ("***ZVMLog", "check size of temporary saved file", "d", tmpsize, 2);
 	close (ftmp);
-	if (fmap.realfilesize <= 0)
+	if (fmap.realfilesize <= 0 && fti.bSaveFile == 1)
 	{
 		printf ("*** Error fmap.realfilesize = %d\n", fmap.realfilesize);
 		return 0;
 	}
-	if (rename (fmap.tempfilename, tmpdocfilename))
-	{
-		printf ("*** Error rename %s to %s \n", fmap.tempfilename, tmpdocfilename);
-		return 0;
-	}
 
-	int extractorretcode = 0;
-	if (wmain (argc, argv) != 0)
+	if (fti.bSaveFile == 1)
 	{
+		if (rename (fmap.tempfilename, tmpdocfilename))
+		{
+			printf ("*** Error rename %s to %s \n", fmap.tempfilename, tmpdocfilename);
+			return 0;
+		}
+
+		int extractorretcode = 0;
+		if (wmain (argc, argv) != 0)
+		{
+			LOG_ZVM ("***ZVMLog", "extractor return code", "d", extractorretcode, 1);
+			printf ("*** Error extract %s \n", tmpdocfilename);
+			return 0;
+		}
 		LOG_ZVM ("***ZVMLog", "extractor return code", "d", extractorretcode, 1);
-		printf ("*** Error extract %s \n", tmpdocfilename);
-		return 0;
+
+		fdin = open (tmptxtfilename, O_RDONLY);
+		if (fdin <=0 )
+		{
+			printf ("*** Error fdin = %d \n", fdin);
+			return 0;
+		}
+
+		txtbufflen = getfilesize_fd(fdin,NULL,0);
+		LOG_ZVM ("***ZVMLog", "text file size", "ld", txtbufflen, 1);
+
+
+		if (txtbufflen <0 )
+		{
+			printf ("*** Error txtbufflen = %d \n", txtbufflen);
+			return 0;
+		}
+		buff = (char *) malloc (txtbufflen);
+		filteredbuff = (char *) malloc (txtbufflen);
+		int bread;
+		bread = read (fdin, buff, txtbufflen);
+		close (fdin);
+
+		filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
+		LOG_ZVM ("***ZVMLog", "filtered buffer length", "ld", filteredbufflen, 1);
+		free (buff);
 	}
-	LOG_ZVM ("***ZVMLog", "extractor return code", "d", extractorretcode, 1);
-
-	fdin = open (tmptxtfilename, O_RDONLY);
-	if (fdin <=0 )
-	{
-		printf ("*** Error fdin = %d \n", fdin);
-		return 0;
-	}
-
-	txtbufflen = getfilesize_fd(fdin,NULL,0);
-	LOG_ZVM ("***ZVMLog", "text file size", "ld", txtbufflen, 1);
-
-
-	if (txtbufflen <0 )
-	{
-		printf ("*** Error txtbufflen = %d \n", txtbufflen);
-		return 0;
-	}
-	buff = (char *) malloc (txtbufflen);
-	filteredbuff = (char *) malloc (txtbufflen);
-	int bread;
-	bread = read (fdin, buff, txtbufflen);
-	close (fdin);
-
-	filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
-	LOG_ZVM ("***ZVMLog", "filtered buffer length", "ld", filteredbufflen, 1);
 
 	int tempwritebytes2channel;
-	if (filteredbufflen > 0)
+	if (filteredbufflen > 0 || fti.bSaveFile == 1)
 	{
 		if (bTextSearchMode == 0)
 		{
@@ -540,8 +439,7 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 		}
 		else
 		{
-			printf ("\n\nfilename<%s>\n", fmap.realfilename);
-			printf ("snippet<%s>\n", getTextByHits (filteredbuff, tStart, tEnd));
+			PrintSnippet (filteredbuff, fmap.realfilename, tStart, tEnd);
 		}
 	}
 	else

@@ -841,8 +841,9 @@ int main ( int argc, char ** argv )
 						continue;
 
 					if (bShowSearchStat)
-						fprintf ( stdout,  bShowSearchStat ? ",":""" %s=", tAttr.m_sName.cstr() );
-
+						fprintf ( stdout,  ", %s=", tAttr.m_sName.cstr() );
+					else
+						fprintf ( stdout,  "" );
 
 					if ( tAttr.m_eAttrType==SPH_ATTR_UINT32SET || tAttr.m_eAttrType==SPH_ATTR_INT64SET )
 					{

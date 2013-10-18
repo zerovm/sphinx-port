@@ -33,6 +33,7 @@ name=ZVM_LogLevel, 		value=1
 
 [args]
 args=filesender-{DOCNUMBER}
+#args=filesender-{DOCNUMBER} --save
 
 #[debug]
 #verbosity=4

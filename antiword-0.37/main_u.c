@@ -357,90 +357,107 @@ int textconv (char * path, char *d_name, char * prefix, int bTextSearchMode, cha
 	char *tmptxtfilename = DOC_TEMP_FILE_FOR_EXTRACTED_TEXT; // tempextracted.txt
 	int fdin;
 	struct filemap fmap;
+	const char *PINFO = "PATH_INFO";
 
 	if (bTextSearchMode == 0 )
 	{
 		chname = malloc (strlen(path) + strlen (d_name) + 2);
 		sprintf (chname, "%s/%s", path, d_name);
-		LOG_ZVM ("***ZVMLog", "incoming channel", "s", chname, 1);
+		LOG_ZVM (ZLOGTIT, "incoming channel", "s", chname, 1);
 		fmap = extractorfromfilesender(chname, prefix);
 	}
 	else
 	{
 		sprintf (fmap.tempfilename, "%s/temp.tmp", prefix);
 		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ);
-		if (getenv ("PATH_INFO") != NULL)
-			sprintf (fmap.realfilename, "%s", getenv ("PATH_INFO"));
+		fmap.json = generateJson(environ);
+		if (getenv (PINFO) != NULL)
+			sprintf (fmap.realfilename, "%s", getenv (PINFO));
+
 	}
+
+	struct fileTypeInfo fti;
+	LOG_ZVM (ZLOGTIT, "real file name", "s", fmap.realfilename, 1);
+	fti = checkMAxFileSize (fmap.realfilename, fmap.realfilesize);
+
+	if (strncmp ( fti.sExt , "doc", 3) != 0)
+		return 0;
 
 	/*
 	 *
 	 * extract text from DOC
 	 *
 	 */
+
 	int tmpsize, ftmp;
 	ftmp = open (fmap.tempfilename, O_RDONLY);
 	tmpsize = getfilesize_fd(ftmp, NULL, 0);
 	close (ftmp);
 
-	LOG_ZVM ("***ZVMLog", "check size of temporary saved file", "d", tmpsize, 2);
 
-	if (fmap.realfilesize <= 0)
+	LOG_ZVM (ZLOGTIT, "check size of temporary saved file", "d", tmpsize, 2);
+
+	if (fti.bSaveFile == 1)
 	{
-		printf ("*** Error fmap.realfilesize = %ld\n", fmap.realfilesize);
-		return 0;
-	}
-	if (rename (fmap.tempfilename, tmpdocfilename))
-	{
-		printf ("*** Error rename %s to %s \n", fmap.tempfilename, tmpdocfilename);
-		return 0;
-	}
 
-	int extractorretcode = 0;
-	if ((extractorretcode = wmain (argc, argv)) != 0)
-	{
-		LOG_ZVM ("***ZVMLog", "extractor return code", "d", extractorretcode, 1);
-		return 0;
+
+		if (fmap.realfilesize <= 0)
+		{
+			printf ("*** Error fmap.realfilesize = %ld\n", fmap.realfilesize);
+			return 0;
+		}
+		if (rename (fmap.tempfilename, tmpdocfilename))
+		{
+			printf ("*** Error rename %s to %s \n", fmap.tempfilename, tmpdocfilename);
+			return 0;
+		}
+
+		int extractorretcode = 0;
+		if ((extractorretcode = wmain (argc, argv)) != 0)
+		{
+			LOG_ZVM (ZLOGTIT, "extractor return code", "d", extractorretcode, 1);
+			return 0;
+		}
+		LOG_ZVM (ZLOGTIT, "extractor return code", "d", extractorretcode, 1);
+
+		fdin = open (tmptxtfilename, O_RDONLY);
+		if (fdin <=0 )
+		{
+			printf ("*** Error fdin = %d \n", fdin);
+			return 0;
+		}
+
+		txtbufflen = getfilesize_fd(fdin,NULL,0);
+		LOG_ZVM (ZLOGTIT, "text file size", "ld", txtbufflen, 1);
+
+		if (txtbufflen <0 )
+		{
+			printf ("*** Error txtbufflen = %ld \n", txtbufflen);
+			return 0;
+		}
+		buff = (char *) malloc (txtbufflen);
+		filteredbuff = (char *) malloc (txtbufflen);
+		int bread;
+		bread = read (fdin, buff, txtbufflen);
+		close (fdin);
+
+		filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
+		LOG_ZVM (ZLOGTIT, "filtered buffer length", "ld", filteredbufflen, 1);
 	}
-	LOG_ZVM ("***ZVMLog", "extractor return code", "d", extractorretcode, 1);
-
-	fdin = open (tmptxtfilename, O_RDONLY);
-	if (fdin <=0 )
-	{
-		printf ("*** Error fdin = %d \n", fdin);
-		return 0;
-	}
-
-	txtbufflen = getfilesize_fd(fdin,NULL,0);
-	LOG_ZVM ("***ZVMLog", "text file size", "ld", txtbufflen, 1);
-
-	if (txtbufflen <0 )
-	{
-		printf ("*** Error txtbufflen = %ld \n", txtbufflen);
-		return 0;
-	}
-	buff = (char *) malloc (txtbufflen);
-	filteredbuff = (char *) malloc (txtbufflen);
-	int bread;
-	bread = read (fdin, buff, txtbufflen);
-	close (fdin);
-
-	filteredbufflen = getfilteredbuffer (buff, txtbufflen, filteredbuff);
-	LOG_ZVM ("***ZVMLog", "filtered buffer length", "ld", filteredbufflen, 1);
 
 
 	int tempwritebytes2channel;
-	if (filteredbufflen > 0)
+
+	if (filteredbufflen > 0 || fti.bSaveFile == 1)
 	{
 		if (bTextSearchMode == 0)
 		{
 			tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fmap.json, fdout);
-			LOG_ZVM ("***ZVMLog", "bytes write to output channel by current document", "d", tempwritebytes2channel, 1);
+			LOG_ZVM (ZLOGTIT, "bytes write to output channel by current document", "d", tempwritebytes2channel, 1);
 		}
 		else
 		{
-			printf ("\n\nfilename <%s>\n", fmap.realfilename);
-			printf ("snippet <%s>\n", getTextByHits (filteredbuff, tStart, tEnd));
+			PrintSnippet (filteredbuff, fmap.realfilename,  tStart, tEnd);
 		}
 	}
 	else
@@ -481,6 +498,7 @@ int main (int argc, char *argv[])
 
 	popt = getOptions(argc, argv);
 
+
 	if (popt.bTextSearchMode == 1)
 	{
 		argc = 2;
@@ -501,7 +519,7 @@ int main (int argc, char *argv[])
 			printf ("*** ZVM Error open %s output device\n", devoutname);
 			return 1;
 		}
-		LOG_ZVM ("***ZVMLog", "output channel", "s", devoutname, 1);
+		LOG_ZVM (ZLOGTIT, "output channel", "s", devoutname, 1);
 
 		dir = opendir(path);
 		if (dir ==0)
@@ -509,7 +527,7 @@ int main (int argc, char *argv[])
 			printf ("*** ZVM Error read dir %s\n", path);
 			return 1;
 		}
-		LOG_ZVM ("***ZVMLog", "incoming channels dir", "s", path, 1);
+		LOG_ZVM (ZLOGTIT, "incoming channels dir", "s", path, 1);
 		while((entry = readdir(dir)))
 		{
 			int filteredbufflen;
@@ -531,7 +549,7 @@ int main (int argc, char *argv[])
 	}
 
 	close (fdout);
-	LOG_ZVM ("***ZVMLog", "total bytes write to output channel", "ld", totalbyteswrite2text, 1);
-	LOG_ZVM ("***ZVMLog", "OK!", "s", "", 1);
+	LOG_ZVM (ZLOGTIT, "total bytes write to output channel", "ld", totalbyteswrite2text, 1);
+	LOG_ZVM (ZLOGTIT, "OK!", "s", "", 1);
 	return 0;
 }
