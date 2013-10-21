@@ -339,10 +339,13 @@ int mystrindex (const char *s, const char *t)
 }
 
 
-
+// 64K
+const int stdout_size_buf = 0x10000;
+char stdout_buffer[stdout_size_buf];
 int main ( int argc, char ** argv )
 {
-
+	// setting full buffering for stdout
+	setvbuf(stdout, stdout_buffer, _IOFBF, stdout_size_buf);
 	char *serversoft = getenv ("SERVER_SOFTWARE");
 	LOG_SERVER_SOFT;
 	LOG_NODE_NAME;
