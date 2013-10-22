@@ -28183,11 +28183,21 @@ bool CWordlist::ReadCP ( CSphAutofile & tFile, DWORD uVersion, bool bWordDict, C
 		}
 	} else if ( uVersion>=11 )
 	{
+
+		// please forgive me for that
+		const BYTE* buffer = NULL;
+		// get pointer to raw data, will iterate over buffer
+		// tRerader should have read data at once, instead of reading in subsequent cycle
+		tReader.GetBytesZerocopy(&buffer, m_dCheckpoints.GetSizeBytes());
 		// read v.14 checkpoints
 		ARRAY_FOREACH ( i, m_dCheckpoints )
 		{
-			m_dCheckpoints[i].m_iWordID = (SphWordID_t)tReader.GetOffset();
-			m_dCheckpoints[i].m_iWordlistOffset = tReader.GetOffset();
+//			m_dCheckpoints[i].m_iWordID = (SphWordID_t)tReader.GetOffset();
+//			m_dCheckpoints[i].m_iWordlistOffset = tReader.GetOffset();
+			m_dCheckpoints[i].m_iWordID = *(SphOffset_t*)buffer;
+			buffer += sizeof(SphOffset_t);
+			m_dCheckpoints[i].m_iWordlistOffset = *(SphOffset_t*)buffer;
+			buffer += sizeof(SphOffset_t);
 		}
 	} else
 	{

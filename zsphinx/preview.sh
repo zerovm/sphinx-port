@@ -15,7 +15,7 @@ rm -rf /data/out/*
 
 echo "search result:" > result_preview.txt
 
-./search.sh "-ws $REQUEST"
+#./search.sh "-ws $REQUEST"
 
 FILENAME=data/out/search_stdout.data
 

@@ -25,8 +25,6 @@ name=SERVER_PROTOCOL,		value=HTTP/1.0
 name=HTTP_ACCEPT_ENCODING,	value=gzip\x2cdeflate\x2csdch
 name=HTTP_X_OBJECT_META_MY_META,value=1000
 name=HTTP_ETAG,	 		value=45d5e3b1f8fac5c20dc4af8fe8f6fb9a
-#name=HTTP_X_TIMESTAMP,		value=1379666039.1613
-#name=HTTP_X_TIMESTAMP,		value=1380108876.06100
 name=HTTP_X_TIMESTAMP,		value=1380108877,06100
 name=HTTP_X_OBJECT_META_TYPE,	value=doc
 name=ZVM_LogLevel, 		value=1

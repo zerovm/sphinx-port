@@ -338,12 +338,19 @@ int mystrindex (const char *s, const char *t)
 	return -1;
 }
 
-
+// 64K
+const int stdout_size_buf = 0x10000;
+char stdout_buffer[stdout_size_buf];
 
 int main ( int argc, char ** argv )
 {
 
-	char *serversoft = getenv ("SERVER_SOFTWARE");
+	// setting full buffering for stdout
+	setvbuf(stdout, stdout_buffer, _IOFBF, stdout_size_buf);
+
+
+	char *serversoft = getenv ("SERVER_SO"
+			"FTWARE");
 	LOG_SERVER_SOFT;
 	LOG_NODE_NAME;
 
@@ -971,8 +978,8 @@ int main ( int argc, char ** argv )
 					tStat.m_iHits );
 				iWord++;
 			}
+			fprintf ( stdout, "\n" );
 		}
-		fprintf ( stdout, "\n" );
 
 		///////////
 		// cleanup

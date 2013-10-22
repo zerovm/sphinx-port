@@ -38,6 +38,7 @@ int main (int argc, char *argv[])
     char *prefix = (char *) OTHER_PREFIX;
     long  byteswrite2text;
     int i = 0;
+    int bTextPlain = 0;
 
   	DIR *dir;
 	struct dirent *entry;
@@ -59,8 +60,20 @@ int main (int argc, char *argv[])
 		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ);
 		if (getenv ("PATH_INFO") != NULL)
 			sprintf (fmap.realfilename, "%s", getenv ("PATH_INFO"));
-		char *filteredbuff = "other"; //
-		PrintSnippet (filteredbuff, fmap.realfilename, popt.tStart, popt.tEnd);
+		if (getenv ("CONTENT_TYPE") != NULL)
+		{
+			if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
+				bTextPlain = 1;
+		}
+		char *buff;
+		int txtbufflen =0;
+		if (bTextPlain == 1 && fmap.realfilesize <= FS_MAX_TEXT_FILE_LENGTH)
+		{
+			buff = (char *) malloc (fmap.realfilesize * sizeof (char) + 1);
+			txtbufflen = getbufffromtxt (fmap.tempfilename , buff);
+		}
+		buff [txtbufflen] = '\0';
+		PrintSnippet (buff, fmap.realfilename, popt.tStart, popt.tEnd);
 	}
 	else
 	{
@@ -93,7 +106,6 @@ int main (int argc, char *argv[])
 			if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
 			{
 				int fdin;
-
 
 				chname = malloc (strlen(path) + strlen (entry->d_name) + 2);
 

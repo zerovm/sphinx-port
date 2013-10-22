@@ -36,15 +36,8 @@ else
 	./rwgenerator_.sh
 fi
 
-echo copy nexes
-cp ../src/xmlpipecreator 	xmlpipecreator.nexe
-cp ../src/indexer 		indexer.nexe
-cp ../src/filesender 		filesender.nexe
-cp ../src/search 		search.nexe
-cp ../zxpdf-3.03/xpdf/pdftotext pdf.nexe
-cp ../docxextract/docxtotext 	txt.nexe
-cp ../antiword-0.37/antiword 	doc.nexe
-cp ../src/other			other.nexe
+#echo copy nexes
+./copynexe.sh
 
 #Extract from entire directory the list of filenames by extension and
 #associate every matched file with filesender node. Also create

@@ -43,7 +43,7 @@
 #define S_DEVOUTPUTDATA "/dev/output" // search output
 #define DELTAINDEX "deltaindex"
 #define MAININDEX "mainindex"
-#define READWRITEBUFFSIZE 1024*1024
+#define READWRITEBUFFSIZE 1024*64
 
 #define INDEXDIRNAME "index"
 //#define INDEXDIRNAME "/home/volodymyr/temp/index"
@@ -108,7 +108,7 @@ int getZVMLogLevel ();
 		}
 
 
-void filesender2extractor (char *, char *, char *, char *);
+void filesender2extractor (char *, char *, char *, char *, int);
 struct filemap extractorfromfilesender (char *, char *);
 char *getTextByHits (char *text, unsigned int, unsigned int);
 size_t SaveFileFromInput (char *, char **);
@@ -119,6 +119,7 @@ char *generateMetaWords (char *);
 char *getTextByWords (char *, char *);
 void PrintSnippet (char *, char *, unsigned int, unsigned int);
 void SendDelete (int );
+char *toLower (char*);
 
 
 void reverse (char *);

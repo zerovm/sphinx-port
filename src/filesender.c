@@ -83,7 +83,7 @@ int main (int argc, char *argv[])
 		sprintf (devnameout, "%s", fti.sChannelname);
 
 	LOG_ZVM ("***ZVMLog", "output device", "s", devnameout, 1);
-	filesender2extractor (devnamein, devnameout, filename, json);
+	filesender2extractor (devnamein, devnameout, filename, json, fti.bPlainText);
 #ifdef TEST
 	struct filemap fmap = getfilefromchannel ("/home/volodymyr/data_test/txt", "/home/volodymyr/data_test"); ///
 	printf ("tmp name - %s; real file name - %s; size %d\n", fmap.tempfilename, fmap.realfilename, (int) fmap.realfilesize);

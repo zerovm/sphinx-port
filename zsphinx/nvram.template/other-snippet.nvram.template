@@ -10,3 +10,5 @@ args=other {CMD_LINE}
 
 [env]
 name=ZVM_LogLevel, value=0
+name=CONTENT_TYPE,		value=text/plain
+

@@ -164,7 +164,7 @@ char * getValue (const char * pKeyVal)
 }
 
 // filtering json
-char * generateMetaWords (char *json)
+char *generateMetaWords (char *json)
 {
 	char *metawords;
 	if (json == NULL)
@@ -176,7 +176,9 @@ char * generateMetaWords (char *json)
 	size_t a = 0;
 	for (a = 0; a < strlen (json); a++)
 	{
-		if (json [a] != '"' && json [a] != ':' && json [a] != ',' && json [a] != '{' && json [a] != '}' )
+		if (json [a] == ',')
+			metawords[a] = ';';
+		else if (json [a] != '"' && json [a] != ':' && json [a] != '{' && json [a] != '}' )
 		{
 			metawords[a] = json [a];
 		}
@@ -189,9 +191,11 @@ char * generateMetaWords (char *json)
 		if (!isalnum (json [a]) )
 			json [a] = ' ';
 	}
+
+
+
 	return metawords;
 }
-
 
 /*
  * get text data from network in format size of text, real filename, text data
@@ -236,7 +240,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 
 		textsize = atoi (textsizebuff);
 
-		LOG_ZVM ("***ZVMLog", "text size", "ld", textsize, 1);
+		LOG_ZVM (ZLOGTIT, "text size", "ld", textsize, 1);
 
 
 		if (textsize <= 0 || bread <=0)
@@ -251,7 +255,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 			bread = read (fdin, &c, 1);
 		}
 		realfilename[realfilenamelen-2] = '\0';
-		LOG_ZVM ("***ZVMLog", "real file name", "s", realfilename, 1);
+		LOG_ZVM (ZLOGTIT, "real file name", "s", realfilename, 1);
 ///////////////////
 //get json
 ///////////////////
@@ -267,8 +271,8 @@ int getdatafromchannel (int fd, char *chname, int docID)
 ///////////////////
 // end read json
 ///////////////////
-		LOG_ZVM ("***ZVMLog", "json length", "zu", strlen (json), 2);
-		LOG_ZVM ("***ZVMLog", "json", "s", json, 3);
+		LOG_ZVM (ZLOGTIT, "json length", "zu", strlen (json), 2);
+		LOG_ZVM (ZLOGTIT, "json", "s", json, 3);
 
 		//read text data.
 		char *buff;
@@ -277,7 +281,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		crc = crc32(0L, Z_NULL, 0);
 		crc = crc32(crc, (const Bytef*) realfilename, strlen (realfilename));
 		printf ("realfilename=*%s*, crc=%lu\n", realfilename, crc);
-		LOG_ZVM ("***ZVMLog", "crc23", "lu", crc, 1);
+		LOG_ZVM (ZLOGTIT, "crc23", "lu", crc, 1);
 
 		printdochead (fd, realfilename, crc);
 		printjson (fd, json);
@@ -301,7 +305,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 					jsonline[linesymcount - 1] = '\0';
 				else
 					jsonline[linesymcount] = '\0';
-				LOG_ZVM ("***ZVMLog", "json line", "s", jsonline, 2);
+				LOG_ZVM (ZLOGTIT, "json line", "s", jsonline, 2);
 				startline = json + a;
 
 				if (strstr ( jsonline,"CONTENT_LENGTH") != NULL)
@@ -309,7 +313,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 					pContentLength = getValue (jsonline);
 				}
 
-				if (strstr ( jsonline,"X_TIMESTAMP") != NULL)
+				if (strstr ( jsonline,"TIMESTAMP") != NULL)
 				{
 					pTimeStamp = getValue (jsonline);
 				}
@@ -356,7 +360,7 @@ int getdatafromchannel (int fd, char *chname, int docID)
 		printdocfooter (fd);
 		docID++;
 
-		LOG_ZVM ("***ZVMLog", "doc count", "d", docID, 1);
+		LOG_ZVM (ZLOGTIT, "doc count", "d", docID, 1);
 
 		bread = read (fdin, &c, 1);
 	}
@@ -580,7 +584,7 @@ struct filemap extractorfromfilesender (char * chname, char *prefix)
 		readcount++;
 	}
 
-	LOG_ZVM ("***ZVMLog", "total read size", "ld", totalreadsize, 1);
+	LOG_ZVM (ZLOGTIT, "total read size", "ld", totalreadsize, 1);
 
 
 	if (totalreadsize <= 0)
@@ -613,7 +617,7 @@ struct filemap extractorfromfilesender (char * chname, char *prefix)
 	long filelength = 0;
 	// check packet size
 	checkpacketsize = atol (numberbuff);
-	LOG_ZVM ("***ZVMLog", "detected packet size", "ld", checkpacketsize, 1);
+	LOG_ZVM (ZLOGTIT, "detected packet size", "ld", checkpacketsize, 1);
 
 	if (checkpacketsize != totalreadsize)
 		printf ("*** Warning conflict packet size. Real readed bytes %lu, packet size specified in header %lu\n", totalreadsize, checkpacketsize);
@@ -628,15 +632,15 @@ struct filemap extractorfromfilesender (char * chname, char *prefix)
 	strncpy (fmap.realfilename, buff + bytesparsed, filenamelength);
 	fmap.realfilename[filenamelength] = '\0';
 	bytesparsed += filenamelength;
-	LOG_ZVM ("***ZVMLog", "real file name size", "zu", strlen (fmap.realfilename), 2);
-	LOG_ZVM ("***ZVMLog", "real filename", "s", fmap.realfilename, 1);
+	LOG_ZVM (ZLOGTIT, "real file name size", "zu", strlen (fmap.realfilename), 2);
+	LOG_ZVM (ZLOGTIT, "real filename", "s", fmap.realfilename, 1);
 
 	// read json length
 	strncpy (numberbuff, buff + bytesparsed, iNumBuffSize);
 	numberbuff[iNumBuffSize + 1] = '\0';
 	jsonlength =  atol (numberbuff);
 	bytesparsed += iNumBuffSize;
-	LOG_ZVM ("***ZVMLog", "json size", "ld", jsonlength, 2);
+	LOG_ZVM (ZLOGTIT, "json size", "ld", jsonlength, 2);
 
 	//read json
 	char *json = (char *) malloc (jsonlength * sizeof (char) + 1);
@@ -644,15 +648,15 @@ struct filemap extractorfromfilesender (char * chname, char *prefix)
 	json [jsonlength] = '\0';
 	fmap.json = json;
 	bytesparsed += jsonlength;
-	LOG_ZVM ("***ZVMLog", "json", "s", json, 3);
-	LOG_ZVM ("***ZVMLog", "fmap.json size", "zu", strlen (fmap.json), 2);
+	LOG_ZVM (ZLOGTIT, "json", "s", json, 3);
+	LOG_ZVM (ZLOGTIT, "fmap.json size", "zu", strlen (fmap.json), 2);
 
 	// read filelength
 	strncpy (numberbuff, buff + bytesparsed, iNumBuffSize);
 	numberbuff[iNumBuffSize + 1] = '\0';
 	filelength =  atol (numberbuff);
 	bytesparsed += iNumBuffSize;
-	LOG_ZVM ("***ZVMLog", "filelength", "ld", filelength, 1);
+	LOG_ZVM (ZLOGTIT, "filelength", "ld", filelength, 1);
 
 	// write file content to temp file
 	long bwrite = 0;
@@ -681,12 +685,12 @@ struct filemap extractorfromfilesender (char * chname, char *prefix)
  * filecontetn size		10 bytes
  * file contetnt		N bytes
  */
-void filesender2extractor (char * inputchname, char * outputchname, char *realfilename, char *json)
+void filesender2extractor (char * inputchname, char * outputchname, char *realfilename, char *json, int bMetaOnly)
 {
 	int fdIN, fdOUT;
 	unsigned long uPacketSize = 0;
 	unsigned long fsize = 0;
-	char bMetaOnly = 0;
+//	char bMetaOnly = 0;
 	long bwrite, bread;
 
 	fdIN = open (inputchname, O_RDONLY);
@@ -696,7 +700,6 @@ void filesender2extractor (char * inputchname, char * outputchname, char *realfi
 	{
 		printf("*** Error open input channel %s, fdIN=%d\n", inputchname, fdIN);
 	}
-
 	if (fdOUT < 0)
 	{
 		printf("*** Error open output channel %s, fdOUT=%d\n", inputchname, fdOUT);
@@ -737,7 +740,7 @@ void filesender2extractor (char * inputchname, char * outputchname, char *realfi
 	close (fdIN);
 	close (fdOUT);
 
-	LOG_ZVM ("***ZVMLog", "bytes write to output channel", "ld", bwrite, 1);
+	LOG_ZVM (ZLOGTIT, "bytes write to output channel", "ld", bwrite, 1);
 
 /*
 	if (buff != NULL)
@@ -1046,10 +1049,10 @@ void unpackindex_fd (char *	devname)
 void newbufferedunpack (char *	devname)
 {
 
-	LOG_ZVM ("***ZVMLog", "index pack device (input)", "s", devname, 2);
+	LOG_ZVM (ZLOGTIT, "index pack device (input)", "s", devname, 2);
 	int fdinfile;
 	char *dirName = (char*)INDEXDIRNAME;
-	LOG_ZVM ("***ZVMLog", "index directory name", "s", dirName, 2);
+	LOG_ZVM (ZLOGTIT, "index directory name", "s", dirName, 2);
 
   	DIR *dir;
 	dir = opendir(dirName);
@@ -1078,7 +1081,7 @@ void newbufferedunpack (char *	devname)
 
 	char blocksizestr [10];
 	size_t blocksize;
-	LOG_ZVM ("***ZVMLog", "read and write buff size", "zu", READWRITEBUFFSIZE, 2);
+	LOG_ZVM (ZLOGTIT, "read and write buff size", "zu", READWRITEBUFFSIZE, 2);
 	while (bread > 0)
 	{
 		if (filecount > 50)
@@ -1098,13 +1101,13 @@ void newbufferedunpack (char *	devname)
 		// read file name
 		bread = read (fdinfile, readbuf, blocksize);
 		readbuf [blocksize] = '\0';
-		LOG_ZVM ("***ZVMLog", "file name", "s", readbuf, 2);
+		LOG_ZVM (ZLOGTIT, "file name", "s", readbuf, 2);
 
 		// получение количества байт в сохраненном файле
 		bread = read(fdinfile, blocksizestr, 10);
 		blocksizestr[10] = '\0';
 		blocksize = atoi (blocksizestr);
-		LOG_ZVM ("***ZVMLog", "file size", "zu", blocksize, 2);
+		LOG_ZVM (ZLOGTIT, "file size", "zu", blocksize, 2);
 
 		size_t filelen = 0;
 		filelen = blocksize;
@@ -1168,7 +1171,7 @@ void newbufferedunpack (char *	devname)
 		close (fdefile);
 		if (readb != writeb)
 			printf ("*** Warning while unpacking index file, readb = %d, writeb = %d\n", readb, writeb);
-//			LOG_ZVM ("***ZVMLog", "unpacked file size", "d", writeb, 2);
+//			LOG_ZVM (ZLOGTIT, "unpacked file size", "d", writeb, 2);
 	}
 	printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char* ) DELTAINDEX);
 	close (fdinfile);
@@ -1181,9 +1184,9 @@ void newbufferedunpack (char *	devname)
 void newbufferedpack (char *devname, char *dirname)
 {
 
-	LOG_ZVM ("***ZVMLog", "start packing", "s", "OK", 2);
-	LOG_ZVM ("***ZVMLog", "device to pack (output)", "s", devname, 2);
-	LOG_ZVM ("***ZVMLog", "path to files", "s", dirname, 2);
+	LOG_ZVM (ZLOGTIT, "start packing", "s", "OK", 2);
+	LOG_ZVM (ZLOGTIT, "device to pack (output)", "s", devname, 2);
+	LOG_ZVM (ZLOGTIT, "path to files", "s", dirname, 2);
 
 	int fdpackfile;
 
@@ -1205,7 +1208,7 @@ void newbufferedpack (char *devname, char *dirname)
 		printf ("*** ZVM Error open DIR %s\n", indexpath);
 	int blocksize = READWRITEBUFFSIZE; // 10 Mb
 
-	LOG_ZVM ("***ZVMLog", "read and write block size", "d", blocksize, 2);
+	LOG_ZVM (ZLOGTIT, "read and write block size", "d", blocksize, 2);
 	char *buff = NULL;
 	buff = (char *) malloc (blocksize);
 
@@ -1249,8 +1252,8 @@ void newbufferedpack (char *devname, char *dirname)
 				bytecount = 0;
 
 			close (fd);
-			LOG_ZVM ("***ZVMLog", "packed file name", "s", newpath, 2);
-			LOG_ZVM ("***ZVMLog", "packed file size", "d", size, 2);
+			LOG_ZVM (ZLOGTIT, "packed file name", "s", newpath, 2);
+			LOG_ZVM (ZLOGTIT, "packed file size", "d", size, 2);
 
 			// for statistic data
 			char *indexnameptr = NULL;
@@ -1267,7 +1270,7 @@ void newbufferedpack (char *devname, char *dirname)
 	free (buff);
 	close (fdpackfile);
 	printstat (mainbytes, deltabytes, filecount, (char *) MAININDEX, (char *) DELTAINDEX);
-	LOG_ZVM ("***ZVMLog", "packed all files", "s", "OK", 2);
+	LOG_ZVM (ZLOGTIT, "packed all files", "s", "OK", 2);
 }
 
 void bufferedpackindexfd (char * devname)
@@ -1467,8 +1470,8 @@ char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 	size_t tCurrentWordPos = 0;
 	size_t tPosCount = 0;
 	size_t tLastWordCharPos = 0, tStartCharPos = 0;
-	unsigned int NotFoundPos = 16777000; // if the sphinx cannot find position of words in the text it return this magic number
-	unsigned int LastPosInFile = 8388000; // if the searched word is the last in the document the sphinx returns the number largest than this magic
+	unsigned int NotFoundPos = 16777000; 	// if the sphinx cannot find position of words in the text it return this magic number
+	unsigned int LastPosInFile = 8388000; 	// if the searched word is the last in the document the sphinx returns the number largest than this magic
 	size_t tSnippetSize = 0;
 	int bFind = 0;
 	if (text != NULL)
@@ -1476,13 +1479,13 @@ char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 	else
 		return NULL;
 
-	LOG_ZVM ("***ZVMLog", "start pos", "u", uiStart, 1);
+	LOG_ZVM (ZLOGTIT, "start pos", "u", uiStart, 1);
 
 	if(uiStart >= NotFoundPos)
 	{
 		return NULL;
 	}
-	if (uiStart > LastPosInFile || uiEnd > LastPosInFile)
+	if (uiStart > LastPosInFile )
 	{
 		if (tTextLength >= TEXT_SNIPPET_SIZE)
 		{
@@ -1490,7 +1493,7 @@ char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 		}
 		else
 		{
-			strncpy (s, text, tTextLength);
+			strncpy (s, text, tTextLength + 1);
 		}
 		return s;
 	}
@@ -1520,7 +1523,15 @@ char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 	if ((tStartCharPos + TEXT_SNIPPET_SIZE) < tTextLength)
 		tSnippetSize = TEXT_SNIPPET_SIZE;
 	else
+	{
 		tSnippetSize = tTextLength - tStartCharPos;
+		if (tSnippetSize < TEXT_SNIPPET_SIZE  && tTextLength > TEXT_SNIPPET_SIZE)
+		{
+			tStartCharPos = tStartCharPos - (TEXT_SNIPPET_SIZE - tSnippetSize);
+			tSnippetSize = TEXT_SNIPPET_SIZE;
+		}
+	}
+
 	strncpy (s, text + tStartCharPos, tSnippetSize);
 	s[tSnippetSize] = '\0';
 
@@ -1529,17 +1540,36 @@ char * getTextByHits (char *text, unsigned int uiStart, unsigned int uiEnd)
 
 char * getTextByWords (char *text, char *words)
 {
-	char *s = (char *) malloc (sizeof (char ) * TEXT_SNIPPET_SIZE);
-
 	if (text == NULL)
 		return NULL;
-//	if (strlen (text) > TEXT_SNIPPET_SIZE )
+	char *s = (char *) malloc (sizeof (char ) * strlen (text));
 
-
-	strncpy (s, text, TEXT_SNIPPET_SIZE - 1);
-	s[TEXT_SNIPPET_SIZE] = '\0';
+	strncpy (s, text, strlen(text) + 1);
+	s[strlen(text)] = '\0';
 
 	return s;
+}
+
+int getbufffromtxt (char *filename, char *buffer)
+{
+	long txtbuffsize;
+	int fd = open (filename, O_RDONLY);
+	if (fd < 0)
+	{
+		printf ("*** ZVM Error open %s file\n", filename);
+		return -1;
+	}
+	txtbuffsize = getfilesize_fd(fd, NULL, 0);
+	if (txtbuffsize < 0)
+	{
+		close (fd);
+		return -1;
+	}
+	int bread = read (fd, buffer, txtbuffsize);
+	if (bread < 0 || bread != txtbuffsize)
+		printf ("***ZVM Error read data fron txt file %s\n", filename);
+	close (fd);
+	return txtbuffsize;
 }
 
 struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize)
@@ -1553,13 +1583,13 @@ struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize)
 	ft.bSaveFile = 1;
 	ft.bPlainText = 0;
 
-	LOG_ZVM ("***ZVMLog", "extension", "s", ext, 2);
+	LOG_ZVM (ZLOGTIT, "extension", "s", ext, 2);
 
-	if (getenv("CONTENT_TYPE") != NULL)
-		if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
-		{
-			ft.bPlainText = 1;
-		}
+//	if (getenv("CONTENT_TYPE") != NULL)
+//		if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
+//		{
+//			ft.bPlainText = 1;
+//		}
 
 	if ((strncmp (ext, "txt", 3) == 0 || strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0) && filesize <= FS_MAX_TEXT_FILE_LENGTH)
 	{
@@ -1571,13 +1601,13 @@ struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize)
 	}
 	else
 	{
-		if ( ft.bPlainText == 1 && filesize <= FS_MAX_TEXT_FILE_LENGTH)
-			sprintf (channelname, "/dev/out/txt");
-		else
-		{
-			sprintf (channelname, "/dev/out/other");
-			ft.bSaveFile = 0;
-		}
+		//if ( ft.bPlainText == 1 && filesize <= FS_MAX_TEXT_FILE_LENGTH)
+		//	sprintf (channelname, "/dev/out/txt");
+		//else
+		//{
+		sprintf (channelname, "/dev/out/other");
+		//			ft.bSaveFile = 0;
+		//}
 	}
 	ft.sChannelname = channelname;
 	return ft;
@@ -1619,14 +1649,14 @@ size_t SaveFileFromInput (char *sSaveName, char **environ)
 		fdIN = open (EX_SEARCH_MODE_INPUT, O_RDONLY);
 		if (fdIN < 0)
 		{
-			printf ("*** ZVM Error open inut channel %s\n", EX_SEARCH_MODE_INPUT);
+			printf ("*** ZVM Error open input channel %s\n", EX_SEARCH_MODE_INPUT);
 			return 0;
 		}
 
 		fdOUT = open (sSaveName, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 		if (fdOUT < 0)
 		{
-			printf ("*** ZVM Error open inut channel %s\n", EX_SEARCH_MODE_INPUT);
+			printf ("*** ZVM Error open input channel %s\n", EX_SEARCH_MODE_INPUT);
 			return 0;
 		}
 
@@ -1664,7 +1694,7 @@ struct p_options getOptions (int argc, char *argv[])
 
     for (i = 0; i < argc; i++)
     {
-		LOG_ZVM ("***ZVMLog", "argv", "s", argv[i], 1);
+		LOG_ZVM (ZLOGTIT, "argv", "s", argv[i], 1);
     	if (argv [i][0] == '-')
     	{
     		if (i==0)
@@ -1677,7 +1707,7 @@ struct p_options getOptions (int argc, char *argv[])
     			break;
    			else if (strcmp (argv[i],"--search") == 0 )
 			{
-   				LOG_ZVM ("***ZVMLog", "search mode", "s", "ON", 1);
+   				LOG_ZVM (ZLOGTIT, "search mode", "s", "ON", 1);
    				popt.bTextSearchMode = 1;
    				popt.tStart = atoll (argv[i+1]);
    				popt.tEnd = atoll (argv[i+2]);
@@ -1721,23 +1751,15 @@ char * generateJson (char **environ)
 			"CONTENT_LENGTH",
 			"CONTENT_TYPE",
 			"HTTP_X_OBJECT_META",
-			"HTTP_ETAG",
 			"HTTP_X_TIMESTAMP",
-			"PATH_INFO",
-			"SERVER_PROTOCOL",
-			"HTTP_ACCEPT_ENCODING"
+			"PATH_INFO"
 	};
 
 	const char *tagfilters_remove_prefix [] = {
 			"HTTP_X_OBJECT_META_",
-			"HTTP_"
+			"HTTP_X_"
 	};
 
-/*
-	const char *tagfilters_skip [] = {
-			"ZVM_LogLevel"
-	};
-*/
 
 	int tagfilterscount = sizeof (tagfilters) / sizeof (char *);
 	int tagfilters_remove_prefix_count = sizeof (tagfilters_remove_prefix) / sizeof (char *);
@@ -1773,6 +1795,7 @@ char * generateJson (char **environ)
 
 		char *pFilterOK;
 		int iFind = 0;
+		int iFindTrim = 0;
 		int j = 0;
 
 		for ( j = 0; j < tagfilterscount; j++ )
@@ -1782,6 +1805,12 @@ char * generateJson (char **environ)
 				iFind = 1;
 			}
 		}
+
+		if (iFind == 0)
+		{
+			continue;
+		}
+
 		for ( j = 0; j < tagfilters_remove_prefix_count; j++)
 		{
 			if ( (pFilterOK = strstr (pKey, tagfilters_remove_prefix[j])) != NULL )
@@ -1799,26 +1828,24 @@ char * generateJson (char **environ)
 
 				char pKeyVal [strlen(pKey) + strlen (pVal) + 2];
 				sprintf (pKeyVal, "%s:%s", pKey, pVal);
-				LOG_ZVM ("***ZVMLog", "searched key", "s", tagfilters_remove_prefix[j], 3);
-				LOG_ZVM ("***ZVMLog", "Key:Val", "s", pKeyVal, 3);
+				LOG_ZVM (ZLOGTIT, "searched key", "s", tagfilters_remove_prefix[j], 3);
+				LOG_ZVM (ZLOGTIT, "Key:Val", "s", pKeyVal, 3);
 
 				jsonsize += addsize;
 				free (pKeyTrim);
 				keycount++;
+				iFindTrim = 1;
+				break;
 			}
 		}
-		if (iFind == 0)
+		if (iFindTrim == 0)
 		{
-			continue;
+			size_t addsize = strlen (pKey) +  strlen (pVal) + 8; //8 symbols plus -------  1 '\t' + 1 '=' + 4 '"' + 1 ',' + 1 '\n'
+			if ((jsonsize + addsize) > jsonmaxsize )
+				json = myrealloc (json, &jsonmaxsize);
+			sprintf (json + jsonsize + 1, "\t\"%s\":\"%s\",\n",pKey, pVal);
+			jsonsize += addsize;
 		}
-
-		size_t addsize = strlen (pKey) +  strlen (pVal) + 8; //8 symbols plus -------  1 '\t' + 1 '=' + 4 '"' + 1 ',' + 1 '\n'
-
-		if ((jsonsize + addsize) > jsonmaxsize )
-			json = myrealloc (json, &jsonmaxsize);
-
-		sprintf (json + jsonsize + 1, "\t\"%s\":\"%s\",\n",pKey, pVal);
-		jsonsize += addsize;
 		free (pKey);
 		free (pVal);
 	}
@@ -1828,7 +1855,7 @@ char * generateJson (char **environ)
 	sprintf (json + jsonsize - 1, "\n}");
 	jsonsize += 2;
 
-	LOG_ZVM ("***ZVMLog", "json key count", "d", keycount, 1);
+	LOG_ZVM (ZLOGTIT, "json key count", "d", keycount, 1);
 
 	return json;
 }
@@ -1874,7 +1901,27 @@ char *FilteringSnippet (char * s)
 			totallen = strlen (snippet);
 		}
 	}
+	int flen = strlen (wordbuff);
+	for (i = 0; i < flen; i++)
+	{
+
+	}
 	return snippet;
+}
+
+char *toLower (char* s)
+{
+	int slen, i = 0;
+
+	if (s == NULL)
+	{
+		return NULL;
+	}
+	else
+		slen = strlen (s);
+	for (i = 0; i < slen; i++)
+		s[i] = tolower (s[i]);
+	return s;
 }
 
 void PrintSnippet (char *text, char *realfilename, unsigned int uiStart, unsigned int uiEnd)
@@ -1882,13 +1929,17 @@ void PrintSnippet (char *text, char *realfilename, unsigned int uiStart, unsigne
 	printf ("\nfilename <%s>\n", realfilename);
 	char *pSnippet = getTextByHits (text, uiStart, uiEnd);
 
+
 	if (pSnippet != NULL)
 		printf ("snippet <%s>\n", FilteringSnippet(pSnippet));
 	else
 	{
 		char *json = generateJson(environ);
 		char *filteredbuff = generateMetaWords(json);
-		printf ("snippet <%s>\n", FilteringSnippet(getTextByWords(filteredbuff, NULL)));
+		filteredbuff = FilteringSnippet(getTextByWords(filteredbuff, NULL));
+
+		printf ("snippet <%s>\n", toLower(filteredbuff));
+		printf ("metadata\n");
 	}
 	return;
 }
@@ -1918,7 +1969,7 @@ void SendDelete (int fd)
 		crc = crc32(0L, Z_NULL, 0);
 		crc = crc32(crc, (const Bytef*) realfilename, strlen (realfilename));
 		printdochead (fd, (char *)"", crc);
-		int bwrite = write (fd, temp, strlen(temp));
+		write (fd, temp, strlen(temp));
 		printdocfooter(fd);
 	}
 	return;
