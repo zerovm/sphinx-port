@@ -11,7 +11,8 @@
 #define MAXFIENAME 1024
 
 #define DEVOUTNAME "/dev/out/xmlpipecreator"
-
+#define CHECK_INDEXER_XML_DEV_NAME "/dev/in/indexer"
+#define CHECK_INDEXER_IND_DEV_NAME "/dev/out/xmlpipecreator"
 
 #define SERVERSOFT "zerocloud"
 
@@ -120,7 +121,7 @@ char *getTextByWords (char *, char *);
 void PrintSnippet (char *, char *, unsigned int, unsigned int);
 void SendDelete (int );
 char *toLower (char*);
-
+void sendConfigOK ();
 
 void reverse (char *);
 void getext (const char *, char *);

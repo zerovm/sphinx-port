@@ -1867,6 +1867,9 @@ int main ( int argc, char ** argv )
 		sphAotSetCacheSize ( hIndexer.GetSize ( "lemmatizer_cache", 262144 ) );
 	}
 
+	// send ok to xmlpipecreator if config ok.
+	sendConfigOK ();
+
 	/////////////////////
 	// index each index
 	////////////////////

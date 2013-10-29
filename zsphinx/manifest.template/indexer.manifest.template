@@ -1,6 +1,7 @@
 =====================================================================
 ==Channel = {ABS_PATH}indexer.out, /dev/in/xmlpipecreator, 0, 0, 9999999999, 9999999999, 0, 0
 Channel = tcp:1:,              /dev/in/xmlpipecreator, 0, 0, 9999999999, 9999999999, 0, 0
+Channel = tcp:1:,              /dev/out/xmlpipecreator, 0, 0, 0, 0, 9999999999, 9999999999
 ==Channel = /dev/stdout,  /dev/stdout, 0, 0, 0, 0, 999999, 999999
 Channel = {ABS_PATH}data/out/indexer_stdout.data,  /dev/stdout, 0, 0, 0, 0, 999999, 999999
 Channel = {ABS_PATH}data/out/indexer_stderr.data,  /dev/stderr, 0, 0, 0, 0, 9999999, 9999999

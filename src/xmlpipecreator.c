@@ -46,6 +46,8 @@ void mylistdir_xmlpipe (int fd, char *path)
 			char devname [strlen (path) + strlen (entry->d_name) + 5];
 			sprintf (devname, "%s/%s", path, entry->d_name);
 			LOG_ZVM ("***ZVMLog", "channel name", "s", devname, 1);
+			if (strncmp (devname, CHECK_INDEXER_XML_DEV_NAME, strlen (CHECK_INDEXER_XML_DEV_NAME)) == 0)
+				continue;
 			int doccount;
 			doccount = getdatafromchannel (fd, devname, docID);
 			LOG_ZVM ("***ZVMLog", "doc in current channel", "d", doccount - docID, 1);
@@ -138,7 +140,38 @@ void closexmlpipe (int fd)
 	bwrite = write (fd, xmldocend, strlen (xmldocend));
 }	
 
+int checkIndexer ()
+{
+	int fd = 0;
+	int BUFFSIZE = 3;
+	char buff[BUFFSIZE];
+	int readbytes = 0;
+	fd = open( CHECK_INDEXER_XML_DEV_NAME, O_RDONLY);
+	if (fd <= 0 )
+	{
+		printf ("*** Error open indexer check device\n");
+		return 0;
+	}
 
+	if ( (readbytes = read (fd, buff, BUFFSIZE - 1)) != (BUFFSIZE - 1))
+	{
+		printf ("*** Error read %d bytes form indexer check device\n", BUFFSIZE - 1);
+		close (fd);
+		return 0;
+	}
+
+	if (strncmp(buff, "OK",2) == 0)
+	{
+		LOG_ZVM ("***ZVMLog", "indexer config", "s", "OK", 1);
+		close (fd);
+		return 1;
+	}
+	else
+	{
+		close (fd);
+		return 0;
+	}
+}
 
 int main(int argc, char **argv)
 {
@@ -151,17 +184,28 @@ int main(int argc, char **argv)
 	int fd;
 
 	int iOptindexer = 1;
+	int bIndexerReady = checkIndexer();
 	int bDeleteFromIndex = 0;
+	int bSaveXML = 0;
 	int i = 0;
 	char deviceoutputname[250];
 	sprintf (deviceoutputname, "%s", DEV_OUTPUT_NAME);
 	for ( i = 0; i < argc; i++)
 	{
 		if ((strncmp(argv[i], "--savexml", strlen (argv[i]))) == 0)
-			sprintf (deviceoutputname, "/dev/output");
+			bSaveXML = 1;
 		if ((strncmp(argv[i], "--delete", strlen (argv[i]))) == 0)
 			bDeleteFromIndex = 1;
 	}
+
+	if (bSaveXML == 1)
+		sprintf (deviceoutputname, "/dev/output");
+	else
+		if (bIndexerReady != 1)
+		{
+			printf ("***Error indexer not ready\n");
+			return 1;
+		}
 
 	if(bDeleteFromIndex == 0)
 		LOG_ZVM ("***ZVMLog", "incoming channels dir", "s", p, 1);
@@ -179,12 +223,12 @@ int main(int argc, char **argv)
 	createxmlpipe (fd);
 	if (bDeleteFromIndex == 0)
 	{
-		printf ("add\n");
+		LOG_ZVM ("***ZVMLog", "incoming channels dir", "s", p, 1);
 		mylistdir_xmlpipe (fd, p);
 	}
 	else
 	{
-		printf ("deelete\n");
+		LOG_ZVM ("***ZVMLog", "incoming channels dir", "s", p, 1);
 		SendDelete (fd);
 	}
 	closexmlpipe (fd);

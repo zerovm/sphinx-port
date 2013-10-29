@@ -87,6 +87,7 @@
 			{"device" : "output",  "path" : "swift://{my_account}/search/sys/rwindex"},
 			{"device" : "stderr"}
 		],
-        "replicate" : 0
+		"connect" : ["xmlpipecreator"],
+ 		"replicate" : 0
 	}
 ]

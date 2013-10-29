@@ -57,6 +57,28 @@ void getext (const char *fname, char *ext)
 	return;
 }
 
+void sendConfigOK ()
+{
+	int fd = open (CHECK_INDEXER_IND_DEV_NAME, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+	int bytewrite = 0;
+
+	if (fd < 0)
+	{
+		return;
+	}
+
+	if ((bytewrite = write(fd, "OK", 2)) != 2)
+	{
+		printf ("***Error write to CHECK_INDEXER_IND_DEV_NAME\n");
+		close (fd);
+		return;
+	}
+	LOG_ZVM ("***ZVMLog", "send OK to xmlpipe", "s", "OK", 1);
+	close (fd);
+	return;
+}
+
+
 /*
  * return size of file in bytes by file descriptor if sizebyfilename=0
  *
@@ -413,7 +435,6 @@ struct filemap getfilefromchannel (char * chname, char 	*prefix)
 //	if (remretcode == 1)
 //		printf ("error deleting previous temp file\n");
 ////////////////////////////////////////////////////////////////////////
-
 
 	fdout = open (tempfilename, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 	if (fdout < 0)
