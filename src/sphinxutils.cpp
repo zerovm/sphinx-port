@@ -1,5 +1,5 @@
 //
-// $Id: sphinxutils.cpp 3701 2013-02-20 18:10:18Z deogar $
+// $Id: sphinxutils.cpp 4098 2013-08-20 10:00:44Z kevg $
 //
 
 //
@@ -24,6 +24,7 @@
 /*zvm*/
 #include <dirent.h>
 /*zvm end*/
+
 #include <errno.h>
 #if HAVE_EXECINFO_H
 #include <execinfo.h>
@@ -297,7 +298,7 @@ static KeyDesc_t g_dKeysSource[] =
 	{ "sql_attr_uint",			KEY_LIST, NULL },
 	{ "sql_attr_bool",			KEY_LIST, NULL },
 	{ "sql_attr_timestamp",		KEY_LIST, NULL },
-	{ "sql_attr_str2ordinal",	KEY_LIST, NULL },
+	{ "sql_attr_str2ordinal",	KEY_LIST | KEY_DEPRECATED, "sql_attr_string for sorting" },
 	{ "sql_attr_float",			KEY_LIST, NULL },
 	{ "sql_attr_bigint",		KEY_LIST, NULL },
 	{ "sql_attr_multi",			KEY_LIST, NULL },
@@ -316,10 +317,10 @@ static KeyDesc_t g_dKeysSource[] =
 	{ "xmlpipe_attr_multi",		KEY_LIST, NULL },
 	{ "xmlpipe_attr_multi_64",	KEY_LIST, NULL },
 	{ "xmlpipe_attr_string",	KEY_LIST, NULL },
-	{ "xmlpipe_attr_wordcount",	KEY_LIST, NULL },
+	{ "xmlpipe_attr_wordcount",	KEY_LIST | KEY_DEPRECATED, "xmlpipe_attr_string for sorting" },
 	{ "xmlpipe_attr_json",		KEY_LIST, NULL },
 	{ "xmlpipe_field_string",	KEY_LIST, NULL },
-	{ "xmlpipe_field_wordcount",	KEY_LIST, NULL },
+	{ "xmlpipe_field_wordcount",	KEY_LIST | KEY_DEPRECATED, "xmlpipe_field_string for searching and sorting" },
 	{ "xmlpipe_fixup_utf8",		0, NULL },
 	{ "sql_group_column",		KEY_LIST | KEY_DEPRECATED, "sql_attr_uint" },
 	{ "sql_date_column",		KEY_LIST | KEY_DEPRECATED, "sql_attr_timestamp" },
@@ -330,9 +331,9 @@ static KeyDesc_t g_dKeysSource[] =
 	{ "odbc_dsn",				0, NULL },
 	{ "sql_joined_field",		KEY_LIST, NULL },
 	{ "sql_attr_string",		KEY_LIST, NULL },
-	{ "sql_attr_str2wordcount",	KEY_LIST, NULL },
+	{ "sql_attr_str2wordcount",	KEY_LIST | KEY_DEPRECATED, "index_field_lengths" },
 	{ "sql_field_string",		KEY_LIST, NULL },
-	{ "sql_field_str2wordcount",	KEY_LIST, NULL },
+	{ "sql_field_str2wordcount",	KEY_LIST | KEY_DEPRECATED, "index_field_lengths" },
 	{ "sql_file_field",			KEY_LIST, NULL },
 	{ "sql_column_buffers",		0, NULL },
 	{ "sql_attr_json",			KEY_LIST, NULL },
@@ -404,6 +405,7 @@ static KeyDesc_t g_dKeysIndex[] =
 	{ "rt_attr_multi",			KEY_LIST, NULL },
 	{ "rt_attr_multi_64",		KEY_LIST, NULL },
 	{ "rt_attr_json",			KEY_LIST, NULL },
+	{ "rt_attr_bool",			KEY_LIST, NULL },
 	{ "rt_mem_limit",			0, NULL },
 	{ "dict",					0, NULL },
 	{ "index_sp",				0, NULL },
@@ -616,7 +618,7 @@ bool CSphConfigParser::ValidateKey ( const char * sKey )
 
 #if !USE_WINDOWS
 
-bool CSphConfigParser::TryToExec ( char * pBuffer, char * pEnd, const char * szFilename, CSphVector<char> & dResult )
+bool TryToExec ( char * pBuffer, const char * szFilename, CSphVector<char> & dResult, char * sError, int iErrorLen )
 {
 #ifdef X86_64_ZEROVM
         return false;
@@ -625,7 +627,7 @@ bool CSphConfigParser::TryToExec ( char * pBuffer, char * pEnd, const char * szF
 
 	if ( pipe ( dPipe ) )
 	{
-		snprintf ( m_sError, sizeof ( m_sError ), "pipe() failed (error=%s)", strerror(errno) );
+		snprintf ( sError, iErrorLen, "pipe() failed (error=%s)", strerror(errno) );
 		return false;
 	}
 
@@ -663,12 +665,11 @@ bool CSphConfigParser::TryToExec ( char * pBuffer, char * pEnd, const char * szF
 
 		exit ( 1 );
 
-	} else
-		if ( iChild==-1 )
-		{
-			snprintf ( m_sError, sizeof ( m_sError ), "fork failed: [%d] %s", errno, strerror(errno) );
-			return false;
-		}
+	} else if ( iChild==-1 )
+	{
+		snprintf ( sError, iErrorLen, "fork failed: [%d] %s", errno, strerror(errno) );
+		return false;
+	}
 
 	close ( iWrite );
 
@@ -690,6 +691,7 @@ bool CSphConfigParser::TryToExec ( char * pBuffer, char * pEnd, const char * szF
 		iTotalRead += iBytesRead;
 	}
 	while ( iBytesRead > 0 );
+	close ( iRead );
 
 	int iStatus, iResult;
 	do
@@ -707,7 +709,7 @@ bool CSphConfigParser::TryToExec ( char * pBuffer, char * pEnd, const char * szF
 
 		if ( iResult==-1 && errno!=EINTR )
 		{
-			snprintf ( m_sError, sizeof ( m_sError ), "waitpid() failed: [%d] %s", errno, strerror(errno) );
+			snprintf ( sError, iErrorLen, "waitpid() failed: [%d] %s", errno, strerror(errno) );
 			return false;
 		}
 	}
@@ -716,19 +718,19 @@ bool CSphConfigParser::TryToExec ( char * pBuffer, char * pEnd, const char * szF
 	if ( WIFEXITED ( iStatus ) && WEXITSTATUS ( iStatus ) )
 	{
 		// FIXME? read stderr and log that too
-		snprintf ( m_sError, sizeof ( m_sError ), "error executing '%s' status = %d", pBuffer, WEXITSTATUS ( iStatus ) );
+		snprintf ( sError, iErrorLen, "error executing '%s' status = %d", pBuffer, WEXITSTATUS ( iStatus ) );
 		return false;
 	}
 
 	if ( WIFSIGNALED ( iStatus ) )
 	{
-		snprintf ( m_sError, sizeof ( m_sError ), "error executing '%s', killed by signal %d", pBuffer, WTERMSIG ( iStatus ) );
+		snprintf ( sError, iErrorLen, "error executing '%s', killed by signal %d", pBuffer, WTERMSIG ( iStatus ) );
 		return false;
 	}
 
 	if ( iBytesRead < 0 )
 	{
-		snprintf ( m_sError, sizeof ( m_sError ), "pipe read error: [%d] %s", errno, strerror(errno) );
+		snprintf ( sError, iErrorLen, "pipe read error: [%d] %s", errno, strerror(errno) );
 		return false;
 	}
 
@@ -737,6 +739,11 @@ bool CSphConfigParser::TryToExec ( char * pBuffer, char * pEnd, const char * szF
 
 	return true;
 #endif //X86_64_ZEROVM
+}
+
+bool CSphConfigParser::TryToExec ( char * pBuffer, const char * szFilename, CSphVector<char> & dResult )
+{
+	return ::TryToExec ( pBuffer, szFilename, dResult, m_sError, sizeof(m_sError) );
 }
 #endif
 
@@ -781,9 +788,8 @@ bool CSphConfigParser::Parse ( const char * sFileName, const char * pBuffer )
 	{
 		// open file
 		fp = fopen ( sFileName, "rb" );
-		if ( !fp ) {
+		if ( !fp )
 			return false;
-		}
 	}
 
 	// init parser
@@ -794,9 +800,9 @@ bool CSphConfigParser::Parse ( const char * sFileName, const char * pBuffer )
 	char * p = NULL;
 	char * pEnd = NULL;
 
-	char sBuf [ L_BUFFER ];
+	char sBuf [ L_BUFFER ] = { 0 };
 
-	char sToken [ L_TOKEN ];
+	char sToken [ L_TOKEN ] = { 0 };
 	int iToken = 0;
 	int iCh = -1;
 
@@ -851,7 +857,7 @@ bool CSphConfigParser::Parse ( const char * sFileName, const char * pBuffer )
 				if ( !pBuffer && m_iLine==1 && p==sBuf && p[1]=='!' )
 				{
 					CSphVector<char> dResult;
-					if ( TryToExec ( p+2, pEnd, sFileName, dResult ) )
+					if ( TryToExec ( p+2, sFileName, dResult ) )
 						Parse ( sFileName, &dResult[0] );
 					break;
 				} else
@@ -1035,8 +1041,6 @@ bool CSphConfigParser::Parse ( const char * sFileName, const char * pBuffer )
 }
 
 /////////////////////////////////////////////////////////////////////////////
-
-/////////////////////////////////////////////////////////////////////////////
 // ZVM
 /*
 ZVM Function for unpacking all index files from /dev/input device in a ZeroVM FS to spcefied by Zsphinx.conf directory
@@ -1184,13 +1188,7 @@ void packindex (char * devname)
 }
 /////////////////////////////////////////////////////////////////////////////
 // ZVM
-
-
-
-
-
 /////////////////////////////////////////////////////////////////////////////
-
 
 bool sphConfTokenizer ( const CSphConfigSection & hIndex, CSphTokenizerSettings & tSettings, CSphString & sError )
 {
@@ -1581,7 +1579,8 @@ bool sphFixupIndexSettings ( CSphIndex * pIndex, const CSphConfigSection & hInde
 		fprintf ( stdout, "WARNING: no morphology, index_exact_words=1 has no effect, ignoring\n" );
 	}
 
-	if ( pDict->GetSettings().m_bWordDict && pDict->HasMorphology() && tSettings.m_iMinPrefixLen && !tSettings.m_bIndexExactWords )
+	if ( pDict->GetSettings().m_bWordDict && pDict->HasMorphology() &&
+		( tSettings.m_iMinPrefixLen || tSettings.m_iMinInfixLen ) && !tSettings.m_bIndexExactWords )
 	{
 		tSettings.m_bIndexExactWords = true;
 		pIndex->Setup ( tSettings );
@@ -1619,7 +1618,6 @@ const char * sphLoadConfig ( const char * sOptConfig, bool bQuiet, CSphConfigPar
 		SYSCONFDIR "/sphinx.conf, "
 #endif
 		"./sphinx.conf)" );
-
 #ifdef TEST
 	if ( !bQuiet )
 		fprintf ( stdout, "using config file '%s'...\n", sOptConfig );
@@ -2051,6 +2049,7 @@ void sphBacktrace ( int iFD, bool bSafe )
 #define SIGRETURN_FRAME_OFFSET 0
 #endif
 
+
 		if ( !pFramePointer )
 		{
 			sphSafeInfo ( iFD, "Frame pointer is null, manual backtrace failed (did you build with -fomit-frame-pointer?)" );
@@ -2073,7 +2072,7 @@ void sphBacktrace ( int iFD, bool bSafe )
 
 		sphSafeInfo ( iFD, "Stack looks OK, attempting backtrace." );
 
-		BYTE** pNewFP;
+		BYTE** pNewFP = NULL;
 		while ( pFramePointer < (BYTE**) pMyStack )
 		{
 			pNewFP = (BYTE**) *pFramePointer;
@@ -2201,8 +2200,8 @@ void sphBacktrace ( int iFD, bool bSafe )
 
 	sphSafeInfo ( iFD, "--- BT to source lines finished ---" );
 #endif //X86_64_ZEROVM
-}
 
+}
 
 void sphBacktraceSetBinaryName ( const char * sName )
 {
@@ -2263,14 +2262,12 @@ void sphUnlinkIndex ( const char * sName, bool bForce )
 	if ( !( g_bUnlinkOld || bForce ) )
 		return;
 
-	// FIXME! ext list must be in sync with sphinx.cpp, searchd.cpp
-	const int EXT_COUNT = 10;
-	const char * dCurExts[EXT_COUNT] = { ".sph", ".spa", ".spi", ".spd", ".spp", ".spm", ".spk", ".sps", ".spe", ".mvp" };
 	char sFileName[SPH_MAX_FILENAME_LEN];
 
-	for ( int j=0; j<EXT_COUNT; j++ )
+	// +1 is for .mvp
+	for ( int i=0; i<sphGetExtCount()+1; i++ )
 	{
-		snprintf ( sFileName, sizeof(sFileName), "%s%s", sName, dCurExts[j] );
+		snprintf ( sFileName, sizeof(sFileName), "%s%s", sName, sphGetExts ( SPH_EXT_CUR )[i] );
 		// 'mvp' is optional file
 		if ( ::unlink ( sFileName ) && errno!=ENOENT )
 			sphWarning ( "unlink failed (file '%s', error '%s'", sFileName, strerror(errno) );
@@ -2297,5 +2294,5 @@ void sphCheckDuplicatePaths ( const CSphConfig & hConf )
 
 
 //
-// $Id: sphinxutils.cpp 3701 2013-02-20 18:10:18Z deogar $
+// $Id: sphinxutils.cpp 4098 2013-08-20 10:00:44Z kevg $
 //

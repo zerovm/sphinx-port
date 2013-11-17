@@ -1,5 +1,4 @@
 /* config/config.h.in.  Generated from configure.ac by autoheader.  */
-
 #define X86_64_ZEROVM 1
 
 /* Define to be the name of the compiler. */
@@ -21,7 +20,7 @@
 #undef HAVE_DLERROR
 
 /* Define to 1 if you have the `dlopen' function. */
-#define HAVE_DLOPEN 0
+#undef HAVE_DLOPEN
 
 /* Define to 1 if you don't have `vprintf' but do have `_doprnt.' */
 #undef HAVE_DOPRNT
@@ -142,6 +141,9 @@
 
 /* Define to 1 if you have the `strncasecmp' function. */
 #undef HAVE_STRNCASECMP
+
+/* Define to 1 if you have the `strnlen' function. */
+#undef HAVE_STRNLEN
 
 /* Define to 1 if you have the `strstr' function. */
 #undef HAVE_STRSTR
@@ -273,7 +275,7 @@
 /* Define to 1 if you want to compile with PostgreSQL support */
 #undef USE_PGSQL
 
-/* re2 library support */
+/* RE2 library support */
 #undef USE_RE2
 
 /* define to use POSIX Syslog for logging */

@@ -1,7 +1,7 @@
 <?php
 
 //
-// $Id: sphinxapi.php 3701 2013-02-20 18:10:18Z deogar $
+// $Id: sphinxapi.php 3802 2013-04-10 12:49:42Z tomat $
 //
 
 //
@@ -538,11 +538,10 @@ class SphinxClient
 		}
 				
 		$this->_host = $host;
-		if ( is_int($port) )
-			if ( $port )
-				$this->_port = $port;
+		$port = intval($port);
+		assert ( 0<=$port && $port<65536 );
+		$this->_port = ( $port==0 ) ? 9312 : $port;
 		$this->_path = '';
-
 	}
 
 	/// set server connection timeout (0 to remove)
@@ -1807,5 +1806,5 @@ class SphinxClient
 }
 
 //
-// $Id: sphinxapi.php 3701 2013-02-20 18:10:18Z deogar $
+// $Id: sphinxapi.php 3802 2013-04-10 12:49:42Z tomat $
 //

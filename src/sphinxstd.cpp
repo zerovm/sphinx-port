@@ -1,5 +1,5 @@
 //
-// $Id: sphinxstd.cpp 3701 2013-02-20 18:10:18Z deogar $
+// $Id: sphinxstd.cpp 4048 2013-07-31 15:31:59Z kevg $
 //
 
 //
@@ -29,7 +29,8 @@
 CSphIOStats gIOStatsObj;
 CSphIOStats *gIOStats;
 SphThreadKey_t gThreadKey;
-#endif 
+#endif
+
 
 int g_iThreadStackSize = 65536;
 
@@ -810,14 +811,53 @@ CSphProcessSharedMutex::CSphProcessSharedMutex ( int iExtraSize )
 		return;
 	}
 #else
+#ifdef X86_64_ZEROVM
+	pthread_mutexattr_t tAttr;
+	int iRes = pthread_mutexattr_init ( &tAttr );
+	if ( iRes )
+	{
+		m_sError.SetSprintf ( "pthread_mutexattr_init, errno=%d", iRes );
+		return;
+	}
+	iRes = pthread_mutexattr_setpshared ( &tAttr, PTHREAD_PROCESS_SHARED );
+	if ( iRes )
+	{
+		m_sError.SetSprintf ( "pthread_mutexattr_setpshared, errno = %d", iRes );
+		pthread_mutexattr_destroy ( &tAttr );
+		return;
+	}
+#endif
 	CSphString sError, sWarning;
 	if ( !m_pStorage.Alloc ( sizeof(pthread_mutex_t) + iExtraSize, sError, sWarning ) )
 	{
 		m_sError.SetSprintf ( "storage.alloc, error='%s', warning='%s'", sError.cstr(), sWarning.cstr() );
+#ifdef X86_64_ZEROVM
+		pthread_mutexattr_destroy ( &tAttr );
+#endif
 		return;
 	}
 
 	m_pMutex = (pthread_mutex_t*) m_pStorage.GetWritePtr ();
+
+#ifdef X86_64_ZEROVM
+	iRes = pthread_mutex_init ( m_pMutex, &tAttr );
+
+	if ( iRes )
+	{
+		m_sError.SetSprintf ( "pthread_mutex_init, errno=%d ", iRes );
+		pthread_mutexattr_destroy ( &tAttr );
+		m_pMutex = NULL;
+		m_pStorage.Reset ();
+		return;
+	}
+
+	iRes = pthread_mutexattr_destroy ( &tAttr );
+	if ( iRes )
+	{
+		m_sError.SetSprintf ( "pthread_mutexattr_destroy, errno = %d", iRes );
+		return;
+	}
+#endif
 #endif // __FreeBSD__
 }
 
@@ -828,7 +868,9 @@ CSphProcessSharedMutex::~CSphProcessSharedMutex()
 #ifdef __FreeBSD__
 		sem_destroy ( m_pMutex );
 #else
-	//	pthread_mutex_destroy ( m_pMutex );
+#ifdef X86_64_ZEROVM
+		pthread_mutex_destroy ( m_pMutex );
+#endif
 #endif
 		m_pMutex = NULL;
 	}
@@ -848,8 +890,12 @@ void CSphProcessSharedMutex::Lock () const
 	if ( m_pMutex )
 		sem_wait ( m_pMutex );
 #else
-	//if ( m_pMutex )
-	//	pthread_mutex_lock ( m_pMutex );
+#ifdef X86_64_ZEROVM
+
+	if ( m_pMutex )
+		pthread_mutex_lock ( m_pMutex );
+#endif
+
 #endif
 #endif
 }
@@ -862,8 +908,10 @@ void CSphProcessSharedMutex::Unlock () const
 	if ( m_pMutex )
 		sem_post ( m_pMutex );
 #else
-	//if ( m_pMutex )
-	//	pthread_mutex_unlock ( m_pMutex );
+#ifdef X86_64_ZEROVM
+	if ( m_pMutex )
+		pthread_mutex_unlock ( m_pMutex );
+#endif
 #endif
 #endif
 }
@@ -911,14 +959,19 @@ bool CSphProcessSharedMutex::TimedLock ( int tmSpin ) const
 	int64_t tmTill = sphMicroTimer() + tmSpin;
 	do
 	{
-//		iRes = pthread_mutex_trylock ( m_pMutex );
+#ifdef X86_64_ZEROVM
+		iRes = pthread_mutex_trylock ( m_pMutex );
+#endif
 		if ( iRes==EBUSY )
 			sphSleepMsec ( 0 );
 	} while ( iRes==EBUSY && sphMicroTimer()<tmTill );
 
 	if ( iRes==EBUSY )
-		iRes = NULL;//pthread_mutex_trylock ( m_pMutex );
-
+#ifdef X86_64_ZEROVM
+		iRes = pthread_mutex_trylock ( m_pMutex );
+#elif
+		iRes = NULL;
+#endif
 	return iRes==0;
 #endif // HAVE_PTHREAD_MUTEX_TIMEDLOCK && HAVE_CLOCK_GETTIME
 #endif // __FreeBSD__
@@ -965,8 +1018,8 @@ struct ThreadCall_t
 #endif
 	ThreadCall_t *	m_pNext;
 };
-SphThreadKey_t g_tThreadCleanupKey;
-SphThreadKey_t g_tMyThreadStack;
+static SphThreadKey_t g_tThreadCleanupKey;
+static SphThreadKey_t g_tMyThreadStack;
 
 
 #if USE_WINDOWS
@@ -1025,8 +1078,10 @@ void * sphThreadInit ( bool )
 {
 	static bool bInit = false;
 #if !USE_WINDOWS
-//	static pthread_attr_t tJoinableAttr;
-//	static pthread_attr_t tDetachedAttr;
+#ifdef X86_64_ZEROVM
+	static pthread_attr_t tJoinableAttr;
+	static pthread_attr_t tDetachedAttr;
+#endif
 #endif
 
 	if ( !bInit )
@@ -1034,18 +1089,16 @@ void * sphThreadInit ( bool )
 #if SPH_DEBUG_LEAKS || SPH_ALLOCS_PROFILER
 		sphMemStatInit();
 #endif
-
-#ifndef X86_64_ZEROVM
+#ifdef X86_64_ZEROVM
 		// we're single-threaded yet, right?!
 		if ( !sphThreadKeyCreate ( &g_tThreadCleanupKey ) )
 			sphDie ( "FATAL: sphThreadKeyCreate() failed" );
 
 		if ( !sphThreadKeyCreate ( &g_tMyThreadStack ) )
 			sphDie ( "FATAL: sphThreadKeyCreate() failed" );
-#endif //X86_64_ZEROVM
-
+#endif
 #if !USE_WINDOWS
-#ifndef X86_64_ZEROVM
+#ifdef X86_64_ZEROVM
 		if ( pthread_attr_init ( &tJoinableAttr ) )
 			sphDie ( "FATAL: pthread_attr_init( joinable ) failed" );
 
@@ -1054,19 +1107,22 @@ void * sphThreadInit ( bool )
 
 		if ( pthread_attr_setdetachstate ( &tDetachedAttr, PTHREAD_CREATE_DETACHED ) )
 			sphDie ( "FATAL: pthread_attr_setdetachstate( detached ) failed" );
-#endif //X86_64_ZEROVM
+#endif
 #endif
 		bInit = true;
 	}
 #if !USE_WINDOWS
-//	if ( pthread_attr_setstacksize ( &tJoinableAttr, g_iThreadStackSize + PTHREAD_STACK_MIN ) )
-//		sphDie ( "FATAL: pthread_attr_setstacksize( joinable ) failed" );
+#ifdef X86_64_ZEROVM
+	if ( pthread_attr_setstacksize ( &tJoinableAttr, g_iThreadStackSize + PTHREAD_STACK_MIN ) )
+		sphDie ( "FATAL: pthread_attr_setstacksize( joinable ) failed" );
 
-//	if ( pthread_attr_setstacksize ( &tDetachedAttr, g_iThreadStackSize + PTHREAD_STACK_MIN ) )
-//		sphDie ( "FATAL: pthread_attr_setstacksize( detached ) failed" );
+	if ( pthread_attr_setstacksize ( &tDetachedAttr, g_iThreadStackSize + PTHREAD_STACK_MIN ) )
+		sphDie ( "FATAL: pthread_attr_setstacksize( detached ) failed" );
 
-//	return bDetached ? &tDetachedAttr : &tJoinableAttr;
+	return bDetached ? &tDetachedAttr : &tJoinableAttr;
+#else
 	return NULL;
+#endif
 #else
 	return NULL;
 #endif
@@ -1109,10 +1165,12 @@ bool sphThreadCreate ( SphThread_t * pThread, void (*fnThread)(void*), void * pA
 	pthread_mutex_init ( &pCall->m_dlock, NULL );
 	pthread_mutex_lock ( &pCall->m_dlock );
 #endif
-
-	//void * pAttr = sphThreadInit ( bDetached );
-	errno = 0;//pthread_create ( pThread, (pthread_attr_t*) pAttr, sphThreadProcWrapper, pCall );
-
+#ifdef X86_64_ZEROVM
+	void * pAttr = sphThreadInit ( bDetached );
+	errno = pthread_create ( pThread, (pthread_attr_t*) pAttr, sphThreadProcWrapper, pCall );
+#else
+	errno = 0;
+#endif
 #if USE_GPROF
 	if ( !errno )
 		pthread_cond_wait ( &pCall->m_dwait, &pCall->m_dlock );
@@ -1141,10 +1199,13 @@ bool sphThreadJoin ( SphThread_t * pThread )
 	*pThread = NULL;
 	return ( uWait==WAIT_OBJECT_0 || uWait==WAIT_ABANDONED );
 #else
-	return 0;//pthread_join ( *pThread, NULL )==0;
+#ifdef X86_64_ZEROVM
+	return pthread_join ( *pThread, NULL )==0;
+#else
+	return 0;
+#endif
 #endif
 }
-
 
 void sphThreadOnExit ( void (*fnCleanup)(void*), void * pArg )
 {
@@ -1163,7 +1224,7 @@ bool sphThreadKeyCreate ( SphThreadKey_t * pKey )
 	return *pKey!=TLS_OUT_OF_INDEXES;
 #else
 # ifdef X86_64_ZEROVM
-	*pKey = gThreadKey; 
+	*pKey = gThreadKey;
 	return true;
 #else
 	return pthread_key_create ( pKey, NULL )==0;
@@ -1171,12 +1232,16 @@ bool sphThreadKeyCreate ( SphThreadKey_t * pKey )
 #endif
 }
 
+
+
 void sphThreadKeyDelete ( SphThreadKey_t tKey )
 {
 #if USE_WINDOWS
 	TlsFree ( tKey );
-//#else
-	//pthread_key_delete ( tKey );
+#else
+#ifdef X86_64_ZEROVM
+	pthread_key_delete ( tKey );
+#endif
 #endif
 }
 
@@ -1239,6 +1304,7 @@ bool sphThreadSet ( SphThreadKey_t tKey, void * pValue )
 #endif //X86_64_ZEROVM
 #endif
 }
+
 
 #if !USE_WINDOWS
 bool sphIsLtLib()
@@ -1335,7 +1401,9 @@ bool CSphAutoEvent::WaitEvent()
 bool CSphMutex::Init ()
 {
 	assert ( !m_bInitialized );
-//	m_bInitialized = ( pthread_mutex_init ( &m_tMutex, NULL )==0 );
+#ifdef X86_64_ZEROVM
+	m_bInitialized = ( pthread_mutex_init ( &m_tMutex, NULL )==0 );
+#endif
 	return m_bInitialized;
 }
 
@@ -1345,17 +1413,32 @@ bool CSphMutex::Done ()
 		return true;
 
 	m_bInitialized = false;
-	return 0;//pthread_mutex_destroy ( &m_tMutex )==0;
+#ifdef X86_64_ZEROVM
+	return pthread_mutex_destroy ( &m_tMutex )==0;
+#else
+	return 0;
+#endif
 }
 
 bool CSphMutex::Lock ()
 {
-	return 0;//( pthread_mutex_lock ( &m_tMutex )==0 );
+	assert ( m_bInitialized );
+
+#ifdef X86_64_ZEROVM
+	return ( pthread_mutex_lock ( &m_tMutex )==0 );
+#else
+	return 0;
+#endif
 }
 
 bool CSphMutex::Unlock ()
 {
-	return 0;//( pthread_mutex_unlock ( &m_tMutex )==0 );
+	assert ( m_bInitialized );
+#ifdef X86_64_ZEROVM
+	return ( pthread_mutex_lock ( &m_tMutex )==0 );
+#else
+	return 0;
+#endif
 }
 
 bool CSphAutoEvent::Init ( CSphMutex * pMutex )
@@ -1365,7 +1448,12 @@ bool CSphAutoEvent::Init ( CSphMutex * pMutex )
 	if ( !pMutex )
 		return false;
 	m_pMutex = pMutex->GetInternalMutex();
-	m_bInitialized = 0; // ( pthread_cond_init ( &m_tCond, NULL )==0 );
+
+#ifdef X86_64_ZEROVM
+	m_bInitialized = ( pthread_cond_init ( &m_tCond, NULL )==0 );
+#else
+	m_bInitialized = 0;
+#endif
 	return m_bInitialized;
 }
 
@@ -1375,7 +1463,11 @@ bool CSphAutoEvent::Done ()
 		return true;
 
 	m_bInitialized = false;
-	return true; //( pthread_cond_destroy ( &m_tCond ) )==0;
+#ifdef X86_64_ZEROVM
+	return ( pthread_cond_destroy ( &m_tCond ) )==0;
+#else
+	return true;
+#endif
 }
 
 void CSphAutoEvent::SetEvent ()
@@ -1383,7 +1475,9 @@ void CSphAutoEvent::SetEvent ()
 	if ( !m_bInitialized )
 		return;
 // pthread_mutex_lock ( m_pMutex ); // locking is done from outside
-//pthread_cond_signal ( &m_tCond );
+#ifdef X86_64_ZEROVM
+	pthread_cond_signal ( &m_tCond );
+#endif
 // pthread_mutex_unlock ( m_pMutex );
 	m_bSent = true;
 }
@@ -1392,11 +1486,15 @@ bool CSphAutoEvent::WaitEvent ()
 {
 	if ( !m_bInitialized )
 		return true;
-	//pthread_mutex_lock ( m_pMutex );
-	// if ( !m_bSent )
-	//     pthread_cond_wait ( &m_tCond, m_pMutex );
+#ifdef X86_64_ZEROVM
+	pthread_mutex_lock ( m_pMutex );
+	if ( !m_bSent )
+	pthread_cond_wait ( &m_tCond, m_pMutex );
+#endif
 	m_bSent = false;
-	//pthread_mutex_unlock ( m_pMutex );
+#ifdef X86_64_ZEROVM
+	pthread_mutex_unlock ( m_pMutex );
+#endif
 	return true;
 }
 
@@ -1539,8 +1637,9 @@ CSphRwlock::CSphRwlock ()
 bool CSphRwlock::Init ()
 {
 	assert ( !m_bInitialized );
-
-//	m_bInitialized = ( pthread_rwlock_init ( &m_tLock, NULL )==0 );
+#ifdef X86_64_ZEROVM
+	m_bInitialized = ( pthread_rwlock_init ( &m_tLock, NULL )==0 );
+#endif
 	return m_bInitialized;
 }
 
@@ -1549,29 +1648,41 @@ bool CSphRwlock::Done ()
 	if ( !m_bInitialized )
 		return true;
 
-//	m_bInitialized = !( pthread_rwlock_destroy ( &m_tLock )==0 );
+#ifdef X86_64_ZEROVM
+	m_bInitialized = !( pthread_rwlock_destroy ( &m_tLock )==0 );
+#endif
 	return !m_bInitialized;
 }
 
 bool CSphRwlock::ReadLock ()
 {
 	assert ( m_bInitialized );
-
-	return 0;//pthread_rwlock_rdlock ( &m_tLock )==0;
+#ifdef X86_64_ZEROVM
+	return pthread_rwlock_rdlock ( &m_tLock )==0;
+#else
+	return 0;
+#endif
 }
 
 bool CSphRwlock::WriteLock ()
 {
 	assert ( m_bInitialized );
-
-	return 0;//pthread_rwlock_wrlock ( &m_tLock )==0;
+#ifdef X86_64_ZEROVM
+	return pthread_rwlock_wrlock ( &m_tLock )==0;
+#else
+	return 0;
+#endif
 }
 
 bool CSphRwlock::Unlock ()
 {
 	assert ( m_bInitialized );
 
-	return 0;//pthread_rwlock_unlock ( &m_tLock )==0;
+#ifdef X86_64_ZEROVM
+	return pthread_rwlock_unlock ( &m_tLock )==0;
+#else
+	return 0;
+#endif
 }
 
 #endif
@@ -1721,5 +1832,5 @@ DWORD sphCRC32 ( const BYTE * pString, int iLen, DWORD uPrevCRC )
 }
 
 //
-// $Id: sphinxstd.cpp 3701 2013-02-20 18:10:18Z deogar $
+// $Id: sphinxstd.cpp 4048 2013-07-31 15:31:59Z kevg $
 //
