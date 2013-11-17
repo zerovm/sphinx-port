@@ -557,7 +557,7 @@ PACKAGE_STRING='sphinx 2.1.3-dev'
 PACKAGE_BUGREPORT='shodan(at)sphinxsearch.com'
 PACKAGE_URL=''
 
-ac_unique_file="src/searchd.cpp"
+ac_unique_file="src/search.cpp"
 # Factoring default headers for most tests.
 ac_includes_default="\
 #include <stdio.h>
