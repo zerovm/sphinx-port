@@ -16,7 +16,7 @@
 #include "sphinx.h"
 #include "sphinxutils.h"
 #include "sphinxint.h"
-#include "zvmfileutil.h"
+#include "../zsphinx/src/zvmfileutil.h"
 #include <time.h>
 //#include <stdlib.h>
 //#include <string.h>
@@ -844,7 +844,7 @@ int main ( int argc, char ** argv )
 				for ( int j=0; j<pResult->m_tSchema.GetAttrsCount(); j++ )
 				{
 					const CSphColumnInfo & tAttr = pResult->m_tSchema.GetAttr(j);
-					if (!bShowSearchStat && ( strcmp("filename", tAttr.m_sName.cstr()) != 0))
+					if (!bShowSearchStat && ( strcmp("path_info", tAttr.m_sName.cstr()) != 0))
 						continue;
 
 					if (bShowSearchStat)

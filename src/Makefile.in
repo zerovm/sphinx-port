@@ -35,7 +35,6 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 bin_PROGRAMS = indexer$(EXEEXT) search$(EXEEXT) \
 	spelldump$(EXEEXT) indextool$(EXEEXT) wordbreaker$(EXEEXT) \
-	xmlpipecreator$(EXEEXT) filesender$(EXEEXT) other$(EXEEXT)
 
 noinst_PROGRAMS = tests$(EXEEXT)
 subdir = src
@@ -111,11 +110,10 @@ CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 SOURCES = $(libsphinx_a_SOURCES) $(indexer_SOURCES) \
 	$(indextool_SOURCES) $(search_SOURCES) \
 	$(spelldump_SOURCES) $(tests_SOURCES) $(wordbreaker_SOURCES) \
-	$(xmlpipecreator_SOURCES) $(filesender_SOURCES) $(other_SOURCES)
 DIST_SOURCES = $(libsphinx_a_SOURCES) $(indexer_SOURCES) \
 	$(indextool_SOURCES) $(search_SOURCES) \
 	$(spelldump_SOURCES) $(tests_SOURCES) $(wordbreaker_SOURCES) \
-	$(xmlpipecreator_SOURCES) $(filesender_SOURCES) $(other_SOURCES)
+
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -327,27 +325,19 @@ clean-noinstPROGRAMS:
 	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
 indexer$(EXEEXT): $(indexer_OBJECTS) $(indexer_DEPENDENCIES) 
 	@rm -f indexer$(EXEEXT)
-	$(CXXLINK) $(indexer_OBJECTS) $(indexer_LDADD) $(LIBS) zvmfileutil.c -lz
+	$(CXXLINK) $(indexer_OBJECTS) $(indexer_LDADD) $(LIBS) ../zsphinx/src/zvmfileutil.c -lz
 indextool$(EXEEXT): $(indextool_OBJECTS) $(indextool_DEPENDENCIES) 
 	@rm -f indextool$(EXEEXT)
 	$(CXXLINK) $(indextool_OBJECTS) $(indextool_LDADD) $(LIBS)
 search$(EXEEXT): $(search_OBJECTS) $(search_DEPENDENCIES) 
 	@rm -f search$(EXEEXT)
-	$(CXXLINK) $(search_OBJECTS) $(search_LDADD) $(LIBS) zvmfileutil.c -lz
+	$(CXXLINK) $(search_OBJECTS) $(search_LDADD) $(LIBS) ../zsphinx/src/zvmfileutil.c -lz
 spelldump$(EXEEXT): $(spelldump_OBJECTS) $(spelldump_DEPENDENCIES) 
 	@rm -f spelldump$(EXEEXT)
 	$(CXXLINK) $(spelldump_OBJECTS) $(spelldump_LDADD) $(LIBS)
 tests$(EXEEXT): $(tests_OBJECTS) $(tests_DEPENDENCIES) 
 	@rm -f tests$(EXEEXT)
 	$(CXXLINK) $(tests_OBJECTS) $(tests_LDADD) $(LIBS)
-xmlpipecreator$(EXEEXT): 
-	$(CC) -o xmlpipecreator$(EXEEXT)  xmlpipecreator.c $(LDFLAGS) zvmfileutil.c -lz
-filesender$(EXEEXT): 
-	$(CC) -o filesender$(EXEEXT)  filesender.c $(LDFLAGS) zvmfileutil.c -lz
-other$(EXEEXT): 
-	$(CC) -o other$(EXEEXT)  other.c $(LDFLAGS) zvmfileutil.c -lz
-text$(EXEEXT): 
-	$(CC) -o text$(EXEEXT) text.c $(LDFLAGS)
 wordbreaker$(EXEEXT): $(wordbreaker_OBJECTS) $(wordbreaker_DEPENDENCIES) 
 	@rm -f wordbreaker$(EXEEXT)
 	$(CXXLINK) $(wordbreaker_OBJECTS) $(wordbreaker_LDADD) $(LIBS)

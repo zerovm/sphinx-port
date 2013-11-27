@@ -50,7 +50,7 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <sys/stat.h>
-#include "../src/zvmfileutil.h"
+#include "../zsphinx/src/zvmfileutil.h"
 //#include <unistd.h>
 
 #ifdef _WIN32

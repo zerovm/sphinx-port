@@ -37,7 +37,7 @@
 #include "UnicodeMap.h"
 #include "Error.h"
 #include "config.h"
-#include "../../src/zvmfileutil.h"
+#include "../../zsphinx/src/zvmfileutil.h"
 
 
 static void printInfoString(FILE *f, Dict *infoDict, const char *key,

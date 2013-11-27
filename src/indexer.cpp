@@ -22,7 +22,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <signal.h>
-#include "zvmfileutil.h"
+#include "../zsphinx/src/zvmfileutil.h"
 
 #if USE_WINDOWS
 	#define snprintf	_snprintf

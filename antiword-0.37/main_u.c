@@ -51,7 +51,7 @@
 #endif /* N_PLAT_NLM */
 #include "version.h"
 #include "antiword.h"
-#include "../src/zvmfileutil.h"
+#include "../zsphinx/src/zvmfileutil.h"
 
 #define FILENAME "file.doc"
 

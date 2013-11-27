@@ -5,3 +5,6 @@ cd ../zxpdf-3.03
 make -j4
 cd ../docxextract
 make -j4
+cd ../zsphinx/src
+make clean
+make

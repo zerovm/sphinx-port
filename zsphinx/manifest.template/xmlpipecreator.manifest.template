@@ -3,7 +3,7 @@ Channel = /dev/null, 				/dev/stdin, 0, 0, 99999999, 99999999, 0, 0
 Channel = {ABS_PATH}data/out/xml_stdout.data, 	/dev/stdout, 0, 0, 0, 0, 99999999, 99999999
 Channel = {ABS_PATH}data/out/xml_stderr.data, 	/dev/stderr, 0, 0, 0, 0, 99999999, 99999999
 Channel = {ABS_PATH}data/out/xml_debug.data, 	/dev/debug, 0, 0, 0, 0, 99999999, 99999999
-==Channel = {ABS_PATH}data/xml_maxindex.data, 	/dev/input, 3, 0, 99999999, 99999999, 99999999, 99999999
+Channel = {ABS_PATH}data/fieldList.data, 	/dev/input, 3, 0, 99999999, 99999999, 0, 0
 Channel = {ABS_PATH}data/xml.data, 	/dev/output, 3, 0, 99999999, 99999999, 99999999, 999999999
 =====================================================================
 Channel = tcp:2:, 				/dev/out/indexer, 0, 0, 0, 0, 99999999999, 999999999999

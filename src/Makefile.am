@@ -13,7 +13,6 @@ indexer_SOURCES = indexer.cpp
 search_SOURCES = search.cpp
 spelldump_SOURCES = spelldump.cpp
 indextool_SOURCES = indextool.cpp
-xmlpipecreator_SOURCES = xmlpipecreator.c
 tests_SOURCES = tests.cpp
 wordbreaker_SOURCES = wordbreaker.cpp
 

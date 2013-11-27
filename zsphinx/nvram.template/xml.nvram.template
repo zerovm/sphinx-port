@@ -10,4 +10,4 @@ args=xmlpipecreator
 #verbosity=4
 
 [env]
-name=ZVM_LogLevel, value=3
+name=ZVM_LogLevel, value=2

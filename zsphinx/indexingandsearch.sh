@@ -33,7 +33,7 @@ then
 	echo skip index template generating
 else
 	echo generate zsphinx.conf from template
-	./rwgenerator_.sh
+	./index_template.sh
 fi
 
 #echo copy nexes

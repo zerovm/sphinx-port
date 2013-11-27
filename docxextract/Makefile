@@ -2,7 +2,7 @@
 CC=x86_64-nacl-gcc
 CFLAGS=-g2 -O2
 
-UNZ_OBJS = docxtotext.o unzip.o ioapi.o zip.o ../src/zvmfileutil.c
+UNZ_OBJS = docxtotext.o unzip.o ioapi.o zip.o ../zsphinx/src/zvmfileutil.c
 
 .c.o:
 	$(CC) -c $(CFLAGS) $*.c 

@@ -161,7 +161,7 @@ PDFTOTEXT_OBJS = Annot.o Array.o BuiltinFont.o BuiltinFontTables.o \
 	PDFDocEncoding.o PSTokenizer.o SecurityHandler.o Stream.o \
 	TextOutputDev.o UnicodeMap.o UnicodeTypeTable.o XpdfPluginAPI.o \
 	XRef.o pdftotext.o
-PDFTOTEXT_LIBS = -L$(GOOLIBDIR) -lGoo $(OTHERLIBS) -lm ../../src/zvmfileutil.c -lz
+PDFTOTEXT_LIBS = -L$(GOOLIBDIR) -lGoo $(OTHERLIBS) -lm ../../zsphinx/src/zvmfileutil.c -lz
 
 pdftotext$(EXE): $(PDFTOTEXT_OBJS) $(GOOLIBDIR)/$(LIBPREFIX)Goo.a
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o pdftotext$(EXE) $(PDFTOTEXT_OBJS) \
