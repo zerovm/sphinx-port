@@ -17,36 +17,6 @@
 #define MAXID_DEV_NAME_OUT "/dev/output" 	// device for save document max ID
 #define DEV_OUTPUT_NAME "/dev/out/indexer"
 
-/*
-
-char *blank_attr_list[] = {
-		"PATH_INFO", // objectname - PATH_INFO str
-		"TIMESTAMP", // HTTP_X_TIMESTAMP; X_TIMESTAMP; TIMESTAMP timestamp
-		"CONTENT_LENGTH", // CONTENT_LENGTH int
-		"meta" // JSON
-};
-
-char *blank_attr_list_types[] = {
-		"string", // objectname  - PATH_INFO str
-		"timestamp", // HTTP_X_TIMESTAMP; X_TIMESTAMP; TIMESTAMP timestamp
-		"int", // CONTENT_LENGTH int
-		"json" // JSON
-};
-
-char *blank_field_list[] = {
-		"content", // internal document text
-		"metatags", // all metatags words only
-};
-char *blank_field_list_types[] = {
-		"string", // internal document text
-		"string", // all metatags words only
-};
-
-const int blank_field_count = sizeof (blank_field_list) / sizeof (char *);
-const int blank_attr_count = sizeof (blank_attr_list) / sizeof (char *);
-
-
-*/
 
 const char *xml_open = "\
 <?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
@@ -254,20 +224,6 @@ char *create_Custom_XML_Head (struct field_list fl)
 // заголовок XML потока
 void createxmlpipe (int fd, struct field_list fl)
 {
-/*	char *xmldochead_blank = "\
-<?xml version=\"1.0\" encoding=\"utf-8\"?>\n\
-<sphinx:docset>\n\
-<sphinx:schema>\n\
-<sphinx:attr name=\"PATH_INFO\" type=\"string\" />\n\
-<sphinx:attr name=\"TIMESTAMP\" type=\"timestamp\" />\n\
-<sphinx:attr name=\"CONTENT_LENGTH\" type=\"int\" />\n\
-<sphinx:attr name=\"meta\" type=\"json\"/> \n\
-<sphinx:field name=\"content\"/> \n\
-<sphinx:field name=\"metatags\" type=\"string\" />\n\
-</sphinx:schema>\n\
-\n";
-*/
-
 	char *XML_Head = create_Custom_XML_Head (fl);
 	int bwrite;
 	bwrite = write (fd, XML_Head, strlen (XML_Head));
@@ -465,6 +421,8 @@ void SendDelete (int fd, struct field_list fl)
 		realfilename [strlen (realfilename) - 1] = '\0';
 		crc = crc32(0L, Z_NULL, 0);
 		crc = crc32(crc, (const Bytef*) realfilename, strlen (realfilename));
+		if (crc == 0)
+			continue;
 		printdochead (fd, crc);
 		int i = 0;
 
