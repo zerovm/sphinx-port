@@ -8,7 +8,7 @@ rm -f nvram/*.nvram
 #
 rm -f data/out/*
 
-cp ../src/indexer 		indexer.nexe
+./copynexe.sh
 
 SCRIPT=$(readlink -f "$0")
 SCRIPT_PATH=`dirname "$SCRIPT"`

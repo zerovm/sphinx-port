@@ -1,8 +1,7 @@
 #!/bin/bash
 
 echo copy nexes
-cp ../src/xmlpipecreator 	xmlpipecreator.nexe
-cp ../src/indexer 		indexer.nexe
+./copynexe.sh
 
 #./allmanifestgenerator.sh "$directory"
 

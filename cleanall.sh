@@ -7,4 +7,5 @@ cd ../docxextract
 make clean
 cd ../zsphinx/src
 make clean
+make
 

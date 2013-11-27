@@ -1,0 +1,102 @@
+        18index/zsphinx.conf      2475#
+# Sphinx configuration file sample
+#
+# WARNING! While this sample file mentions all available options,
+# it contains (very) short helper descriptions only. Please refer to
+# doc/sphinx.html for details.
+#
+
+#############################################################################
+## data source definition
+#############################################################################
+
+source mainindex
+{
+	type = xmlpipe2
+#
+# xmlpipecommand игнорируется. используется канал /dev/in/xmlpipecreator
+	xmlpipe_command = out.xml
+}
+
+source deltaindex
+{
+	type = xmlpipe2
+#
+# xmlpipecommand игнорируется. используется канал /dev/in/xmlpipecreator
+	xmlpipe_command = out.xml
+}
+
+#############################################################################
+## index definition
+#############################################################################
+
+# local index example
+#
+# this is an index which is stored locally in the filesystem
+#
+# all indexing-time options (such as morphology and charsets)
+# are configured per local index
+
+index mainindex
+{
+	source			= mainindex
+	path			= index/mainindex
+#	docinfo			= extern
+#	mlock			= 0
+#	morphology		= stem_enru
+	morphology		= none
+#	min_stemming_len	= 10
+	charset_type		= utf-8
+#	charset_table		= 0..9, A..Z->a..z, _, a..z, U+A8->U+B8, U+B8, U+C0..U+DF->U+E0..U+FF, U+E0..U+FF
+	enable_star		= 1
+#	html_strip		= 1
+	min_word_len		= 1
+	min_prefix_len		= 0
+}
+
+index deltaindex
+{
+	source			= deltaindex
+	path			= index/deltaindex
+#	docinfo			= extern
+#	mlock			= 0
+#	morphology		= stem_enru
+	morphology		= none
+#	min_stemming_len	= 10
+	charset_type		= utf-8
+#	charset_table		= 0..9, A..Z->a..z, _, a..z, U+A8->U+B8, U+B8, U+C0..U+DF->U+E0..U+FF, U+E0..U+FF
+	enable_star		= 1
+#	html_strip		= 1
+	min_word_len		= 1
+	min_prefix_len		= 0
+}
+
+
+#############################################################################
+## indexer settings
+#############################################################################
+
+indexer
+{
+	mem_limit			= 512M
+}
+
+#############################################################################
+## searchd settings
+#############################################################################
+
+searchd
+{
+	listen 		= 33121
+	log 		= index/searchd.log
+	query_log 	= index/query.log
+	read_timeout 	= 5
+	max_children 	= 30
+	pid_file 	= index/searchd.pid
+	max_matches 	= 1000
+	seamless_rotate	= 1
+	preopen_indexes	= 0
+	unlink_old 	= 1
+}
+
+# --eof--
