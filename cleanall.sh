@@ -5,5 +5,6 @@ cd ../zxpdf-3.03
 make clean
 cd ../docxextract
 make clean
-
+cd ../zsphinx/src
+make clean
 
