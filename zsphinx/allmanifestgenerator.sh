@@ -17,10 +17,6 @@ SCRIPT=$(readlink -f "$0")
 SCRIPT_PATH=`dirname "$SCRIPT"`
 ABS_PATH=$SCRIPT_PATH
 
-mkdir -p manifest
-mkdir -p data/out
-mkdir -p nvram
-
 #removing old manifest and nvram files
 rm -f manifest/*.manifest nvram/*.nvram
 

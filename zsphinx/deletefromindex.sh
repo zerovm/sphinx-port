@@ -1,8 +1,8 @@
 #!/bin/bash
 
 echo copy nexes
-cp ../src/xmlpipecreator 	xmlpipecreator.nexe
-cp ../src/indexer 		indexer.nexe
+./copynexe.sh
+
 
 #./allmanifestgenerator.sh "$directory"
 
@@ -23,7 +23,6 @@ ${ZVM_PREFIX}/bin/zerovm -P manifest/xmlpipecreator_delete.manifest &
 ${ZVM_PREFIX}/bin/zerovm -P manifest/indexer.manifest
 
 ./ns_stop.sh
-
 
 cat data/out/indexer_stdout.data
 

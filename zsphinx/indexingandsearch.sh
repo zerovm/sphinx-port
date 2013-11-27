@@ -17,6 +17,19 @@ then
     query=$2
 fi
 
+if ! [ -f manifest ]; then
+	mkdir -p manifest
+fi
+
+if ! [ -f data/out ]; then
+	mkdir -p data/out
+fi
+
+if ! [ -f nvram ]; then
+	mkdir -p nvram
+fi
+
+
 echo $directory
 echo $query
 
