@@ -3,8 +3,7 @@
 ###########################################################
 
 [args]
-args=other {CMD_LINE}
-
+args=other {CMD_LINE} 
 #[debug]
 #verbosity=3
 

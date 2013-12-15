@@ -20,12 +20,12 @@ INSTALL_DATA = @INSTALL_DATA@
 
 EXE = @EXE@
 
-#all:
-#	cd goo; $(MAKE)
-#	cd @UP_DIR@fofi; $(MAKE)
-#	cd @UP_DIR@splash; $(MAKE)
-#	cd @UP_DIR@xpdf; $(MAKE) @XPDF_TARGET@
-#
+all:
+	cd goo; $(MAKE)
+	cd @UP_DIR@fofi; $(MAKE)
+	cd @UP_DIR@splash; $(MAKE)
+	cd @UP_DIR@xpdf; $(MAKE) @XPDF_TARGET@
+
 #all-no-x:
 #	cd goo; $(MAKE)
 #	cd @UP_DIR@fofi; $(MAKE)
@@ -49,6 +49,12 @@ pdftotext: dummy
 	cd @UP_DIR@splash; $(MAKE)
 	cd @UP_DIR@xpdf; $(MAKE) pdftotext$(EXE)
 
+libpdf.a: dummy
+	cd goo; $(MAKE)
+	cd @UP_DIR@fofi; $(MAKE)
+	cd @UP_DIR@splash; $(MAKE)
+	cd @UP_DIR@xpdf; $(MAKE) libpdf.a
+	
 #pdfinfo:
 #	cd goo; $(MAKE)
 #	cd @UP_DIR@fofi; $(MAKE)

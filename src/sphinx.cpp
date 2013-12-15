@@ -58,7 +58,7 @@
 #endif
 
 #if USE_LIBICONV
-#include "iconv.h"
+#include <iconv.h>
 #endif
 
 #if USE_ZLIB
@@ -27144,9 +27144,11 @@ bool CSphSource_XMLPipe2::Connect ( CSphString & sError )
 	XML_SetElementHandler ( m_pParser, xmlStartElement, xmlEndElement );
 	XML_SetCharacterDataHandler ( m_pParser, xmlCharacters );
 
+
 #if USE_LIBICONV
 	XML_SetUnknownEncodingHandler ( m_pParser, xmlUnknownEncoding, NULL );
 #endif
+
 
 #endif
 

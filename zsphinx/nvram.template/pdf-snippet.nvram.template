@@ -4,7 +4,7 @@
 
 [fstab] 
 #inject files into FS
-channel=/dev/mount/import, mountpoint=/, access=ro
+channel=/dev/mount/import, mountpoint=/, access=ro, removable=no
 
 [args]
 args=pdf {CMD_LINE}

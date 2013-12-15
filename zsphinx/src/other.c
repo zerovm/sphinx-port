@@ -89,7 +89,7 @@ int main (int argc, char *argv[])
 	    fdout = open (devoutname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 	    if (fdout < 0 )
 	    {
-	    	printf ("*** ZVM Error open % output device\n", devoutname);
+	    	printf ("*** ZVM Error open %s output device\n", devoutname);
 	    	return 1;
 	    }
 

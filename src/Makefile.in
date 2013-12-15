@@ -66,7 +66,8 @@ am_libsphinx_a_OBJECTS = $(am__objects_1)
 libsphinx_a_OBJECTS = $(am_libsphinx_a_OBJECTS)
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
-am_indexer_OBJECTS = indexer.$(OBJEXT)
+ZVM_OBJS = ../zsphinx/src/zvmfileutil.$(OBJEXT)
+am_indexer_OBJECTS = indexer.$(OBJEXT) indexer_.$(OBJEXT)
 indexer_OBJECTS = $(am_indexer_OBJECTS)
 indexer_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
@@ -225,16 +226,15 @@ SRC_SPHINX = sphinx.cpp sphinxexcerpt.cpp sphinxquery.cpp \
 	sphinxsoundex.cpp sphinxmetaphone.cpp sphinxstemen.cpp sphinxstemru.cpp sphinxstemcz.cpp sphinxstemar.cpp \
 	sphinxutils.cpp sphinxstd.cpp sphinxsort.cpp sphinxexpr.cpp sphinxfilter.cpp \
 	sphinxsear	ch.cpp sphinxrt.cpp sphinxjson.cpp sphinxudf.c sphinxaot.cpp
+	
+ZVM_SRC = ../zsphinx/src/zvmfileutil.c
 
-noinst_LIBRARIES = libsphinx.a
+noinst_LIBRARIES = libsphinx.a libindexer.a 
 libsphinx_a_SOURCES = $(SRC_SPHINX)
 indexer_SOURCES = indexer.cpp
 search_SOURCES = search.cpp
 spelldump_SOURCES = spelldump.cpp
 indextool_SOURCES = indextool.cpp
-xmlpipecreator_SOURCES = xmlpipecreator.c
-filesender_SOURCES = filesender.c
-other_SOURCES = other.c
 tests_SOURCES = tests.cpp
 wordbreaker_SOURCES = wordbreaker.cpp
 BUILT_SOURCES = extract-version
@@ -281,8 +281,14 @@ clean-noinstLIBRARIES:
 	-test -z "$(noinst_LIBRARIES)" || rm -f $(noinst_LIBRARIES)
 libsphinx.a: $(libsphinx_a_OBJECTS) $(libsphinx_a_DEPENDENCIES) 
 	-rm -f libsphinx.a
-	$(libsphinx_a_AR) libsphinx.a $(libsphinx_a_OBJECTS) $(libsphinx_a_LIBADD)
+	$(libsphinx_a_AR) libsphinx.a $(libsphinx_a_OBJECTS) $(libsphinx_a_LIBADD) 
 	$(RANLIB) libsphinx.a
+libindexer.a: $(libsphinx_a_OBJECTS) $(libsphinx_a_DEPENDENCIES) $(indexer_OBJECTS) $(ZVM_OBJS)
+	-rm -f libindexer.a
+	$(libsphinx_a_AR) libindexer.a $(libsphinx_a_OBJECTS) $(libsphinx_a_LIBADD) indexer_.o $(ZVM_OBJS)
+	$(RANLIB) libindexer.a
+$(ZVM_OBJS):
+	$(CC) -c $(ZVM_SRC) -o $(ZVM_OBJS)
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(MKDIR_P) "$(DESTDIR)$(bindir)"
@@ -321,9 +327,12 @@ uninstall-binPROGRAMS:
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
 
+clean_libindexer:
+	-rm -f libindexer.a 
+
 clean-noinstPROGRAMS:
 	-test -z "$(noinst_PROGRAMS)" || rm -f $(noinst_PROGRAMS)
-indexer$(EXEEXT): $(indexer_OBJECTS) $(indexer_DEPENDENCIES) 
+indexer$(EXEEXT): $(indexer_OBJECTS) $(indexer_DEPENDENCIES)  
 	@rm -f indexer$(EXEEXT)
 	$(CXXLINK) $(indexer_OBJECTS) $(indexer_LDADD) $(LIBS) ../zsphinx/src/zvmfileutil.c -lz
 indextool$(EXEEXT): $(indextool_OBJECTS) $(indextool_DEPENDENCIES) 

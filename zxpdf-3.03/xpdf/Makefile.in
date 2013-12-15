@@ -26,6 +26,8 @@ LDFLAGS = @LDFLAGS@
 T1LIBS = @t1_LIBS@
 FTLIBS = @freetype2_LIBS@
 
+LIBPDF = libpdf.a
+
 XLIBS = @Sgm_LIBS@ @Xm_LIBS@ @Xt_LIBS@ @Xp_LIBS@ @Xext_LIBS@ @Xpm_LIBS@ @X_PRE_LIBS@ @X_LIBS@ -lX11 @X_EXTRA_LIBS@
 
 SPLASHLIBS = -L$(SPLASHLIBDIR) -lsplash
@@ -34,10 +36,18 @@ OTHERLIBS = @LIBS@ @libpaper_LIBS@ \
 	-L$(FOFILIBDIR) -lfofi \
 	-L$(GOOLIBDIR) -lGoo
 
+OTHERLIBS_LIB = \
+	$(FOFILIBDIR)/libfofi.a \
+	$(GOOLIBDIR)/libGoo.a
+
 CXX = @CXX@
+AR = @AR@
+RANLIB = @RANLIB@
 
 LIBPREFIX = @LIBPREFIX@
 EXE = @EXE@
+
+LIBPDF = libpdf.a
 
 #------------------------------------------------------------------------
 
@@ -47,6 +57,9 @@ EXE = @EXE@
 	$(CXX) $(CXXFLAGS) -c $<
 
 #------------------------------------------------------------------------
+
+ZVM_OBJS = zvmfileutil.o
+ZVM_SRC = ../../zsphinx/src/zvmfileutil.c
 
 CXX_SRC = \
 	$(srcdir)/Annot.cc \
@@ -99,6 +112,7 @@ CXX_SRC = \
 	$(srcdir)/XRef.cc \
 	$(srcdir)/pdftops.cc \
 	$(srcdir)/pdftotext.cc \
+	$(srcdir)/pdftotext_.cc \
 	$(srcdir)/pdfinfo.cc \
 	$(srcdir)/pdffonts.cc \
 	$(srcdir)/pdfdetach.cc \
@@ -109,10 +123,10 @@ CXX_SRC = \
 #------------------------------------------------------------------------
 
 all: xpdf$(EXE) pdftops$(EXE) pdftotext$(EXE) pdfinfo$(EXE) \
-	pdffonts$(EXE) pdfdetach$(EXE) pdftoppm$(EXE) pdfimages$(EXE)
+	pdffonts$(EXE) pdfdetach$(EXE) pdftoppm$(EXE) pdfimages$(EXE) $(LIBPDF)
 
 all-no-x: pdftops$(EXE) pdftotext$(EXE) pdfinfo$(EXE) pdffonts$(EXE) \
-	pdfdetach$(EXE) pdfimages$(EXE)
+	pdfdetach$(EXE) pdfimages$(EXE) $(LIBPDF)
 
 #------------------------------------------------------------------------
 
@@ -126,6 +140,7 @@ XPDF_OBJS = Annot.o Array.o BuiltinFont.o BuiltinFontTables.o Catalog.o \
 	PSTokenizer.o SecurityHandler.o SplashOutputDev.o Stream.o \
 	TextOutputDev.o UnicodeMap.o UnicodeTypeTable.o XPDFApp.o \
 	XPDFCore.o XPDFTree.o XPDFViewer.o XpdfPluginAPI.o XRef.o xpdf.o
+
 XPDF_LIBS = -L$(GOOLIBDIR) -lGoo $(SPLASHLIBS) $(T1LIBS) $(FTLIBS) \
 	$(XLIBS) $(OTHERLIBS) -lm
 
@@ -160,12 +175,33 @@ PDFTOTEXT_OBJS = Annot.o Array.o BuiltinFont.o BuiltinFontTables.o \
 	OptionalContent.o Outline.o OutputDev.o Page.o Parser.o PDFDoc.o \
 	PDFDocEncoding.o PSTokenizer.o SecurityHandler.o Stream.o \
 	TextOutputDev.o UnicodeMap.o UnicodeTypeTable.o XpdfPluginAPI.o \
-	XRef.o pdftotext.o
-PDFTOTEXT_LIBS = -L$(GOOLIBDIR) -lGoo $(OTHERLIBS) -lm ../../zsphinx/src/zvmfileutil.c -lz
+	XRef.o pdftotext.o pdftotext_.o
+PDFTOTEXT_LIBS = -L$(GOOLIBDIR) -lGoo $(OTHERLIBS) -lm -lz
 
-pdftotext$(EXE): $(PDFTOTEXT_OBJS) $(GOOLIBDIR)/$(LIBPREFIX)Goo.a
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o pdftotext$(EXE) $(PDFTOTEXT_OBJS) \
-		$(PDFTOTEXT_LIBS)
+pdftotext$(EXE): $(PDFTOTEXT_OBJS) $(GOOLIBDIR)/$(LIBPREFIX)Goo.a $(ZVM_OBJS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o pdftotext$(EXE) $(PDFTOTEXT_OBJS) $(ZVM_OBJS) \
+		$(PDFTOTEXT_LIBS) 
+
+zvmfileutil.o:
+	$(CXX) -c $(ZVM_SRC)
+pdftotext_l.o:
+	$(CC) -c pdftotext_l.c
+	
+PDFTOTEXTLIB_OBJS = Annot.o Array.o BuiltinFont.o BuiltinFontTables.o \
+	Catalog.o CharCodeToUnicode.o CMap.o Decrypt.o Dict.o Error.o \
+	FontEncodingTables.o Function.o Gfx.o GfxFont.o \
+	GfxState.o GlobalParams.o JArithmeticDecoder.o JBIG2Stream.o \
+	JPXStream.o Lexer.o Link.o NameToCharCode.o Object.o \
+	OptionalContent.o Outline.o OutputDev.o Page.o Parser.o PDFDoc.o \
+	PDFDocEncoding.o PSTokenizer.o SecurityHandler.o Stream.o \
+	TextOutputDev.o UnicodeMap.o UnicodeTypeTable.o XpdfPluginAPI.o \
+	XRef.o pdftotext_.o
+PDFTOTEXTLIB_LIBS = $(OTHERLIBS_LIB)
+
+$(LIBPDF): $(PDFTOTEXTLIB_OBJS) $(GOOLIBDIR)/$(LIBPREFIX)Goo.a  
+	rm -f $(LIBPDF)
+	$(AR) $(LIBPDF) $(PDFTOTEXTLIB_OBJS) $(PDFTOTEXTLIB_LIBS) 
+	$(RANLIB) $(LIBPDF) 
 
 #------------------------------------------------------------------------
 
@@ -260,6 +296,8 @@ clean:
 	rm -f $(PDFDETACH_OBJS) pdfdetach$(EXE)
 	rm -f $(PDFTOPPM_OBJS) pdftoppm$(EXE)
 	rm -f $(PDFIMAGES_OBJS) pdfimages$(EXE)
+	rm -f $(LIBPDF)
+	rm -f $(ZVM_OBJS)
 
 #------------------------------------------------------------------------
 

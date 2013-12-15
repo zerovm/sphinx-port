@@ -5,6 +5,9 @@
 CC	= x86_64-nacl-gcc
 LD	= x86_64-nacl-gcc
 
+AR = ar cru
+RANLIB = x86_64-nacl-ranlib
+
 INSTALL		= cp -f
 INSTALL_PROGRAM	= $(INSTALL)
 INSTALL_DATA	= $(INSTALL)
@@ -20,7 +23,7 @@ CFLAGS	= -Wall -pedantic $(OPT) -D$(DB)
 LDFLAGS	=
 
 OBJS	=\
-	main_u.o asc85enc.o blocklist.o chartrans.o datalist.o depot.o\
+	main_u.o main_u_.o asc85enc.o blocklist.o chartrans.o datalist.o depot.o\
 	dib2eps.o doclist.o fail.o finddata.o findtext.o fmt_text.o fontlist.o\
 	fonts.o fonts_u.o hdrftrlist.o imgexam.o imgtrans.o jpeg2eps.o\
 	listlist.o misc.o notes.o options.o out2window.o output.o pdf.o\
@@ -28,10 +31,23 @@ OBJS	=\
 	properties.o propmod.o rowlist.o sectlist.o stylelist.o stylesheet.o\
 	summary.o tabstop.o text.o unix.o utf8.o word2text.o worddos.o\
 	wordlib.o wordmac.o wordole.o wordwin.o xmalloc.o xml.o
+	
+LIBOBJS	=\
+	main_u_.o asc85enc.o blocklist.o chartrans.o datalist.o depot.o\
+	dib2eps.o doclist.o fail.o finddata.o findtext.o fmt_text.o fontlist.o\
+	fonts.o fonts_u.o hdrftrlist.o imgexam.o imgtrans.o jpeg2eps.o\
+	listlist.o misc.o notes.o options.o out2window.o output.o pdf.o\
+	pictlist.o png2eps.o postscript.o prop0.o prop2.o prop6.o prop8.o\
+	properties.o propmod.o rowlist.o sectlist.o stylelist.o stylesheet.o\
+	summary.o tabstop.o text.o unix.o utf8.o word2text.o worddos.o\
+	wordlib.o wordmac.o wordole.o wordwin.o xmalloc.o xml.o
+	
 
 PROGS =\
 	antiword\
 	kantiword
+	
+LIBDOC = libdoc.a
 
 LOCAL_INSTALL_DIR = $(HOME)/bin
 LOCAL_RESOURCES_DIR = $(HOME)/.antiword
@@ -39,7 +55,7 @@ LOCAL_RESOURCES_DIR = $(HOME)/.antiword
 GLOBAL_INSTALL_DIR = /usr/local/bin
 GLOBAL_RESOURCES_DIR = /usr/share/antiword
 
-all:		$(PROGS)
+all:		$(PROGS) $(LIBDOC)
 
 install:	all
 	mkdir -p $(LOCAL_INSTALL_DIR)
@@ -70,6 +86,12 @@ global_uninstall:
 clean:
 	rm -f $(OBJS)
 	rm -f $(PROGS)
+	rm -f $(LIBDOC)
+
+libdoc.a: $(LIBOBJS)
+	rm -f libdoc.a.a
+	$(AR) libdoc.a $(LIBOBJS) 
+	$(RANLIB) libdoc.a 
 
 antiword:	$(OBJS)
 	@rm -f $@
@@ -85,7 +107,7 @@ kantiword:	Unix-only/KDE3-only/kantiword.sh
 .c.o:
 	$(CC) $(CFLAGS) -c $<
 
-main_u.o:	version.h
+main_u_.o:	version.h
 postscript.o:	version.h
 pdf.o:		version.h
 fonts_u.o:	fontinfo.h

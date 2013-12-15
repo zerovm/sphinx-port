@@ -8,6 +8,12 @@
 #ifndef ZVMFILEUTIL_H_
 #define ZVMFILEUTIL_H_
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+
 #define MAXFIENAME 1024
 #define MAX_FIELD_NAME_LENGTH 1024
 
@@ -101,8 +107,6 @@ extern char *blank_field_list_types[];
 extern int blank_field_count;
 extern int blank_attr_count;
 
-
-
 int getZVMLogLevel ();
 
 #define LOG_SERVER_SOFT 																	\
@@ -141,6 +145,7 @@ void PrintSnippet (char *, char *, unsigned int, unsigned int);
 char *toLower (char*);
 void sendConfigOK ();
 char *my_strtolower (char *);
+char *myrealloc (char *, size_t *);
 
 void reverse (char *);
 void getext (const char *, char *);
@@ -158,5 +163,9 @@ void newbufferedpack (char *, char *);
 
 int mymakedir (char *);
 void mylistdir (char *);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ZVMFILEUTIL_H_ */

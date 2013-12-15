@@ -4,10 +4,13 @@
 
 [fstab] 
 #inject files into FS
-channel=/dev/mount/import, mountpoint=/, access=ro
+channel=/dev/mount/import, mountpoint=/, access=ro, removable=no
 
 [args]
 args=pdf
 
 [env]
-name=ZVM_LogLevel, value=1
+name=ZVM_LogLevel, value=3
+
+#[debug]
+#verbosity=2

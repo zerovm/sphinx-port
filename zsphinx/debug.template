@@ -14,7 +14,7 @@ set confirm off
 set output-radix 16
 b CreateSession
 r
-add-symbol-file /home/volodymyr/git/sphinx-port/zsphinx/txt.nexe 0x440a00020000
+add-symbol-file /home/volodymyr/git/sphinx-port/zsphinx/pdf.nexe 0x440a00020000
 b main
 c
 

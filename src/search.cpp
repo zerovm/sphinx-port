@@ -507,6 +507,8 @@ int main ( int argc, char ** argv )
 		}
 	}
 
+	printf ("squery: %s\n", sQuery);
+
 	if (bMetaWeight)
 	{
 		CSphNamedInt *pFieldWeights;
@@ -710,6 +712,7 @@ int main ( int argc, char ** argv )
 
 			// lookup first timestamp if needed
 			// FIXME! remove this?
+			printf ("tQuery  %s\n", tQuery.m_sQuery.cstr());
 			if ( tQuery.m_eSort!=SPH_SORT_RELEVANCE && tQuery.m_eSort!=SPH_SORT_EXTENDED && tQuery.m_eSort!=SPH_SORT_EXPR )
 			{
 				int iTS = -1;

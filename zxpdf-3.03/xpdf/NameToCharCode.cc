@@ -31,8 +31,15 @@ NameToCharCode::NameToCharCode() {
   size = 31;
   len = 0;
   tab = (NameToCharCodeEntry *)gmallocn(size, sizeof(NameToCharCodeEntry));
+  /*TEST*/
+    printf ("size = %d \n", size);
+    printf ("len = %d \n", len);
+
   for (i = 0; i < size; ++i) {
     tab[i].name = NULL;
+    tab[i].c = 0;
+    /*TEST*/
+	printf ("tab[%d].c = %u; tab[%d].name= %s \n", i, tab[i].c, i, tab[i].name);
   }
 }
 
