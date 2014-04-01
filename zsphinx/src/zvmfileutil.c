@@ -19,6 +19,7 @@
 
 
 extern char **environ;
+OperationMode_t Mode = cluster;
 
 char *blank_attr_list[] = {
 		"PATH_INFO", // objectname - PATH_INFO str
@@ -47,6 +48,9 @@ int blank_field_count = sizeof (blank_field_list) / sizeof (char *);
 int blank_attr_count = sizeof (blank_attr_list) / sizeof (char *);
 
 
+/*
+OperationMode_t Mode = cluster;
+*/
 
 
 /*
@@ -115,7 +119,7 @@ void sendConfigOK ()
  *
  * return size of file in bytes by file name if sizebyfilename=1
 */
-unsigned long getfilesize_fd (int fd, char *filename, int sizebyfilename)
+long long int getfilesize_fd (int fd, char *filename, int sizebyfilename)
 {
 	if (sizebyfilename == 1)
 		fd = open (filename, O_RDONLY);
@@ -142,6 +146,25 @@ unsigned long getfilesize_fd (int fd, char *filename, int sizebyfilename)
 		close(fd);
 
 	return fsize;
+}
+
+long long int getfilesize_env ()
+{
+	unsigned long tContentLength = 0;
+	char *cContentLength = NULL;
+/*
+	printf ("get size\n");
+	printf ("getenv(CONTENT_LENGTH_NAME) = %s\n", getenv(CONTENT_LENGTH_NAME));
+*/
+	if (getenv(CONTENT_LENGTH_NAME) != NULL)
+	{
+		cContentLength = getenv(CONTENT_LENGTH_NAME);
+		tContentLength = atoi (cContentLength);
+	}
+	else
+		return -1;
+
+	return tContentLength;
 }
 
 int getZVMLogLevel ()
@@ -849,11 +872,15 @@ void filesender2extractor (char * inputchname, char * outputchname, char *realfi
 {
 	int fdIN, fdOUT;
 	unsigned long uPacketSize = 0;
-	unsigned long fsize = 0;
+	long long int fsize = 0;
 //	char bMetaOnly = 0;
 	long bwrite, bread;
 
-	fdIN = open (inputchname, O_RDONLY);
+	if (Mode == single_operation)
+		fdIN = 0;
+	else
+		fdIN = open (inputchname, O_RDONLY);
+
 	fdOUT = open (outputchname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 
 	if (fdIN < 0)
@@ -866,6 +893,13 @@ void filesender2extractor (char * inputchname, char * outputchname, char *realfi
 	}
 
 	fsize = getfilesize_fd (fdIN, NULL, 0);
+
+	// try to get input file size by environment variable CONTENT_LENGTH
+	if (fsize <= 0)
+	{
+		fsize = getfilesize_env();
+		LOG_ZVM (ZLOGTIT, "Size of input file detect by environment variable", "s", "OK", 1);
+	}
 
 	if (strstr(outputchname,"other") == NULL)
 		bMetaOnly = 0;
@@ -966,6 +1000,30 @@ int puttext2channel (char *bufftext, long size, char *realfilename, char *json, 
 	return totalbytewrite;
 }
 
+int saveTextToFile (char *buff, long buff_size)
+{
+	int fdSave;
+
+	fdSave = open ("textfile.txt", O_RDONLY);
+
+	if (!fdSave)
+	{
+		printf ("*** ZVM Error. Extracted text do not save to temp file.\n");
+		return 0;
+	}
+
+	int bwrite = write (fdSave, buff, buff_size);
+
+	if (bwrite < 0)
+	{
+		printf ("*** ZVM Error. Error write extracted text to file.\n");
+		return 0;
+	}
+
+	close (fdSave);
+	return 1;
+}
+
 /*
  * filtering text buffer
 */
@@ -986,6 +1044,9 @@ int getfilteredbuffer (const char *buff, long bufflen, char *filteredbuff)
 		}
 	}
 	filteredbuff [filteredbuffsize] = '\0';
+
+	saveTextToFile (filteredbuff, filteredbuffsize);
+
 	return filteredbuffsize;
 }
 
@@ -1732,12 +1793,38 @@ int getbufffromtxt (char *filename, char *buffer)
 	return txtbuffsize;
 }
 
-struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize)
+fileTypeInfo_t checkMAxFileSize ()
 {
-	char *ext = (char *) malloc (sizeof (char) * strlen (filename));
 	char *channelname= (char *) malloc (sizeof (char) * 50);
+	char *filename = NULL;
+	char *filesize_buff = NULL;
+	fileTypeInfo_t ft;
+/*
+	ft.sExt = (char *)  malloc (sizeof (char));
+	ft.sExt = '\0';
+*/
+	size_t filesize = 0;
+
+	if (getenv(PATH_INFO_NAME) != NULL)
+	{
+		filename = getenv(PATH_INFO_NAME);
+
+	}
+	else
+	{
+		ft.tFileSize = 0;
+		return ft;
+	}
+
+	char *ext = (char *) malloc (sizeof (char) * strlen (filename));
+
+	if (getenv(CONTENT_LENGTH_NAME) != NULL)
+	{
+		filesize_buff = getenv(PATH_INFO_NAME);
+		filesize = atoi (filesize_buff);
+	}
+
 	getext (filename, ext);
-	struct fileTypeInfo ft;
 	ft.tFileSize = filesize;
 	ft.sExt = ext;
 	ft.bSaveFile = 1;
@@ -1745,36 +1832,29 @@ struct fileTypeInfo checkMAxFileSize (char *filename, size_t filesize)
 
 	LOG_ZVM (ZLOGTIT, "extension", "s", ext, 2);
 
-//	if (getenv("CONTENT_TYPE") != NULL)
-//		if (strstr (getenv("CONTENT_TYPE"), "text/plain" ) != NULL)
-//		{
-//			ft.bPlainText = 1;
-//		}
-
 	if ((strncmp (ext, "txt", 3) == 0 || strncmp (ext, "odt", 3) == 0 || strncmp (ext, "docx", 4) == 0) && filesize <= FS_MAX_TEXT_FILE_LENGTH)
 	{
 		sprintf (channelname, "/dev/out/txt");
+		ft.iExtractorType = txt; //txt, docx, pdf the same extractor
 	}
 	else if ((strncmp (ext, "pdf", 3) == 0 || strncmp (ext, "doc", 3) == 0) && filesize <= FS_MAX_FILE_LENGTH)
 	{
 		sprintf (channelname, "/dev/out/%s", ext);
+		if (strncmp (ext, "pdf", 3) == 0)
+				ft.iExtractorType = pdf;
+		if (strncmp (ext, "doc", 3) == 0)
+				ft.iExtractorType = doc;
 	}
 	else
 	{
-		//if ( ft.bPlainText == 1 && filesize <= FS_MAX_TEXT_FILE_LENGTH)
-		//	sprintf (channelname, "/dev/out/txt");
-		//else
-		//{
 		sprintf (channelname, "/dev/out/other");
-		//			ft.bSaveFile = 0;
-		//}
+		ft.iExtractorType = other;
 	}
 	ft.sChannelname = channelname;
 	return ft;
 }
 
-
-size_t SaveFileFromInput (char *sSaveName, char **environ)
+size_t SaveFileFromInput (char *sSaveName, char **environ, InputDevice_t dev_type)
 {
 	size_t tFileLength = 0;
 	size_t bread = 0, bwrite = 0;
@@ -1782,31 +1862,34 @@ size_t SaveFileFromInput (char *sSaveName, char **environ)
 	int fdIN;
 	int fdOUT;
 	char *fileName;
-	struct fileTypeInfo fti;
+	fileTypeInfo_t fti;
 	int bPlainText = 0;
-	const char *Cont_Len = "CONTENT_LENGTH";
-	const char *Cont_Typ = "CONTENT_TYPE";
-	const char *Path_info = "PATH_INFO";
 
-	if (getenv (Cont_Len) != NULL)
-		tFileLength = atoll (getenv (Cont_Len));
-	if (getenv (Path_info) != NULL)
+	if (getenv (CONTENT_LENGTH_NAME) != NULL)
+		tFileLength = atoll (getenv (CONTENT_LENGTH_NAME));
+
+	if (getenv (PATH_INFO_NAME) != NULL)
 	{
-		fileName = (char *) malloc (sizeof (char) * strlen (getenv (Path_info)) + 1);
-		sprintf  (fileName, getenv (Path_info));
+//		fileName = (char *) malloc (sizeof (char) * strlen (getenv (PATH_INFO_NAME)) + 1);
+
+		fileName = getenv (PATH_INFO_NAME);
 	}
 
-	if (getenv(Cont_Typ) != NULL )
-		if (strstr (getenv(Cont_Typ), "text/plain" ) != NULL)
+	if (getenv(CONTENT_TYPE_NAME) != NULL )
+		if (strstr (getenv(CONTENT_TYPE_NAME), "text/plain" ) != NULL)
 		{
 			bPlainText = 1;
 		}
 
-	fti = checkMAxFileSize (fileName, tFileLength);
+	fti = checkMAxFileSize ();
 
 	if ( fti.bSaveFile == 1 )
 	{
-		fdIN = open (EX_SEARCH_MODE_INPUT, O_RDONLY);
+		if (dev_type == dev_input)
+			fdIN = open (EX_SEARCH_MODE_INPUT, O_RDONLY);
+		else
+			fdIN = 1;
+
 		if (fdIN < 0)
 		{
 			printf ("*** ZVM Error open input channel %s\n", EX_SEARCH_MODE_INPUT);
@@ -1826,7 +1909,8 @@ size_t SaveFileFromInput (char *sSaveName, char **environ)
 			tFileLength += bwrite;
 		}
 
-		close (fdIN);
+		if (dev_type == dev_input)
+			close (fdIN);
 		close (fdOUT);
 	}
 
@@ -2003,7 +2087,7 @@ char *generateJson (char **environ)
 
 				char pKeyVal [strlen(pKey) + strlen (pVal) + 2];
 				sprintf (pKeyVal, "%s:%s", pKey, pVal);
-				LOG_ZVM (ZLOGTIT, "searched key", "s", tagfilters_remove_prefix[j], 3);
+				LOG_ZVM (ZLOGTIT, "remove prefix key", "s", tagfilters_remove_prefix[j], 3);
 				LOG_ZVM (ZLOGTIT, "Key:Val", "s", pKeyVal, 3);
 
 				jsonsize += addsize;

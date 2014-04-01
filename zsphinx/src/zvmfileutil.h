@@ -13,6 +13,25 @@ extern "C"
 {
 #endif
 
+typedef enum {dev_stdin, dev_input} InputDevice_t;
+typedef enum {txt, docx, odt, doc, rtf, pdf, other} Extractortype_t;
+typedef enum {single_operation, cluster} OperationMode_t;
+
+
+
+//swift metatags constant
+#define PATH_INFO_NAME "PATH_INFO"
+#define CONTENT_LENGTH_NAME "CONTENT_LENGTH"
+#define CONTENT_TYPE_NAME "CONTENT_TYPE"
+#define SERVER_SOFTWARE_NAME "SERVER_SOFTWARE"
+//end swift metatags constant
+
+//#define SINGLE_OPERATION_MODE
+
+#define FILESENDER_SINGLE_MODE_OUTPUT_FILE "filesender.dat"
+#define EXTRACTOR_SINGLE_MODE_OUTPUT_FILE "extractor.dat"
+#define XML_SINGLE_MODE_OUTPUT_FILE "xml.dat"
+
 
 #define MAXFIENAME 1024
 #define MAX_FIELD_NAME_LENGTH 1024
@@ -21,6 +40,8 @@ extern "C"
 #define DEVOUTNAME "/dev/out/xmlpipecreator"
 #define CHECK_INDEXER_XML_DEV_NAME "/dev/in/indexer"
 #define CHECK_INDEXER_IND_DEV_NAME "/dev/out/xmlpipecreator"
+
+#define INDEXER_XML_INPUT_DEVICE_CLUSTER_MODE "/dev/in/xmlpipecreator"
 
 #define SERVERSOFT "zerocloud"
 
@@ -66,6 +87,10 @@ extern "C"
 
 #include <string.h>
 
+extern OperationMode_t Mode;
+
+
+
 struct filemap {
 	char realfilename[MAXFIENAME];
 	char tempfilename[MAXFIENAME];
@@ -73,15 +98,15 @@ struct filemap {
 	long realfilesize;
 };
 
-struct fileTypeInfo {
+typedef struct  {
 	char *sExt;
 	char *sChannelname;
 	int iFileType;
 	size_t tFileSize;
-	int iExtractorType;
+	Extractortype_t iExtractorType;
 	int bSaveFile;
 	int bPlainText;
-};
+} fileTypeInfo_t;
 
 struct p_options {
     int bToOutput;
@@ -115,7 +140,6 @@ int getZVMLogLevel ();
 		printf ("***ZVMLOG [LogLevel>0] [serversoft], \t%s\n", serversoft);					\
 	}
 
-
 #define LOG_NODE_NAME 																		\
 	if (getZVMLogLevel() > 0)																\
 	{																						\
@@ -128,15 +152,38 @@ int getZVMLogLevel ();
 				printf("%s [LogLevel=%d] [%s], \t%"valuetype" \n", message, level, valuename, value);	\
 		}
 
+
+
 #define MY_MAX(A, B) strlen (A) >= strlen (B) ? strlen (A) : strlen (B)
 #define MY_STRNCMP(A, B) strncmp (my_strtolower(A) ,my_strtolower(B), MY_MAX(my_strtolower(A), my_strtolower(B)))
 //strncmp (my_strtolower(new_field_name) ,my_strtolower(fl.fields[i]), MY_MAX(my_strtolower(new_field_name), my_strtolower(fl.fields[i])))
 
+#define WRITE_TO_LOCAL_FILE_EXTRACTOR	int fd_save = 0;																\
+																										\
+fd_save = open ( EXTRACTOR_SINGLE_MODE_OUTPUT_FILE, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );	\
+if (fd_save > 0)																										\
+{																														\
+	tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fmap.json, fd_save);	\
+	close(fd_save);																										\
+}
+
+#define WRITE_TO_LOCAL_FILE_FILESENDER																					\
+int 																													\
+fd_save = 0;																											\
+fd_save = open ( FILESENDER_OUTPUT_FILE, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );			\
+if (fd_save > 0)																										\
+{																														\
+	filesender2extractor (devnamein, devnameout, filename, json, fti.bPlainText);										\
+	close(fd_save);																										\
+}																														\
+
+
+
 void filesender2extractor (char *, char *, char *, char *, int);
 struct filemap extractorfromfilesender (char *, char *);
 char *getTextByHits (char *text, unsigned int, unsigned int);
-size_t SaveFileFromInput (char *, char **);
-struct fileTypeInfo checkMAxFileSize (char *, size_t);
+size_t SaveFileFromInput (char *, char **, InputDevice_t);
+fileTypeInfo_t checkMAxFileSize ();
 struct p_options getOptions (int, char **);
 char *generateJson (char **);
 char *generateMetaWords (char *);
@@ -149,7 +196,7 @@ char *myrealloc (char *, size_t *);
 
 void reverse (char *);
 void getext (const char *, char *);
-unsigned long getfilesize_fd (int, char *, int );
+long long int getfilesize_fd (int, char *, int );
 struct filemap getfilefromchannel (char *, char *);
 void putfile2channel (char *, char *, char *, char *);
 int puttext2channel (char *, long , char *, char *, int);
