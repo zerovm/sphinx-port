@@ -1,6 +1,5 @@
 #!/bin/bash
 
-echo copy nexes
 ./copynexe.sh
 
 #./allmanifestgenerator.sh "$directory"
