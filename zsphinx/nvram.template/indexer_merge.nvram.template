@@ -1,0 +1,12 @@
+###########################################################
+# ZRT nvram file, injects tar images contents into ZRT FS #
+###########################################################
+
+[args]
+args=indexer --config index/zsphinx.conf --merge mainindex deltaindex
+
+#[debug]
+#verbosity=3
+
+[env]
+name=ZVM_LogLevel, value=1

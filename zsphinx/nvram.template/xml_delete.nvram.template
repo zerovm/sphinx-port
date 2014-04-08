@@ -1,0 +1,14 @@
+###########################################################
+# ZRT fstab file, injects tar images contents into ZRT FS #
+###########################################################
+
+[args]
+#args=xmlpipecreator --savexml --delete
+args=xmlpipecreator --delete
+#args=xmlpipecreator
+
+#[debug]
+#verbosity=4
+
+[env]
+name=ZVM_LogLevel, value=1

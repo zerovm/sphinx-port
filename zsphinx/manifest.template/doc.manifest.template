@@ -1,0 +1,22 @@
+=====================================================================
+Channel = /dev/null, 				/dev/stdin, 0, 0, 9999999999, 999999999, 0, 0
+Channel = {ABS_PATH}data/out/doc_debug.txt, 	/dev/debug, 0, 0, 0, 0, 999999999, 9999999999
+Channel = {ABS_PATH}data/out/doc_stdout.txt, 	/dev/stdout, 0, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/doc_stderr.txt, 	/dev/stderr, 0, 0, 0, 0, 99999999, 999999
+=====================================================================
+Channel = {ABS_PATH}nvram/doc.nvram,		/dev/nvram,	0, 0, 999999999,9999999999, 0,0
+Channel = {ABS_PATH}data/antiword.tar, 		/dev/mount/import, 3, 0, 999999999,9999999999, 9999999,9999999
+=====================================================================
+Version = 20130611
+Program = {ABS_PATH}doc.nexe
+Memory = 419430400, 0
+NameServer = udp:127.0.0.1:54321
+Timeout=500
+Node = 5
+=====================================================================
+Channel = tcp:1:, 	/dev/out/xmlpipecreator, 0, 0, 0, 0, 99999999, 99999999
+==Channel = {ABS_PATH}data/out/doc_text.txt, 	/dev/out/xmlpipecreator, 0, 0, 0, 0, 99999999, 99999999
+==Channel = {ABS_PATH}data/out/doc_testsave.txt, 	/dev/out/test, 0, 0, 0, 0, 99999999, 99999999
+=====================================================================
+== incoming nodes with *.doc files
+=====================================================================

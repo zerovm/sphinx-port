@@ -1,0 +1,24 @@
+=====================================================================
+Channel = tcp:1:,              /dev/in/xmlpipecreator, 0, 0, 9999999999, 9999999999, 0, 0
+Channel = tcp:1:,              /dev/out/xmlpipecreator, 0, 0, 0, 0, 9999999999, 9999999999
+Channel = {ABS_PATH}data/out/indexer_stdout.data,  /dev/stdout, 0, 0, 0, 0, 999999, 999999
+Channel = {ABS_PATH}data/out/indexer_stderr.data,  /dev/stderr, 0, 0, 0, 0, 9999999, 9999999
+Channel = {ABS_PATH}data/out/indexer_debug.log,  /dev/debug, 0, 0, 0, 0, 99999999, 99999999
+Channel = /dev/null,         /dev/stdin, 0, 0, 99999999, 99999999, 0, 0
+Channel = {ABS_PATH}data/rwindex,  /dev/input, 3, 0, 99999999999, 99999999999, 0, 0
+Channel = {ABS_PATH}data/rwindex_,  /dev/output, 3, 0, 0, 0, 99999999999, 99999999999
+=====================================================================
+
+=====================================================================
+Channel = {ABS_PATH}nvram/indexer.nvram,  /dev/nvram, 0, 0, 9999999, 9999999, 0, 0
+==Channel = {ABS_PATH}data/config.tar,   /dev/mount/config, 1, 0, 9999999, 9999999, 0, 0
+==Channel = {ABS_PATH}data/index.tar,   /dev/mount/index, 2, 0, 0, 0, 9999999, 9999999
+=====================================================================
+
+Version = 20130611
+Program = {ABS_PATH}indexer.nexe
+Memory = 4294967296, 0
+
+Node = 2
+NameServer = udp:127.0.0.1:54321
+Timeout = 1000

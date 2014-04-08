@@ -1,0 +1,16 @@
+###########################################################
+# ZRT fstab file, injects tar images contents into ZRT FS #
+###########################################################
+
+[args]
+args=search -c index/zsphinx.conf -i mainindex {command}
+#CONTENT LENGTH 140057 -j CONTENT_LENGTH 140057
+#CONTENT LENGTH 1000 -j CONTENT_LENGTH 140057
+#-j fname /home/volodymyr/disk/tf/manifest.pdf
+#args=search --config index/zsphinx.conf --stdin -i deltaindex
+
+#[debug]
+#verbosity=3
+
+[env]
+name=ZVM_LogLevel, value=0

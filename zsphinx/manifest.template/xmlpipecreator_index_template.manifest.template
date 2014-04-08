@@ -1,0 +1,19 @@
+=====================================================================
+Channel = /dev/null, 				/dev/stdin, 0, 0, 99999999, 99999999, 0, 0
+Channel = {ABS_PATH}data/out/xml_stdout.data, 	/dev/stdout, 0, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/xml_stderr.data, 	/dev/stderr, 0, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/out/xml_debug.data, 	/dev/debug, 0, 0, 0, 0, 99999999, 99999999
+Channel = {ABS_PATH}data/fieldList.data, 	/dev/input, 3, 0, 99999999, 99999999, 0, 0
+Channel = {ABS_PATH}data/xml.data, 	/dev/output, 3, 0, 99999999, 99999999, 99999999, 999999999
+=====================================================================
+Channel = tcp:2:, 				/dev/out/indexer, 0, 0, 0, 0, 99999999999, 999999999999
+Channel = tcp:2:, 				/dev/in/indexer, 0, 0, 99999999999, 99999999999, 0, 0
+=====================================================================
+Channel = {ABS_PATH}nvram/xml_index_template.nvram, 		/dev/nvram, 0, 0, 99999999, 99999999, 0, 0
+=====================================================================
+Version = 20130611
+Program = {ABS_PATH}xmlpipecreator.nexe
+Memory = 4294967296, 0
+Node = 1
+NameServer = udp:127.0.0.1:54321
+Timeout = 1000

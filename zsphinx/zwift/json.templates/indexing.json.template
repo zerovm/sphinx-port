@@ -1,0 +1,93 @@
+[
+	{
+		"name" : "filesender",
+		"exec" : 
+		{
+			"path": "swift://{my_account}/search/sys/filesender.nexe"
+		},
+		"file_list" : 
+		[
+			{"device" : "input", "path" : "swift://{my_account}/search/doc/*"},
+			{"device" : "stderr"}
+		],
+		"connect" : ["pdf", "txt", "doc", "other"],
+        "replicate" : 0
+	},
+	{
+		"name" : "pdf",
+		"exec" : {"path" : "swift://{my_account}/search/sys/pdf.nexe"},
+		"file_list" : 
+		[
+			{"device" : "image", 	"path" : "swift://{my_account}/search/sys/confpdf.tar"},
+			{"device" : "stderr",  	"path" : "swift://{my_account}/search/outputfiles/pdf_stderr.txt"}
+		],
+		"connect" : ["xmlpipecreator"],
+        "replicate" : 0
+	},
+	{
+		"name" : "other",
+		"exec" : {"path" : "swift://{my_account}/search/sys/other.nexe"},
+		"file_list" : 
+		[
+			{"device" : "stdout",  	"path" : "swift://{my_account}/search/outputfiles/other_stdout.txt"}
+		],
+		"connect" : ["xmlpipecreator"],
+        "replicate" : 0
+	},
+	{
+		"name" : "txt",
+		"exec" : {"path" : "swift://{my_account}/search/sys/txt.nexe"},
+		"file_list" : 
+		[
+			{"device" : "stderr",  	"path" : "swift://{my_account}/search/outputfiles/txt_stderr.txt"}
+		],
+		"connect" : ["xmlpipecreator"],
+        "replicate" : 0
+	},
+	{
+		"name" : "doc",
+		"exec" : 
+		{
+			"path" : "swift://{my_account}/search/sys/doc.nexe",
+			"args" : "temp.doc"
+		},
+		"file_list" : 
+		[
+			{"device" : "image", "path" :  "swift://{my_account}/search/sys/antiword.tar"},
+			{"device" : "stderr",  	"path" : "swift://{my_account}/search/outputfiles/doc_stderr.txt"}
+		],
+		"connect" : ["xmlpipecreator"],
+        "replicate" : 0
+	},
+	{
+		"name" : "xmlpipecreator",
+		"exec" : 
+		{
+			"path" : "swift://{my_account}/search/sys/xmlpipecreator.nexe",
+			"args" : "--duplicate"
+		},
+		"file_list" : 
+		[
+			{"device" : "stdout", "path" :  "swift://{my_account}/search/outputfiles/xmlpipecreator_stdout.txt"}
+		],
+        "connect" : ["indexer"],
+        "replicate" : 0
+	},
+	{
+		"name" : "indexer",
+		"exec" : 
+		{
+			"path" : "swift://{my_account}/search/sys/indexer.nexe",
+			"args" : "--config index/zsphinx.conf deltaindex"
+		},
+		"file_list" : 
+		[
+			{"device" : "stdout",  "path" : "swift://{my_account}/search/outputfiles/indexer_stdout.txt"},
+			{"device" : "input",   "path" : "swift://{my_account}/search/sys/rwindex"},
+			{"device" : "output",  "path" : "swift://{my_account}/search/sys/rwindex"},
+			{"device" : "stderr"}
+		],
+		"connect" : ["xmlpipecreator"],
+ 		"replicate" : 0
+	}
+]

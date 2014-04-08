@@ -1,0 +1,12 @@
+###########################################################
+# ZRT fstab file, injects tar images contents into ZRT FS #
+###########################################################
+
+[args]
+args=txt
+
+#[debug]
+#verbosity=3
+
+[env]
+name=ZVM_LogLevel, value=1
