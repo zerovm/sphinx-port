@@ -17,5 +17,7 @@ typedef struct {
 #define INITIAL_LIST_SIZE 10
 #define SPHINX_CONFIG_FILE "/settings/sphinx.conf"
 #define SPHINX_INDEX_NAME "mainindex"
+#define INDEX_SAVE_PATH "/dev/output"
+#define XML_PATH "xml.dat"
 
 #endif /* TYPES__H_ */

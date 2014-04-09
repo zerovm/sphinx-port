@@ -59,8 +59,6 @@ void mylistdir_ (char *path)
 	closedir(dir);
 }
 
-
-
 unsigned long int num_CRC32 (const char * str)
 {
 	unsigned long int crc = crc32(0L, Z_NULL, 0);
@@ -121,7 +119,6 @@ int do_extract_text (char *input_file, char *output_file)
 		free (ext);
 		return 1;
 	}
-
 	free (ext);
 	return 0;
 }
@@ -161,7 +158,6 @@ int filtering_buff ( char *buff, size_t buff_size )
 		if ( !isalnum( ( char * ) buff[i] )  )
 			buff[i] = ' ';
 	}
-
 	return 0;
 }
 
@@ -189,8 +185,6 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 	tmpFile = (char *) malloc ( sizeof (char) * ( strlen ( fileName ) + 10) );
 	sprintf ( tmpFile, "%s.tmp" , fileName );
 
-
-
 	if (do_extract_text ( fileName, tmpFile ) == 1)
 	{
 		text = NULL;
@@ -201,8 +195,6 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 		text = get_text_from_file( tmpFile, &size_text);
 		filtering_buff ( text, size_text );
 	}
-
-	//printf ( "%zu\n", size_text );
 
 	open_xml_document_( xml_fd, num_CRC32( fileName ) );
 	write_XML_Elemet_Size( xml_fd, "CONTENT_FIELD", text, size_text );
@@ -215,11 +207,6 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 	free (tmpFile);
 	free ( text );
 
-/*
-	if (remove ( tmpFile ) != 0)
-		printf ( "Warning. Cannot remove %s file.\n", tmpFile );
-*/
-
 	return 0;
 }
 
@@ -230,14 +217,14 @@ int docs_to_xml (char * path)
 	int xml_fd;
 	initList( pFileList );
 	setFileTypeFilter ( pFileTypeFilter );
-	get_file_list ( "/", pFileList, pFileTypeFilter );
+	get_file_list ( path, pFileList, pFileTypeFilter );
 
 	for ( i = 0; i < pFileList->count; i++)
 	{
 		printf ( "%d. %s \n", i, pFileList->list[i] );
 	}
 ///////////////////////
-	xml_fd = open_xml_( "xml.dat" ); //FIXME const
+	xml_fd = open_xml_( XML_PATH ); //FIXME const
 	for ( i = 0; i < pFileList->count; i++)
 	{
 		add_doc_to_xml ( xml_fd, pFileList->list[i] );
@@ -245,8 +232,8 @@ int docs_to_xml (char * path)
 	close_xml_( xml_fd );
 ///////////////////////
 
-
-	//indexer_main(  );
+	freeList( pFileList );
+	freeList( pFileTypeFilter );
 	return 0;
 }
 
@@ -284,7 +271,8 @@ int do_index_xml ()
 
 int save_index ()
 {
-	newbufferedpack_ ( "/dev/output", "/index" );
+	rename ( SPHINX_CONFIG_FILE, "/index/sphinx.conf" );
+	newbufferedpack_ ( INDEX_SAVE_PATH, "/index" );
 	return 0;
 }
 
@@ -293,18 +281,13 @@ int main (int argc, char ** argv )
 
 	if ( save_settings_to_fs () < 0 )
 		return -1;
-	//print_file( SPHINX_CONFIG_FILE );
 
-	docs_to_xml( "/" );
+
+	docs_to_xml( "/docs" );
 	do_index_xml ();
-
-	print_file( "xml.dat" );
-
-	rename ( SPHINX_CONFIG_FILE, "/index/sphinx.conf" );
+	print_file( XML_PATH );
 
 	save_index ();
-
-	mylistdir( "/");
 
 	return 0;
 }
