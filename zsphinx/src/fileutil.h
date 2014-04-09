@@ -12,5 +12,6 @@ int get_file_list (char *path, SingleList_t *, SingleList_t *);
 int print_dir_tree (char *);
 void print_file (char *);
 int save_from_stdin ( char *);
+void newbufferedpack_ (char *, char *);
 
 #endif /* FILEUTIL_H_ */

@@ -1,0 +1,39 @@
+###########################################################
+# ZRT nvram file, injects tar images contents into ZRT FS #
+###########################################################
+
+[fstab] 
+channel=/dev/mount/data.tar, mountpoint=/, access=ro, removable=no
+
+[args]
+args=single_object_indexer -a
+
+#[debug]
+#verbosity=3
+
+[env]
+name=fname, 			value=/home/volodymyr/libpeerconnection.log
+name=CONTENT_LENGTH,		value=0
+name=CONTENT_TYPE,		value=text/plain
+name=DOCUMENT_ROOT,		value=/dev/input
+name=HTTP_ACCEPT,		value=*/*
+name=REMOTE_USER,		value=g_103319991787805482239
+name=HTTP_REFERER,		value=https://z.litestack.com/js/?account=g_103319991787805482239
+name=SERVER_NAME,		value=127.0.0.1
+name=REMOTE_ADDR,		value=127.0.0.1
+name=SERVER_SOFTWARE,		value=zerocloud
+name=GATEWAY_INTERFACE,		value=CGI/1.1
+name=HTTP_ACCEPT_LANGUAGE,	value=en-US\x2cen;q=0.8
+name=SCRIPT_NAME,		value=swift://g_103319991787805482239/search/sys/filesender.nexe
+name=HTTP_USER_AGENT,		value=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML\x2c like Gecko) Chrome/28.0.1500.95 Safari/537.36
+name=REQUEST_METHOD,		value=POST
+name=HTTP_HOST,			value=z.litestack.com
+name=PATH_INFO,			value=/home/volodymyr/libpeerconnection.log
+name=SERVER_PORT,		value=8080
+name=SERVER_PROTOCOL,		value=HTTP/1.0
+name=HTTP_ACCEPT_ENCODING,	value=gzip\x2cdeflate\x2csdch
+name=HTTP_X_OBJECT_META_MY_META,value=ТЕКСТ на русском
+name=HTTP_ETAG,	 		value=45d5e3b1f8fac5c20dc4af8fe8f6fb9a
+name=HTTP_X_TIMESTAMP,		value=1380108877,06100
+name=HTTP_X_OBJECT_META_TYPE,	value=doc
+name=ZVM_LogLevel, 		value=1

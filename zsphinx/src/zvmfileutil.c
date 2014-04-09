@@ -19,7 +19,7 @@
 
 
 extern char **environ;
-OperationMode_t Mode = cluster;
+OperationMode_t Mode = none;
 
 char *blank_attr_list[] = {
 		"PATH_INFO", // objectname - PATH_INFO str

@@ -26,8 +26,7 @@ int open_xml_ ( char *XML_file )
 <sphinx:attr name=\"TIMESTAMP\" type=\"timestamp\" />\n\
 <sphinx:attr name=\"CONTENT_LENGTH\" type=\"int\" />\n\
 </sphinx:schema>\n\
-\n\
-</sphinx:docset>\n";
+\n";
 	int fd = 0;
 	int bwrite = 0;
 	fd = open ( XML_file, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );

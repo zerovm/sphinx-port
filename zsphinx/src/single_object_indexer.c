@@ -28,6 +28,7 @@
 
 char *get_text_from_file ( char *, size_t *);
 
+
 void mylistdir_ (char *path)
 {
   	DIR *dir;
@@ -86,7 +87,6 @@ int setFileTypeFilter ( SingleList_t *pList )
 	addToList( "pdf", pList );
 	addToList( "odt", pList );
 	addToList( "sh", pList );
-
 	return 0;
 }
 
@@ -99,25 +99,29 @@ int do_extract_text (char *input_file, char *output_file)
 	{
 		int ret = doc_to_text (input_file,  output_file );
 	}
-	if (( strcasecmp( ext, "txt" ) == 0) || ( strcasecmp( ext, "sh" ) == 0) )
+
+	else if (( strcasecmp( ext, "txt" ) == 0) || ( strcasecmp( ext, "sh" ) == 0) )
 	{
 		output_file [ strlen ( output_file ) - 4 ] = '\0';
 	}
-
-	if ( strcasecmp( ext, "docx" ) == 0)
+	else if ( strcasecmp( ext, "docx" ) == 0)
 	{
 		docx_to_text( input_file, output_file );
 	}
-
-	if ( strcasecmp( ext, "odt" ) == 0)
+	else if ( strcasecmp( ext, "odt" ) == 0)
 	{
 		docx_to_text( input_file, output_file );
 	}
-
-	if ( strcasecmp( ext, "pdf" ) == 0)
+	else if ( strcasecmp( ext, "pdf" ) == 0)
 	{
 		pdf_to_text( input_file, output_file );
 	}
+	else
+	{
+		free (ext);
+		return 1;
+	}
+
 	free (ext);
 	return 0;
 }
@@ -128,6 +132,7 @@ char *get_text_from_file ( char * file_name, size_t *text_size  )
 	size_t fsize, bread, i = 0;
 	int fd = 0;
 	char *buff = NULL;
+
 
 	int ret_stat = stat ( file_name, &st );
 	fsize = st.st_size;
@@ -146,6 +151,18 @@ char *get_text_from_file ( char * file_name, size_t *text_size  )
 	*text_size = bread;
 
 	return buff;
+}
+
+int filtering_buff ( char *buff, size_t buff_size )
+{
+	size_t i = 0;
+	for ( i = 0; i < buff_size; i++)
+	{
+		if ( !isalnum( ( char * ) buff[i] )  )
+			buff[i] = ' ';
+	}
+
+	return 0;
 }
 
 int add_doc_to_xml (int xml_fd, char *fileName)
@@ -172,11 +189,20 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 	tmpFile = (char *) malloc ( sizeof (char) * ( strlen ( fileName ) + 10) );
 	sprintf ( tmpFile, "%s.tmp" , fileName );
 
-	do_extract_text ( fileName, tmpFile );
 
-	text = get_text_from_file( tmpFile, &size_text);
 
-	printf ( "%zu\n", size_text );
+	if (do_extract_text ( fileName, tmpFile ) == 1)
+	{
+		text = NULL;
+		size_text = 0;
+	}
+	else
+	{
+		text = get_text_from_file( tmpFile, &size_text);
+		filtering_buff ( text, size_text );
+	}
+
+	//printf ( "%zu\n", size_text );
 
 	open_xml_document_( xml_fd, num_CRC32( fileName ) );
 	write_XML_Elemet_Size( xml_fd, "CONTENT_FIELD", text, size_text );
@@ -186,6 +212,7 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 	write_XML_Elemet_( xml_fd, "CONTENT_LENGTH", fileLenBuff );
 	close_xml_document_( xml_fd );
 	free (fileLenBuff);
+	free (tmpFile);
 	free ( text );
 
 /*
@@ -196,7 +223,7 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 	return 0;
 }
 
-int index_docs (char * path)
+int docs_to_xml (char * path)
 {
 	int i = 0;
 	SingleList_t tFileList, *pFileList=&tFileList, tFileTypeFilter, *pFileTypeFilter = &tFileTypeFilter;
@@ -210,7 +237,7 @@ int index_docs (char * path)
 		printf ( "%d. %s \n", i, pFileList->list[i] );
 	}
 ///////////////////////
-	xml_fd = open_xml_( "/dev/output" );
+	xml_fd = open_xml_( "xml.dat" ); //FIXME const
 	for ( i = 0; i < pFileList->count; i++)
 	{
 		add_doc_to_xml ( xml_fd, pFileList->list[i] );
@@ -225,27 +252,58 @@ int index_docs (char * path)
 
 int save_settings_to_fs ()
 {
-	if ( mkdir( "settings", 0777 ) != 0 )
+	if ( mkdir( "/settings", 0777 ) != 0 )
+	{
+		fprintf ( stderr, "Indexer settings not loaded\n" );
 		return -1;
+	}
 
-	int conf = save_from_stdin( "/settings/sphinx.conf" );
+	int conf = save_from_stdin( SPHINX_CONFIG_FILE );
 	if ( conf <=0 )
+	{
+		fprintf ( stderr, "Indexer settings not loaded\n" );
 		return -1;
+	}
+	return 0;
+}
+
+int do_index_xml ()
+{
+	char *ind_argv[] = {"indexer", "--config", SPHINX_CONFIG_FILE, SPHINX_INDEX_NAME};
+	int ind_argc = sizeof (ind_argv) / sizeof (char *);
+
+	if ( mkdir( "/index", 0777 ) != 0 )
+	{
+		fprintf ( stderr, "Index directory not created\n" );
+		return -1;
+	}
+
+	int ret_ind = indexer_main(ind_argc, ind_argv);
+	return ret_ind;
+}
+
+int save_index ()
+{
+	newbufferedpack_ ( "/dev/output", "/index" );
 	return 0;
 }
 
 int main (int argc, char ** argv )
 {
 
-	if ( save_settings_to_fs < 0 )
-	{
-		fprintf ( stderr, "Indexer settings not loaded\n" );
+	if ( save_settings_to_fs () < 0 )
 		return -1;
-	}
+	//print_file( SPHINX_CONFIG_FILE );
 
+	docs_to_xml( "/" );
+	do_index_xml ();
 
+	print_file( "xml.dat" );
 
-	index_docs( "/" );
+	rename ( SPHINX_CONFIG_FILE, "/index/sphinx.conf" );
+
+	save_index ();
+
 	mylistdir( "/");
 
 	return 0;

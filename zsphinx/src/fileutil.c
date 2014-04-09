@@ -89,6 +89,7 @@ int get_file_list (char *path, SingleList_t *pList, SingleList_t *pFileTypeList)
 			int i = 0;
 			char *fileExt = NULL;
 			fileExt = getext_( filePath );
+/*
 			for ( i = 0; i < pFileTypeList->count; i++)
 				if ( strcmp ( fileExt , pFileTypeList->list[i]) == 0 )
 				{
@@ -98,13 +99,18 @@ int get_file_list (char *path, SingleList_t *pList, SingleList_t *pFileTypeList)
 					addToList( filePath, pList );
 					free ( freeFilePath );
 				}
+*/
+			char *freeFilePath = filePath;
+			if ( filePath[0] == '/' && filePath[1] == '/' )
+				filePath++;
+			addToList( filePath, pList );
+			free ( freeFilePath );
 			free (fileExt);
 		}
 	}
 	closedir(dir);
 	return 0;
 }
-
 
 int print_dir_tree (char *path)
 {
@@ -146,7 +152,6 @@ int print_dir_tree (char *path)
 void print_file (char *fileName)
 {
 	FILE *f;
-	int MAX_BUFF = 1024;
 	int bread = 0;
 	char buff[ MAX_BUFF ];
 
@@ -185,6 +190,81 @@ int save_from_stdin ( char *filename )
 	return data_size;
 }
 
+void newbufferedpack_ (char *devname, char *dirname)
+{
+
+	int fdpackfile;
+
+	fdpackfile = open (devname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+	if ( fdpackfile  <= 0 )
+	{
+		printf ("*** ZVM Error open packfile (write)%s\n", devname);
+		return;
+	}
+
+	char *indexpath;//deirectory with  index files and zspfinx.conf
+	indexpath = dirname;
+  	DIR *dir;
+	struct dirent *entry;
+	dir = opendir(indexpath);
+	char *newpath;
+
+	if (!dir)
+		printf ("*** ZVM Error open DIR %s\n", indexpath);
+	int blocksize = 1024 * 64; // 10 Mb
+
+	char *buff = NULL;
+	buff = (char *) malloc (blocksize);
+
+	long deltabytes = 0;
+	long mainbytes = 0;
+	int filecount = 0;
+
+	while((entry = readdir(dir)))
+	{
+		if(entry->d_type != DT_DIR)
+		{
+			size_t size;
+			size_t bread = 0;
+			size_t bwrite;
+			size_t bytecount;
+			bytecount = 0;
+
+			newpath = (char *) malloc (strlen (entry->d_name) + strlen(indexpath) + 2);
+			sprintf(newpath, "%s/%s", indexpath, entry->d_name);
+			int fd;
+
+			fd = open (newpath, O_RDONLY);
+			size = getfilesize_fd(fd, NULL, 0);
+
+			char tempstr [strlen (newpath) + 12];
+			// write header (10 bytes size of filename + filename + 10 bytes size of filedata)
+			sprintf(tempstr, "%10zu%s%10zu", strlen (newpath), newpath, size);
+			bwrite = write (fdpackfile, tempstr, strlen (tempstr));
+			// write header (10 bytes size of filename + filename)
+
+
+			//read and write file data
+			if (size > 0)
+			{
+				while ((bread = read(fd, buff, blocksize)) > 0)
+				{
+					bytecount += bread;
+					bwrite = write(fdpackfile, buff, bread);
+				}
+			} else
+				bytecount = 0;
+
+			close (fd);
+
+			// for statistic data
+			filecount++;
+			//statistic
+		}
+	}
+	free (buff);
+	close (fdpackfile);
+}
 
 
 

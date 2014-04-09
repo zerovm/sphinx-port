@@ -1609,6 +1609,7 @@ int indexer_main ( int argc, char ** argv )
 
 	int i;
 
+/*
 	if (Mode == cluster)
 		printf ("cluster\n");
 	else
@@ -1618,12 +1619,14 @@ int indexer_main ( int argc, char ** argv )
 		printf ("single_operation\n");
 	else
 		printf ("not a single_operation\n");
+*/
 
 	if (Mode == cluster)
 	{
 		LOG_ZVM (ZLOGTIT, "indexer work mode", "s", "cluster", 1);
 		newbufferedunpack( (char *) I_DEVINPUTDATA);
 	}
+/*
 	FILE *test;
 
 	test = fopen ("index/zsphinx.conf", "r");
@@ -1633,6 +1636,7 @@ int indexer_main ( int argc, char ** argv )
 		return 1;
 	}
 	fclose (test);
+*/
 
 
 	for ( i=1; i<argc; i++ )
