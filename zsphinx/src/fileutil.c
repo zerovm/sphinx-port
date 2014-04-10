@@ -53,6 +53,31 @@ char *getext_ (const char *fname)
 	return ext;
 }
 
+void get_list_from_file ( SingleList_t *list )
+{
+	char *fname = "/files.txt";
+	char buff [MAX_BUFF];
+
+	FILE *f;
+
+	f = fopen ( fname, "r" );
+
+	if ( !f )
+	{
+		printf ( "error open %s file\n", fname );
+		return;
+	}
+
+	while ( fgets ( buff, MAX_BUFF, f ) != NULL )
+	{
+		printf ( "print buff %s  \n", buff );
+		addToList( buff, list );
+	}
+	fclose(f);
+
+	return;
+}
+
 int get_file_list (char *path, SingleList_t *pList, SingleList_t *pFileTypeList)
 {
 	static int a;
@@ -270,10 +295,6 @@ int prepare_temp_dir (char *dir_name)
 {
 	if (mkdir ( dir_name, 0777 ) != 0 )
 		return -1;
-
-	if (chdir ( dir_name ) != 0 )
-		return -1;
-
 	return 0;
 }
 

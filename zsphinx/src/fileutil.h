@@ -14,5 +14,6 @@ void print_file (char *);
 int copy_to_file_from_fd (int, char *);
 void newbufferedpack_ (char *, char *);
 int prepare_temp_dir (char *);
+void get_list_from_file ( SingleList_t* );
 
 #endif /* FILEUTIL_H_ */

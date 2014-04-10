@@ -1,7 +1,7 @@
 =====================================================================
 Channel = {ABS_PATH}data/out/single_indexer_stdout.data,	/dev/stdout, 0, 0, 0, 0, 99999999, 99999999
 Channel = {ABS_PATH}data/out/single_indexer_stderr.data,	/dev/stderr, 0, 0, 0, 0, 99999999, 99999999
-Channel = {ABS_PATH}data/out/single_indexer_debug.data,	/dev/debug, 0, 0, 0, 0, 99999999, 99999999
+==Channel = {ABS_PATH}data/out/single_indexer_debug.data,	/dev/debug, 0, 0, 0, 0, 99999999, 99999999
 Channel = {ABS_PATH}data/zsphinx.conf,		/dev/stdin, 0, 0, 99999999, 99999999, 0, 0
 Channel = {FILE_NAME},  	/dev/input, 3, 0, 99999999999, 99999999999, 0, 0
 Channel = {ABS_PATH}data/saved_index.data,  		/dev/output, 3, 0, 0, 0, 99999999999, 99999999999

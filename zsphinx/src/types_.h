@@ -18,7 +18,10 @@ typedef struct {
 #define SPHINX_CONFIG_FILE "/settings/sphinx.conf"
 #define SPHINX_INDEX_NAME "mainindex"
 #define INDEX_SAVE_PATH "/dev/output"
+#define OBJECT_DEVICE_NAME "/dev/input"
 #define XML_PATH "xml.dat"
 #define TEMP_DIR "temp_dir"
+#define PATH_INFO_NAME "PATH_INFO"
+
 
 #endif /* TYPES__H_ */

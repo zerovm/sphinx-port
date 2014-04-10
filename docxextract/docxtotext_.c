@@ -328,8 +328,6 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
     uLong ratio=0;
     err = unzGetCurrentFileInfo64(uf,&file_info,filename_inzip,sizeof(filename_inzip),NULL,0,NULL,0);
 
-
-
    	if ((strcmp (filename_inzip, "word/document.xml") != 0) && dt == 1)
    	{
    		return UNZ_OK;
@@ -338,7 +336,6 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
    	{
    		return UNZ_OK;
    	}
-
 
     if (err!=UNZ_OK)
     {
@@ -379,6 +376,16 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
             write_filename = filename_inzip;
         else
             write_filename = filename_withoutpath;
+
+
+        if (dt == 0)
+        {
+        	char *write_filename_temp;
+        	write_filename_temp = (char * ) malloc ( sizeof (char *) * (strlen ( write_filename ) + strlen ("/temp_dir/") + 2) );
+        	sprintf ( write_filename_temp, "/temp_dir/%s", write_filename );
+        	write_filename = write_filename_temp;
+
+        }
 
         err = unzOpenCurrentFilePassword(uf,password);
         if (err!=UNZ_OK)
@@ -500,12 +507,14 @@ int do_extract(uf,opt_extract_without_path,opt_overwrite,password)
 
     for (i=0;i<gi.number_entry;i++)
     {
-        if (do_extract_currentfile(uf,&opt_extract_without_path,
-                                      &opt_overwrite,
-                                      password) != UNZ_OK)
+    	if (do_extract_currentfile(uf,&opt_extract_without_path, &opt_overwrite, password) != UNZ_OK)
+        {
             break;
+        }
+
         if ((i+1)<gi.number_entry)
         {
+
             err = unzGoToNextFile(uf);
             if (err!=UNZ_OK)
             {
@@ -831,7 +840,7 @@ int getdoctype (char *filename)
 		return 2;
 	if (strncmp (doctypename, "txt", 3) == 0)
 		return 3;
-	return 3;
+	return 0;
 }
 
 int docx_to_text (char * filename, char *filename_out)

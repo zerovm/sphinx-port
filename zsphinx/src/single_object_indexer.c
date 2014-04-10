@@ -19,6 +19,7 @@
 #include "xml_util.h"
 #include <zlib.h>
 #include <dirent.h>
+#include <libgen.h>
 
 
 //extractors
@@ -209,6 +210,8 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 	return 0;
 }
 
+
+
 int docs_to_xml (char * path)
 {
 	int i = 0;
@@ -217,6 +220,8 @@ int docs_to_xml (char * path)
 	initList( pFileList );
 	setFileTypeFilter ( pFileTypeFilter );
 	get_file_list ( path, pFileList, pFileTypeFilter );
+
+//	get_list_from_file ( pFileList );
 
 	for ( i = 0; i < pFileList->count; i++)
 	{
@@ -253,6 +258,37 @@ int save_settings_to_fs ()
 	return 0;
 }
 
+int save_object_to_fs ()
+{
+	//
+	char *real_obj_path = NULL;
+	char *real_obj_name = NULL;
+	int obj  = 0;
+	int fd_dev = 0;
+
+	real_obj_path = getenv ( PATH_INFO_NAME );
+	if ( !real_obj_path )
+		return -1;
+	// detect obj type
+
+	real_obj_name = basename ( real_obj_path );
+	if ( !real_obj_name )
+		return -1;
+
+	fd_dev = open ( OBJECT_DEVICE_NAME, O_RDONLY );
+	if ( fd_dev <= 0 )
+		return -1;
+
+	obj = copy_to_file_from_fd (fd_dev, real_obj_name );
+	if ( obj <=0 )
+	{
+		fprintf ( stderr, "Indexer settings not loaded\n" );
+		return -1;
+	}
+
+	return 0;
+}
+
 int do_index_xml ()
 {
 	char *ind_argv[] = {"indexer", "--config", SPHINX_CONFIG_FILE, SPHINX_INDEX_NAME};
@@ -277,9 +313,13 @@ int save_index ()
 
 int prepare_object ()
 {
-	prepare_temp_dir ( TEMP_DIR );
+	if ( prepare_temp_dir ( TEMP_DIR ) < 0 )
+		return -1;
 
+	if ( save_object_to_fs() < 0 )
+		return -1;
 
+	extractfile ( basename ( getenv( PATH_INFO_NAME ) ) );
 
 	return 0;
 }
@@ -290,11 +330,14 @@ int main (int argc, char ** argv )
 	if ( save_settings_to_fs () < 0 )
 		return -1;
 
-	docs_to_xml( "/docs" );
-	do_index_xml ();
-	print_file( XML_PATH );
+	if ( prepare_object () < 0 )
+		return -1;
 
+	docs_to_xml( TEMP_DIR );
+	print_file( XML_PATH );
+	do_index_xml ();
 	save_index ();
+
 
 	return 0;
 }
