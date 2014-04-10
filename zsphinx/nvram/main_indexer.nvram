@@ -3,14 +3,15 @@
 ###########################################################
 
 [fstab] 
-channel=/dev/mount/data.tar, mountpoint=/, access=ro, removable=no
+channel=/dev/mount/presettings.tar, mountpoint=/, access=ro, removable=no
 
 [args]
-args=single_object_indexer -a
+args=single_object_indexer
 
 #[debug]
 #verbosity=3
 
 [env]
 name=SERVER_SOFTWARE,		value=zerocloud
+name=PATH_INFO, 		value={FILE_NAME}
 

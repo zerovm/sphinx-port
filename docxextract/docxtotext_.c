@@ -950,20 +950,6 @@ int docx_to_text_ ( char *zip_file, char *file_in_zip, char *output_text_file )
 {
 	int ret_value = 0;
 	int fout = 0;
-/*
-	char *zi
-
-	zipFileName = (char * ) malloc ( sizeof (char) * ( strlen ( filename ) + 9 ) ); // .tmp.zip
-
-	sprintf( zipFileName, "%s.tmp.zip", filename );
-	printf ("%s\n", zipFileName);
-
-	if (rename( filename, zipFileName ) != 0)
-		return -1;
-
-	int retval = extractfile (zipFileName);
-
-*/
 
     unzFile uf=NULL;
     uf = unzOpen64(zip_file);
@@ -975,20 +961,6 @@ int docx_to_text_ ( char *zip_file, char *file_in_zip, char *output_text_file )
 
     printf ("try open %s\n", zip_file);
 	ret_value = do_extract_onefile(uf, file_in_zip, 1, 1, NULL);
-/*
-	fout = open ( output_text_file, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
-
-	if ( fout <= 0 )
-	{
-		free (tempBuff);
-		free (zipFileName);
-		return -1;
-	}
-	int wbrite = 0;
-	wbrite = write ( fout, tempBuff, textsize );
-
-	close ( fout );
-*/
 
 	return ret_value;
 }

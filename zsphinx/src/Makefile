@@ -17,7 +17,7 @@ OBJS_SINGLE_OBJECT_INDEXER = single_object_indexer.o fileutil.o lists.o xml_util
 LIBS_SINGLE_OBJECT_INDEXER = ../../antiword-0.37/libdoc.a ../../docxextract/libdocx.a ../../src/libindexer.a -lz
 #
 
-all:  other$(EXE) xmlpipecreator$(EXE) filesender$(EXE) main_indexer$(EXE)
+all:  other$(EXE) xmlpipecreator$(EXE) filesender$(EXE) main_indexer$(EXE) single_object_indexer$(EXE)
 
 filesender$(EXE): zvmfileutil.o filesender.o filesender_.o 
 	$(CC) filesender.o zvmfileutil.o filesender_.o -o filesender$(EXE) $(LIBS)
@@ -67,7 +67,7 @@ xml_util.o: xml_util.c
 main_indexer$(EXE): $(OBJS_MAIN_INDEXER) ../../antiword-0.37/libdoc.a ../../docxextract/libdocx.a ../../zxpdf-3.03/xpdf/libpdf.a ../../src/libindexer.a
 	$(CC) -o main_indexer$(EXE) $(OBJS_MAIN_INDEXER) ../../antiword-0.37/libdoc.a ../../docxextract/libdocx.a ../../zxpdf-3.03/xpdf/libpdf.a ../../src/libindexer.a ../../src/libsphinx.a $(LIBS) $(LIBS_PDF)   
 
-single_object_indexer: $(OBJS_SINGLE_OBJECT_INDEXER)
+single_object_indexer$(EXE): $(OBJS_SINGLE_OBJECT_INDEXER)
 	$(CC) -o $@ $(OBJS_SINGLE_OBJECT_INDEXER) ../../zxpdf-3.03/xpdf/libpdf.a $(LIBS_SINGLE_OBJECT_INDEXER) $(LIBS_PDF) $(LIBS) 
 
 

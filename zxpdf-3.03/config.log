@@ -83,7 +83,7 @@ configure:2887: checking whether we are cross compiling
 configure:2895: x86_64-nacl-gcc -o conftest    conftest.c  >&5
 configure:2899: $? = 0
 configure:2906: ./conftest
-./configure: line 2908:  6114 Segmentation fault      (core dumped) ./conftest$ac_cv_exeext
+./configure: line 2908:  5558 Segmentation fault      (core dumped) ./conftest$ac_cv_exeext
 configure:2910: $? = 139
 configure:2925: result: yes
 configure:2930: checking for suffix of object files
@@ -442,8 +442,8 @@ configure:4981: $? = 0
 configure:4998: result: none required
 configure:5074: checking for gethostbyname
 configure:5074: x86_64-nacl-g++ -o conftest -g -O2   conftest.cpp  >&5
-/tmp/ccR7aWj2.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/zxpdf-3.03/conftest.cpp:46: warning: Using 'gethostbyname' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+/tmp/ccOsndlc.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/zxpdf-3.03/conftest.cpp:46: warning: Using 'gethostbyname' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
 configure:5074: $? = 0
 configure:5074: result: yes
 configure:5122: checking select() and fd_set in sys/select.h and sys/bsdtypes.h
@@ -518,8 +518,8 @@ configure:5727: $? = 0
 configure:5755: result: no
 configure:5778: checking for fseek64
 configure:5778: x86_64-nacl-gcc -std=gnu99 -o conftest -g -O2   conftest.c  >&5
-/tmp/ccCTw0wj.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/zxpdf-3.03/conftest.c:51: undefined reference to `fseek64'
+/tmp/cc8S7ONv.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/zxpdf-3.03/conftest.c:51: undefined reference to `fseek64'
 collect2: ld returned 1 exit status
 configure:5778: $? = 1
 configure: failed program was:
@@ -580,8 +580,8 @@ configure: failed program was:
 configure:5778: result: no
 configure:5791: checking for ftell64
 configure:5791: x86_64-nacl-gcc -std=gnu99 -o conftest -g -O2   conftest.c  >&5
-/tmp/ccmBiiNB.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/zxpdf-3.03/conftest.c:51: undefined reference to `ftell64'
+/tmp/cc8EhE09.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/zxpdf-3.03/conftest.c:51: undefined reference to `ftell64'
 collect2: ld returned 1 exit status
 configure:5791: $? = 1
 configure: failed program was:

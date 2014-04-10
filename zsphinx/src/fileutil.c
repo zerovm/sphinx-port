@@ -266,7 +266,16 @@ void newbufferedpack_ (char *devname, char *dirname)
 	close (fdpackfile);
 }
 
+int prepare_temp_dir (char *dir_name)
+{
+	if (mkdir ( dir_name, 0777 ) != 0 )
+		return -1;
 
+	if (chdir ( dir_name ) != 0 )
+		return -1;
+
+	return 0;
+}
 
 
 

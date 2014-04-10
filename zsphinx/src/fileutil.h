@@ -13,5 +13,6 @@ int print_dir_tree (char *);
 void print_file (char *);
 int save_from_stdin ( char *);
 void newbufferedpack_ (char *, char *);
+int prepare_temp_dir (char *);
 
 #endif /* FILEUTIL_H_ */

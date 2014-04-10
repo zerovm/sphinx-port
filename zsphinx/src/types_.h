@@ -19,5 +19,6 @@ typedef struct {
 #define SPHINX_INDEX_NAME "mainindex"
 #define INDEX_SAVE_PATH "/dev/output"
 #define XML_PATH "xml.dat"
+#define TEMP_DIR "temp_dir"
 
 #endif /* TYPES__H_ */

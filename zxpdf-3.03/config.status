@@ -444,7 +444,7 @@ Copyright (C) 2009 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/home/volodymyr/git/work/sphinx-port/zxpdf-3.03'
+ac_pwd='/home/volodymyr/git/work/sphinx_port/zxpdf-3.03'
 srcdir='.'
 INSTALL='/usr/bin/install -c'
 test -n "$AWK" || AWK=awk

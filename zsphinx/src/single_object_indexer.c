@@ -97,7 +97,6 @@ int do_extract_text (char *input_file, char *output_file)
 	{
 		int ret = doc_to_text (input_file,  output_file );
 	}
-
 	else if (( strcasecmp( ext, "txt" ) == 0) || ( strcasecmp( ext, "sh" ) == 0) )
 	{
 		output_file [ strlen ( output_file ) - 4 ] = '\0';
@@ -129,7 +128,6 @@ char *get_text_from_file ( char * file_name, size_t *text_size  )
 	size_t fsize, bread, i = 0;
 	int fd = 0;
 	char *buff = NULL;
-
 
 	int ret_stat = stat ( file_name, &st );
 	fsize = st.st_size;
@@ -203,6 +201,7 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 	write_XML_Elemet_( xml_fd, "TIMESTAMP", "");
 	write_XML_Elemet_( xml_fd, "CONTENT_LENGTH", fileLenBuff );
 	close_xml_document_( xml_fd );
+
 	free (fileLenBuff);
 	free (tmpFile);
 	free ( text );
@@ -276,12 +275,17 @@ int save_index ()
 	return 0;
 }
 
+int prepare_object ()
+{
+	prepare_temp_dir ( TEMP_DIR );
+	return 0;
+}
+
 int main (int argc, char ** argv )
 {
 
 	if ( save_settings_to_fs () < 0 )
 		return -1;
-
 
 	docs_to_xml( "/docs" );
 	do_index_xml ();

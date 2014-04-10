@@ -111,7 +111,7 @@ configure:3410: checking whether we are cross compiling
 configure:3418: x86_64-nacl-gcc -o conftest -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG  -I/usr/local/include  conftest.c  -L/usr/local/lib >&5
 configure:3422: $? = 0
 configure:3429: ./conftest
-./configure: line 3431:  4060 Segmentation fault      (core dumped) ./conftest$ac_cv_exeext
+./configure: line 3431:  3506 Segmentation fault      (core dumped) ./conftest$ac_cv_exeext
 configure:3433: $? = 139
 configure:3448: result: yes
 configure:3453: checking for suffix of object files
@@ -1260,8 +1260,8 @@ configure:5822: $? = 0
 configure:5822: result: yes
 configure:5828: checking for _doprnt
 configure:5828: x86_64-nacl-gcc -o conftest -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG  -I/usr/local/include  conftest.c  -L/usr/local/lib >&5
-/tmp/ccSYAfRv.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/conftest.c:90: undefined reference to `_doprnt'
+/tmp/cchdkXFo.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/conftest.c:90: undefined reference to `_doprnt'
 collect2: ld returned 1 exit status
 configure:5828: $? = 1
 configure: failed program was:
@@ -1365,14 +1365,14 @@ configure:5870: $? = 0
 configure:5887: result: none required
 configure:5895: checking for library containing gethostbyname
 configure:5926: x86_64-nacl-gcc -o conftest -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG  -I/usr/local/include  conftest.c  -L/usr/local/lib >&5
-/tmp/cc1oxfJm.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/conftest.c:67: warning: Using 'gethostbyname' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+/tmp/cc5u5Jyr.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/conftest.c:67: warning: Using 'gethostbyname' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
 configure:5926: $? = 0
 configure:5943: result: none required
 configure:5951: checking for library containing inflate
 configure:5982: x86_64-nacl-gcc -o conftest -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG  -I/usr/local/include  conftest.c  -L/usr/local/lib >&5
-/tmp/ccTgwhiO.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/conftest.c:67: undefined reference to `inflate'
+/tmp/ccmEex09.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/conftest.c:67: undefined reference to `inflate'
 collect2: ld returned 1 exit status
 configure:5982: $? = 1
 configure: failed program was:
@@ -1452,8 +1452,8 @@ configure:5999: result: -lz
 configure:6009: checking for library containing logf
 configure:6040: x86_64-nacl-gcc -o conftest -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG  -I/usr/local/include  conftest.c -lz  -L/usr/local/lib >&5
 conftest.c:63: warning: conflicting types for built-in function 'logf'
-/tmp/ccc5Nscz.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/conftest.c:67: undefined reference to `logf'
+/tmp/cczpZQE3.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/conftest.c:67: undefined reference to `logf'
 collect2: ld returned 1 exit status
 configure:6040: $? = 1
 configure: failed program was:
@@ -1537,8 +1537,8 @@ configure:6068: $? = 0
 configure:6068: result: yes
 configure:6068: checking for gethostbyname
 configure:6068: x86_64-nacl-gcc -o conftest -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG  -I/usr/local/include  conftest.c -lm -lz  -L/usr/local/lib >&5
-/tmp/ccbzAp3L.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/conftest.c:91: warning: Using 'gethostbyname' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+/tmp/ccFcp0sq.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/conftest.c:91: warning: Using 'gethostbyname' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
 configure:6068: $? = 0
 configure:6068: result: yes
 configure:6068: checking for gettimeofday
@@ -1744,14 +1744,14 @@ configure:6221: checking for F_SETLKW in fcntl.h
 configure:6246: result: yes
 configure:6258: checking for dlopen in -ldl
 configure:6283: x86_64-nacl-gcc -o conftest -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG  -I/usr/local/include  conftest.c -ldl  -lm -lz  -L/usr/local/lib -lrt  >&5
-/tmp/ccyLxKiq.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/conftest.c:91: warning: Using 'dlopen' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+/tmp/ccZ1M9PJ.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/conftest.c:91: warning: Using 'dlopen' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
 configure:6283: $? = 0
 configure:6292: result: yes
 configure:6306: checking for dlopen
 configure:6306: x86_64-nacl-gcc -o conftest -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG  -I/usr/local/include  conftest.c -ldl -lm -lz  -L/usr/local/lib -lrt  >&5
-/tmp/cczTYCqC.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/conftest.c:115: warning: Using 'dlopen' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
+/tmp/ccLSLz8n.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/conftest.c:115: warning: Using 'dlopen' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
 configure:6306: $? = 0
 configure:6306: result: yes
 configure:6306: checking for dlerror
@@ -1798,8 +1798,8 @@ configure:7709: result: no
 configure:7730: checking for libexpat
 configure:7733: checking for library containing XML_Parse
 configure:7764: x86_64-nacl-gcc -o conftest -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG  -I/usr/local/include        conftest.c -ldl -lm -lz  -L/usr/local/lib -lrt  -lpthread >&5
-/tmp/cccoZJil.o: In function `main':
-/home/volodymyr/git/work/sphinx-port/conftest.c:99: undefined reference to `XML_Parse'
+/tmp/cceIPeQG.o: In function `main':
+/home/volodymyr/git/work/sphinx_port/conftest.c:99: undefined reference to `XML_Parse'
 collect2: ld returned 1 exit status
 configure:7764: $? = 1
 configure: failed program was:
@@ -2321,14 +2321,14 @@ sphinx_cv_unaligned_ram_access=no
 ## Output variables. ##
 ## ----------------- ##
 
-ACLOCAL='${SHELL} /home/volodymyr/git/work/sphinx-port/config/missing --run aclocal-1.11'
+ACLOCAL='${SHELL} /home/volodymyr/git/work/sphinx_port/config/missing --run aclocal-1.11'
 AMDEPBACKSLASH='\'
 AMDEP_FALSE='#'
 AMDEP_TRUE=''
-AMTAR='${SHELL} /home/volodymyr/git/work/sphinx-port/config/missing --run tar'
-AUTOCONF='${SHELL} /home/volodymyr/git/work/sphinx-port/config/missing --run autoconf'
-AUTOHEADER='${SHELL} /home/volodymyr/git/work/sphinx-port/config/missing --run autoheader'
-AUTOMAKE='${SHELL} /home/volodymyr/git/work/sphinx-port/config/missing --run automake-1.11'
+AMTAR='${SHELL} /home/volodymyr/git/work/sphinx_port/config/missing --run tar'
+AUTOCONF='${SHELL} /home/volodymyr/git/work/sphinx_port/config/missing --run autoconf'
+AUTOHEADER='${SHELL} /home/volodymyr/git/work/sphinx_port/config/missing --run autoheader'
+AUTOMAKE='${SHELL} /home/volodymyr/git/work/sphinx_port/config/missing --run automake-1.11'
 AWK='mawk'
 CC='x86_64-nacl-gcc'
 CCDEPMODE='depmode=gcc3'
@@ -2365,7 +2365,7 @@ LTLIBOBJS=' ${LIBOBJDIR}realloc$U.lo ${LIBOBJDIR}lstat$U.lo ${LIBOBJDIR}stat$U.l
 MAINT='#'
 MAINTAINER_MODE_FALSE=''
 MAINTAINER_MODE_TRUE='#'
-MAKEINFO='${SHELL} /home/volodymyr/git/work/sphinx-port/config/missing --run makeinfo'
+MAKEINFO='${SHELL} /home/volodymyr/git/work/sphinx_port/config/missing --run makeinfo'
 MKDIR_P='/bin/mkdir -p'
 MYSQL_CFLAGS=''
 MYSQL_LIBS=''
@@ -2420,7 +2420,7 @@ host_alias='x86_64-nacl'
 htmldir='${docdir}'
 includedir='${prefix}/include'
 infodir='${datarootdir}/info'
-install_sh='${SHELL} /home/volodymyr/git/work/sphinx-port/config/install-sh'
+install_sh='${SHELL} /home/volodymyr/git/work/sphinx_port/config/install-sh'
 libdir='${exec_prefix}/lib'
 libexecdir='${exec_prefix}/libexec'
 localedir='${datarootdir}/locale'
