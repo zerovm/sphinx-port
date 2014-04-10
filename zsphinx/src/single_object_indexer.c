@@ -244,7 +244,7 @@ int save_settings_to_fs ()
 		return -1;
 	}
 
-	int conf = save_from_stdin( SPHINX_CONFIG_FILE );
+	int conf = copy_to_file_from_fd (0, SPHINX_CONFIG_FILE );
 	if ( conf <=0 )
 	{
 		fprintf ( stderr, "Indexer settings not loaded\n" );
@@ -278,6 +278,9 @@ int save_index ()
 int prepare_object ()
 {
 	prepare_temp_dir ( TEMP_DIR );
+
+
+
 	return 0;
 }
 

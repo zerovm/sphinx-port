@@ -171,22 +171,22 @@ void print_file (char *fileName)
 	fclose (f);
 }
 
-int save_from_stdin ( char *filename )
+int copy_to_file_from_fd (int fd_in, char *filename )
 {
 	int data_size = 0;
 	char buff [ MAX_BUFF ];
 	int bread = 0, bwrite = 0;
 
-	int fd;
-	fd = open ( filename, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
-	if (fd <= 0)
+	int fd_out;
+	fd_out = open ( filename, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
+	if (fd_out <= 0)
 		return 0;
-	while ( ( bread = read ( 0, buff, MAX_BUFF ) ) > 0 )
+	while ( ( bread = read ( fd_in, buff, MAX_BUFF ) ) > 0 )
 	{
-		bwrite = write ( fd, buff, bread );
+		bwrite = write ( fd_out, buff, bread );
 		data_size += bwrite;
 	}
-	close (fd);
+	close (fd_out);
 	return data_size;
 }
 

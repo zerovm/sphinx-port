@@ -11,7 +11,7 @@
 int get_file_list (char *path, SingleList_t *, SingleList_t *);
 int print_dir_tree (char *);
 void print_file (char *);
-int save_from_stdin ( char *);
+int copy_to_file_from_fd (int, char *);
 void newbufferedpack_ (char *, char *);
 int prepare_temp_dir (char *);
 
