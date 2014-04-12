@@ -13,5 +13,6 @@ int open_xml_ ( char *);
 int close_xml_ (int);
 int open_xml_document_ ( int, unsigned long int);
 int close_xml_document_ (int);
+char * str_to_lower_case ( char * );
 
 #endif /* XML_UTIL_H_ */

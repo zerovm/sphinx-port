@@ -14,6 +14,19 @@
 #include <fcntl.h>
 #include "xml_util.h"
 
+char * str_to_lower_case ( char *str )
+{
+	int  i = 0;
+	char *buff = NULL;
+
+	buff = (char *) malloc ( sizeof (char) * ( strlen( str ) + 1 ) );
+	while ( str [i] != '\0' )
+		buff [i] = (char) tolower ( (int) str[i++] );
+	buff[i] = '\0';
+
+	return buff;
+}
+
 int open_xml_ ( char *XML_file )
 {
 	char *XML_open =
@@ -29,13 +42,16 @@ int open_xml_ ( char *XML_file )
 \n";
 	int fd = 0;
 	int bwrite = 0;
+	char * XML_open_lower = NULL;
+	XML_open_lower = str_to_lower_case( XML_open );
 	fd = open ( XML_file, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
 	if (fd <= 0)
 	{
 		fprintf (stderr, "error open %s file", XML_file);
 		return -1;
 	}
-	bwrite = write ( fd, XML_open, strlen ( XML_open ) );
+	bwrite = write ( fd, XML_open_lower, strlen ( XML_open_lower ) );
+	free (XML_open_lower);
 	return fd;
 }
 
@@ -62,6 +78,7 @@ int close_xml_document_ (int fd)
 {
 	char *XML = "</sphinx:document>\n\n";
 	int bwrite = 0;
+	str_to_lower_case( XML );
 	bwrite = write ( fd, XML, strlen ( XML ) );
 	return 0;
 }
@@ -70,18 +87,21 @@ int write_XML_Elemet_ (int fd, char *elemeNtname, char *element)
 {
 	int bwrite = 0;
 	int strSize = 50; //stock
+	char * elementName_lower = NULL;
+	elementName_lower = str_to_lower_case( elemeNtname );
 	if (element != NULL)
 		strSize += strlen(element) * 2;
-	if (elemeNtname != NULL)
-		strSize += strlen(elemeNtname);
+	if (elementName_lower != NULL)
+		strSize += strlen(elementName_lower);
 	else
 	{
 		printf ("*** ZVM Error. Wrong element name\n");
 		return 0;
 	}
 	char *str = (char*) malloc (sizeof (char) * strSize);
-	sprintf (str, "<%s><![CDATA[%s]]></%s>\n", elemeNtname, element, elemeNtname);
+	sprintf (str, "<%s><![CDATA[%s]]></%s>\n", elementName_lower, element, elementName_lower);
 	bwrite = write (fd, str, strlen (str));
+	free(elementName_lower);
 	return bwrite;
 }
 
@@ -90,23 +110,25 @@ int write_XML_Elemet_Size (int fd, char *elemeNtname, char *element, size_t e_si
 	int bwrite = 0;
 	int strSize = 50; //stock
 	char *temp = NULL;
+	char *elementName_lower = NULL;
+	elementName_lower = str_to_lower_case( elemeNtname );
 	int temp_len = 0, temp_total_len = 0;
 
 	if (element != NULL)
 		strSize += strlen(element) * 2;
-	if (elemeNtname != NULL)
-		strSize += strlen(elemeNtname);
+	if (elementName_lower != NULL)
+		strSize += strlen(elementName_lower);
 	else
 	{
 		printf ("*** ZVM Error. Wrong element name\n");
 		return 0;
 	}
 
-	temp = (char *) malloc ( sizeof (char) * ( 50 + e_size + strlen(elemeNtname) * 2 ) );
-	sprintf ( temp, "<%s><![CDATA[", elemeNtname );
+	temp = (char *) malloc ( sizeof (char) * ( 50 + e_size + strlen(elementName_lower) * 2 ) );
+	sprintf ( temp, "<%s><![CDATA[", elementName_lower );
 	temp_len = strlen ( temp );
 	memcpy( temp + temp_len, element, e_size );
-	sprintf ( temp + temp_len + e_size, "]]></%s>\n", elemeNtname );
+	sprintf ( temp + temp_len + e_size, "]]></%s>\n", elementName_lower );
 	temp_total_len = temp_len + e_size + strlen ( temp + + temp_len + e_size );
 
 	//char *str = (char*) malloc (sizeof (char) * strSize);
@@ -114,6 +136,7 @@ int write_XML_Elemet_Size (int fd, char *elemeNtname, char *element, size_t e_si
 
 	bwrite = write (fd, temp, temp_total_len);
 	free( temp );
+	free(elementName_lower);
 
 	return bwrite;
 }
