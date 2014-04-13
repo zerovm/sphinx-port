@@ -11,7 +11,7 @@ EXE = .nexe
 
 OBJS = zvmfileutil.o other.o other_.o xmlpipecreator.o filesender.o main_indexer.o opt.o filesender_.o
 
-OBJS_MAIN_INDEXER = main_indexer.o opt.o other_.o xmlpipecreator_.o filesender_.o zvmfileutil.o
+OBJS_MAIN_INDEXER = main_indexer.o opt.o other_.o xmlpipecreator_.o filesender_.o zvmfileutil.o fileutil.o lists.o
 
 OBJS_SINGLE_OBJECT_INDEXER = single_object_indexer.o fileutil.o lists.o xml_util.o
 LIBS_SINGLE_OBJECT_INDEXER = ../../antiword-0.37/libdoc.a ../../docxextract/libdocx.a ../../src/libindexer.a -lz

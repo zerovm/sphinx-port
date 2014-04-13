@@ -217,16 +217,27 @@ int docs_to_xml (char * path)
 	int i = 0;
 	SingleList_t tFileList, *pFileList=&tFileList, tFileTypeFilter, *pFileTypeFilter = &tFileTypeFilter;
 	int xml_fd;
+	char *ext = NULL;
 	initList( pFileList );
 	setFileTypeFilter ( pFileTypeFilter );
-	get_file_list ( path, pFileList, pFileTypeFilter );
 
-//	get_list_from_file ( pFileList );
+	int obj  = 0;
+	int fd_dev = 0;
 
-	for ( i = 0; i < pFileList->count; i++)
+	if ( strcmp ( getext_( path ), "zip") == 0 )
 	{
-		printf ( "%d. %s \n", i, pFileList->list[i] );
+		get_file_list_inzip ( path , pFileList );
 	}
+	else
+	{
+		get_file_list ( path, pFileList, pFileTypeFilter );
+	}
+
+
+	printf ( "list of indexed docs\n" );
+	for ( i = 0; i < pFileList->count; i++)
+		printf ( "%s\n", pFileList->list[i] );
+
 ///////////////////////
 	xml_fd = open_xml_( XML_PATH ); //FIXME const
 	for ( i = 0; i < pFileList->count; i++)
@@ -258,7 +269,7 @@ int save_settings_to_fs ()
 	return 0;
 }
 
-int save_object_to_fs ()
+char * save_object_to_fs ()
 {
 	//
 	char *real_obj_path = NULL;
@@ -268,25 +279,25 @@ int save_object_to_fs ()
 
 	real_obj_path = getenv ( PATH_INFO_NAME );
 	if ( !real_obj_path )
-		return -1;
+		return NULL;
 	// detect obj type
 
 	real_obj_name = basename ( real_obj_path );
 	if ( !real_obj_name )
-		return -1;
+		return NULL;
 
 	fd_dev = open ( OBJECT_DEVICE_NAME, O_RDONLY );
 	if ( fd_dev <= 0 )
-		return -1;
+		return NULL;
 
 	obj = copy_to_file_from_fd (fd_dev, real_obj_name );
 	if ( obj <=0 )
 	{
 		fprintf ( stderr, "Indexer settings not loaded\n" );
-		return -1;
+		return NULL;
 	}
 
-	return 0;
+	return real_obj_name;
 }
 
 int do_index_xml ()
@@ -311,32 +322,37 @@ int save_index ()
 	return 0;
 }
 
-int prepare_object ()
+char * prepare_object ()
 {
+	char *real_obj_name = NULL;
 	if ( prepare_temp_dir ( TEMP_DIR ) < 0 )
-		return -1;
+		return NULL;
 
-	if ( save_object_to_fs() < 0 )
-		return -1;
+	if ( (real_obj_name = save_object_to_fs()) == NULL )
+		return NULL;
 
 	extractfile ( basename ( getenv( PATH_INFO_NAME ) ) );
 
-	return 0;
+	return real_obj_name;
 }
+
+
 
 int main (int argc, char ** argv )
 {
 
+	char *real_obj_name = NULL;
+
 	if ( save_settings_to_fs () < 0 )
 		return -1;
 
-	if ( prepare_object () < 0 )
+	if ( ( real_obj_name = prepare_object ()) == NULL )
 		return -1;
 
-	docs_to_xml( TEMP_DIR );
-	print_file( XML_PATH );
+	docs_to_xml( real_obj_name );
 	do_index_xml ();
 	save_index ();
+
 
 
 	return 0;

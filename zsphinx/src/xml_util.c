@@ -95,7 +95,7 @@ int write_XML_Elemet_ (int fd, char *elemeNtname, char *element)
 		strSize += strlen(elementName_lower);
 	else
 	{
-		printf ("*** ZVM Error. Wrong element name\n");
+		printf ("Error. Wrong element name\n");
 		return 0;
 	}
 	char *str = (char*) malloc (sizeof (char) * strSize);

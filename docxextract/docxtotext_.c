@@ -52,6 +52,10 @@
 #include <sys/stat.h>
 #include "../zsphinx/src/zvmfileutil.h"
 #include "docxtotext_.h"
+#include "../zsphinx/src/lists.h"
+#include "../zsphinx/src/types_.h"
+
+
 //#include <unistd.h>
 
 #ifdef _WIN32
@@ -66,7 +70,8 @@
 #include "unzip.h"
 
 #define CASESENSITIVITY (0)
-#define WRITEBUFFERSIZE (8192)
+//#define WRITEBUFFERSIZE (8192)
+#define WRITEBUFFERSIZE (1048576)
 #define MAXFILENAME (256)
 #define FILENAME "file.docx"
 #ifdef _WIN32
@@ -195,7 +200,7 @@ void do_banner()
 void do_help()
 {
     printf("Usage : miniunz [-e] [-x] [-v] [-l] [-o] [-p password] file.zip [file_to_extr.] [-d extractdir]\n\n" \
-           "  -e  Extract without pathname (junk paths)\n" \
+           "  -e  	 without pathname (junk paths)\n" \
            "  -x  Extract with pathname\n" \
            "  -v  list files\n" \
            "  -l  list files\n" \
@@ -310,6 +315,51 @@ int do_list(uf)
 }
 
 
+int do_list_new(uf, list)
+    unzFile uf;
+	SingleList_t *list;
+{
+    uLong i;
+    int j = 0;
+    unz_global_info64 gi;
+    int err;
+
+    err = unzGetGlobalInfo64(uf,&gi);
+    if (err!=UNZ_OK)
+        printf("error %d with zipfile in unzGetGlobalInfo \n",err);
+    for (i=0;i<gi.number_entry;i++)
+    {
+        char filename_inzip[256];
+        unz_file_info64 file_info;
+        uLong ratio=0;
+        const char *string_method;
+        char charCrypt=' ';
+        err = unzGetCurrentFileInfo64(uf,&file_info,filename_inzip,sizeof(filename_inzip),NULL,0,NULL,0);
+
+        char *abs_path = NULL;
+  		abs_path = (char *) malloc ( sizeof ( char ) * ( strlen( filename_inzip ) + strlen ( TEMP_DIR ) + 3 ) );
+   		sprintf ( abs_path, "/%s/%s", TEMP_DIR, basename (filename_inzip) );
+   		addToList( abs_path, list );
+  		free (abs_path);
+
+        if (err!=UNZ_OK)
+        {
+            printf("error %d with zipfile in unzGetCurrentFileInfo\n",err);
+            break;
+        }
+        if ((i+1)<gi.number_entry)
+        {
+            err = unzGoToNextFile(uf);
+            if (err!=UNZ_OK)
+            {
+                printf("error %d with zipfile in unzGoToNextFile\n",err);
+                break;
+            }
+        }
+    }
+    return 0;
+}
+
 int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
     unzFile uf;
     const int* popt_extract_without_path;
@@ -327,6 +377,7 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
     unz_file_info64 file_info;
     uLong ratio=0;
     err = unzGetCurrentFileInfo64(uf,&file_info,filename_inzip,sizeof(filename_inzip),NULL,0,NULL,0);
+
 
    	if ((strcmp (filename_inzip, "word/document.xml") != 0) && dt == 1)
    	{
@@ -468,11 +519,16 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
             }
             while (err>0);
             if (fout)
-                    fclose(fout);
+            {
+            	fclose(fout);
 
+            }
+
+/*
             if (err==0)
                 change_file_date(write_filename,file_info.dosDate,
                                  file_info.tmu_date);
+*/
         }
 
         if (err==UNZ_OK)
@@ -512,7 +568,8 @@ int do_extract(uf,opt_extract_without_path,opt_overwrite,password)
             break;
         }
 
-        if ((i+1)<gi.number_entry)
+
+    	if ((i+1)<gi.number_entry)
         {
 
             err = unzGoToNextFile(uf);
@@ -862,7 +919,7 @@ int docx_to_text (char * filename, char *filename_out)
 	doc_type = getdoctype (filename);
 	dt = doc_type;
 
-	int retval = extractfile( zipFileName );
+	int retval = extractfile( zipFileName);
 
 	char *docfile = NULL;
 
@@ -883,6 +940,45 @@ int docx_to_text (char * filename, char *filename_out)
 	return 0;
 }
 
+int get_file_list_inzip (char *zipfilename, SingleList_t *list)
+{
+    //const char zipfilename[strlen(filename)];
+    char filename_try[MAXFILENAME+16] = "";
+    int ret_value=0;
+    int opt_do_list=1;
+    char *ret_path;
+    unzFile uf=NULL;
+
+    if (zipfilename!=NULL)
+    {
+        strncpy(filename_try, zipfilename,MAXFILENAME-1);
+        filename_try[ MAXFILENAME ] = '\0';
+        uf = unzOpen64(zipfilename);
+        if (uf==NULL)
+        {
+            strcat(filename_try,".zip");
+            uf = unzOpen64(filename_try);
+        }
+    }
+
+    if (uf==NULL)
+    {
+        printf("Cannot open %s or %s.zip\n",zipfilename,zipfilename);
+        return 1;
+    }
+
+    int aa = initList( list );
+
+    ret_value = do_list_new(uf, list);
+
+    unzClose(uf);
+    if (ret_value != 0)
+    {
+    	printf ("Error\n");
+    	return ret_value;
+    }
+    return ret_value;
+}
 
 int extractfile (char *zipfilename)
 {
@@ -898,6 +994,7 @@ int extractfile (char *zipfilename)
     int opt_overwrite=1;
     int opt_extractdir=0;
     const char *dirname=NULL;
+    char *ret_path;
     unzFile uf=NULL;
 
     if (zipfilename!=NULL)
@@ -949,7 +1046,6 @@ int extractfile (char *zipfilename)
     unzClose(uf);
     if (ret_value != 0)
     {
-    	printf ("Error\n");
     	return ret_value;
     }
     return ret_value;
