@@ -1331,6 +1331,12 @@ int parsemail(char *mbox,	/* file name */
 
     if(set_append) {
     
+#define IO_SIZE_BUF 0x10000
+    char io_buffer[IO_SIZE_BUF];
+
+    setvbuf(fp, io_buffer, _IOFBF, IO_SIZE_BUF);
+
+
 	/* add to an mbox as we read */
 
 	if(set_append_filename && strncmp(set_append_filename, "$DIR/", 5)) {
