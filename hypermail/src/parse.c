@@ -1194,6 +1194,7 @@ static void write_txt_file(struct emailinfo *emp, struct Push *raw_text_buf)
 	 || (emp->is_deleted == FILTERED_EXPIRE && set_delete_level == 2))
 	&& (set_overwrite || !isfile(txt_filename))) {
         FILE *fp = fopen(txt_filename, "w");
+        set_buffered_ ( &fp );
 	if (fp) {
 	    fwrite(p, strlen(p), 1, fp);
 	    fclose(fp);
@@ -1210,6 +1211,10 @@ static void write_txt_file(struct emailinfo *emp, struct Push *raw_text_buf)
 ** think anything it reads in is one article only. Increment should be set
 ** if this updates an archive.
 */
+
+#define IO_SIZE_BUF 0x10000
+    char io_buffer[IO_SIZE_BUF];
+
 
 int parsemail(char *mbox,	/* file name */
 	      int use_stdin,	/* read from stdin */
@@ -1329,15 +1334,11 @@ int parsemail(char *mbox,	/* file name */
 	progerr(errmsg);
     }
 
+	setvbuf(fp, io_buffer, _IOFBF, IO_SIZE_BUF);
+
     if(set_append) {
     
-#define IO_SIZE_BUF 0x10000
-    char io_buffer[IO_SIZE_BUF];
-
-    setvbuf(fp, io_buffer, _IOFBF, IO_SIZE_BUF);
-
-
-	/* add to an mbox as we read */
+    /* add to an mbox as we read */
 
 	if(set_append_filename && strncmp(set_append_filename, "$DIR/", 5)) {
 	    if(strlen(set_append_filename) >= sizeof(filename))
@@ -1356,6 +1357,9 @@ int parsemail(char *mbox,	/* file name */
 	    progerr(errmsg);
 	}
     }
+
+    set_buffered_ ( &fpo );
+
 
     num = startnum;
 
@@ -2567,6 +2571,7 @@ msgid);
 						      ptr + 1);
 					*ptr = PATH_SEPARATOR;
 					file_ptr = fopen(meta_file, "w");
+					set_buffered_ ( &file_ptr );
 					if (file_ptr) {
 					    if (type) {
 						if (charset)
@@ -3016,6 +3021,8 @@ int parse_old_html(int num, struct emailinfo *ep, int parse_body,
      */
 
     if ((fp = fopen(filename, "r")) != NULL) {
+
+    set_buffered_ ( &fp );
 	while (fgets(line, sizeof(line), fp)) {
 
 	    if (1 == sscanf(line, "<!-- %99[^=]=", command)) {
@@ -3640,6 +3647,9 @@ void fixnextheader(char *dir, int num, int direction)
 #endif
 
     fp = fopen(filename, "w+");
+
+    set_buffered_ (fp);
+
     if (fp) {
 	while (bp) {
 	    if (!strncmp(bp->line, "<!-- emptylink=", 15)) {
@@ -3876,6 +3886,7 @@ void fixreplyheader(char *dir, int num, int remove_maybes, int max_update)
     if (fp) {
         bool list_started = FALSE; /* tells when we're starting a reply list for the
 				      first time */
+    set_buffered_ ( &fp );
 	while (bp) {
 	    if (!strncmp(bp->line, "<!-- emptylink=", 15)) {
 	      /* JK: just skip this line and the following which is just our
@@ -4053,6 +4064,7 @@ void fixthreadheader(char *dir, int num, int max_update)
 #endif
 
     if ((fp = fopen(filename, "w+")) != NULL) {
+    set_buffered_ ( &fp );
 	while (bp != NULL) {
 	   if (!strncmp(bp->line, "<!-- emptylink=", 15)) {
 	      /* JK: just skip this line and the following which is just our
@@ -4141,3 +4153,20 @@ int count_deleted(int limit)
     }
     return total;
 }
+
+//void set_buffered_ (FILE**);
+
+void set_buffered_ (FILE**fp)
+{
+/*
+	char buff[0x10000];
+	printf ( "set buff\n");
+	if ( *fp != NULL )
+	{
+		printf ( "set buff - %d \n", (*fp)->_fileno );
+		setvbuf(*fp, buff, _IOFBF, IO_SIZE_BUF);
+	}
+*/
+}
+
+

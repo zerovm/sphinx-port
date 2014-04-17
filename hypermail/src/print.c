@@ -128,12 +128,15 @@ int togdbm(void *gp, struct emailinfo *ep)
 
 #endif
 
+#define FIX_ICONV_FREE
+//#undef FIX_ICONV_FREE
 
 /* Uses threadlist to find the next message after
  * msgnum in the thread containing msgnum.
  * Returns NULL if there are no more messages in 
  * the thread.
  */
+
 struct emailinfo *nextinthread(int msgnum)
 {
     struct reply *rp = threadlist;
@@ -337,8 +340,13 @@ void fprint_menu0(FILE *fp, struct emailinfo *email, int pos)
   }
 
 #ifdef HAVE_ICONV
-  if(tmpptr)
+#ifdef FIX_ICONV_FREE
+	  ;
+#else
+  if(tmpptr != NULL )
     free(tmpptr);
+#endif
+
 #endif
 }
 
@@ -1093,8 +1101,12 @@ char *ConvURLsString(char *line, char *mailid, char *mailsubject, char *charset)
 	}
     }
 #ifdef HAVE_ICONV
-    if(tmpptr)
-      free(tmpptr);
+#ifdef FIX_ICONV_FREE
+	  ;
+#else
+    free(tmpptr);
+#endif
+
 #endif
 
     return parsed;
@@ -1153,8 +1165,11 @@ void printheaders (FILE *fp, struct emailinfo *email)
 	    size_t tmplen;
 	    char *tmpptr=i18n_convstring(header_content,"UTF-8",email->charset,&tmplen);
 	    ConvURLs(fp, tmpptr, id, subject, email->charset);
-	    if (tmpptr)
-	      free(tmpptr);
+#ifdef FIX_ICONV_FREE
+	  ;
+#else
+    free(tmpptr);
+#endif
 #else
 	    ConvURLs(fp, header_content, id, subject, email->charset);
 #endif
@@ -1503,8 +1518,10 @@ void print_headers(FILE *fp, struct emailinfo *email, int in_thread_file)
 
   fprintf(fp, "</address>\n");
 
+/*
     if(tmpsubject)
      free(tmpsubject);
+*/
     if(tmpname)
      free(tmpname);
 }
@@ -1558,8 +1575,11 @@ print_replies(FILE *fp, struct emailinfo *email, int num, int in_thread_file)
 	    ptr = i18n_utf2numref(email2->subject,1);
 	    tmpptr = i18n_utf2numref(email2->name,1);
 	    fprintf(fp, "%s: \"%s\"</a></li>\n", tmpptr, ptr);
-	    if (tmpptr)
-	      free(tmpptr);
+#ifdef FIX_ICONV_FREE
+	  ;
+#else
+    free(tmpptr);
+#endif
 #else
 	    ptr = convchars(email2->subject, email2->charset);
 	    fprintf(fp, "%s: \"%s\"</a></li>\n", email2->name, ptr);
@@ -1606,8 +1626,11 @@ int print_links_up(FILE *fp, struct emailinfo *email, int pos, int in_thread_fil
 		char *tmpptr=i18n_convstring(email->subject,"UTF-8",email->charset,&tmplen);
 		ptr = makemailcommand(set_replymsg_command, set_hmail, email->msgid, 
 				      tmpptr);
-		if (tmpptr)
-		  free(tmpptr);
+#ifdef FIX_ICONV_FREE
+	  ;
+#else
+    free(tmpptr);
+#endif
 #else
 		ptr = makemailcommand(set_replymsg_command, set_hmail, email->msgid, 
 				      email->subject);
@@ -2345,10 +2368,19 @@ void writearticles(int startnum, int maxnum)
 	num++;
 
 #ifdef HAVE_ICONV
-	if (localsubject)
+#ifdef FIX_ICONV_FREE
+	;
+#else
+    if (localsubject)
 	  free(localsubject);
 	if (localname)
 	  free(localname);
+
+#endif
+
+
+
+
 #endif
     }
     

@@ -58,7 +58,8 @@ extern int snprintf(char *str, size_t size, const  char  *format, ...);
 int isfile(char *path)
 {
     struct stat stbuf;
-
+    if (path == NULL)
+    	return 0;
     if (stat(path, &stbuf))
 	return 0;
     return ((stbuf.st_mode & S_IFMT) == S_IFREG) ? 1 : 0;

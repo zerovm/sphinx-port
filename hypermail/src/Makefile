@@ -21,6 +21,8 @@ SUFFIX=
 
 # Compiler to use
 CC=x86_64-nacl-gcc
+AR = ar
+ARFLAGS = cru
 
 # Installation program to use
 INSTALL_PROG=../install-sh 
@@ -30,7 +32,7 @@ SPLINTFLAGS=-Ipcre
 #WNOERROR=-Werror
 #WARNINGS=$(WNOERROR) -ansi -pedantic -Wall -Wtraditional -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wnested-externs -Winline -Dlint
 
-CFLAGS=-g -O2  -Ipcre -DTRIO_MINIMAL $(WARNINGS)
+CFLAGS=-g -O0  -Ipcre -DTRIO_MINIMAL $(WARNINGS)
 YACC=bison -y
 NETLIBS= -lnsl
 LDFLAGS= -Lpcre/.libs
@@ -46,20 +48,20 @@ SRCS=		base64.c date.c domains.c file.c hypermail.c lang.c lock.c \
 		mem.c parse.c print.c printfile.c string.c struct.c uudecode.c\
 		dmatch.c setup.c threadprint.c getdate.c getname.c\
 		finelink.c txt2html.c search.c quotes.c trio.c triostr.c \
-		trionan.c
+		trionan.c hypermail_.c
 
 OBJS=		base64.o date.o domains.o file.o hypermail.o lang.o lock.o \
 		mem.o parse.o print.o printfile.o string.o struct.o uudecode.o\
 		dmatch.o setup.o threadprint.o getdate.o getname.o\
 		finelink.o txt2html.o search.o quotes.o trio.o triostr.o \
-		trionan.o
+		trionan.o hypermail_.o
 
 MAILOBJS=	mail.o ../libcgi/libcgi.a
 
 .c.o:
 	$(CC) -c $(CFLAGS) $<
 
-all:    pcre/.libs/libpcre.a  hypermail$(SUFFIX) mail$(SUFFIX) lang$(SUFFIX)
+all:    pcre/.libs/libpcre.a  hypermail$(SUFFIX) #mail$(SUFFIX) lang$(SUFFIX)
 
 pcre/.libs/libpcre.a:
 	@cd pcre; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" ; rm -f .libs/lib*.so*
@@ -70,6 +72,11 @@ fnv/libfnv.a:
 hypermail$(SUFFIX): $(OBJS) 
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(OPT_LIBS) $(MISC_LIBS)
 	chmod 0755 $@
+
+hypermail.a: $(OBJS) 
+	rm -rf hypermail.a 
+	$(AR) $(ARFLAGS) hypermail.a $(OBJS) 
+#	$(CC) -o $@ -c $(CFLAGS) $(LDFLAGS) $(OBJS) $(OPT_LIBS) $(MISC_LIBS) 
 
 mail$(SUFFIX):	$(MAILOBJS)
 	$(CC) -o $@ $(CFLAGS) $(MAILOBJS) $(NETLIBS) -lm
@@ -125,6 +132,7 @@ clean:
 	rm -f *.o .pure *qx *qv *.ln core
 	rm -f .inslog tca.map lint.out splint.out
 	rm -f getdate.c
+	rm -f hypermail.a
 	@cd pcre; $(MAKE) clean
 	@(if test "$(FNV_DEP)" != "" ; then cd fnv; $(MAKE) clean; fi)
 	@cd ../libcgi; $(MAKE) clean

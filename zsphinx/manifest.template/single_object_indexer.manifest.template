@@ -14,4 +14,4 @@ Channel = {ABS_PATH}data/presettings.tar,   			/dev/mount/presettings.tar, 1, 0,
 Version = 20130611
 Program = {ABS_PATH}src/single_object_indexer.nexe
 Memory = 4294967296, 0
-Timeout = 10
+Timeout = 1000

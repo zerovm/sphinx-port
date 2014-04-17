@@ -26,6 +26,9 @@
 #include "../../antiword-0.37/main_u_.h"
 #include "../../zxpdf-3.03/xpdf/pdftotext_.h"
 #include "../../docxextract/docxtotext_.h"
+#include "../../hypermail/src/hypermail.h"
+
+
 
 char *get_text_from_file ( char *, size_t *);
 
@@ -322,38 +325,65 @@ int save_index ()
 	return 0;
 }
 
-char * prepare_object ()
+char * prepare_object (int argc, char ** argv)
 {
 	char *real_obj_name = NULL;
+	int is_zip = 0;
+	int i = 0;
+
 	if ( prepare_temp_dir ( TEMP_DIR ) < 0 )
 		return NULL;
 
-	if ( (real_obj_name = save_object_to_fs()) == NULL )
-		return NULL;
-
-	extractfile ( basename ( getenv( PATH_INFO_NAME ) ) );
-
+	for ( i = 0; i < argc; i++ )
+	{
+		if ( (strcasecmp( argv [i], "--zip" )) == 0 || (strcasecmp( argv [i], "-z" )) == 0 )
+		{
+			if ( (real_obj_name = save_object_to_fs()) == NULL )
+				return NULL;
+			extractfile ( basename ( getenv( PATH_INFO_NAME ) ) );
+		}
+		if ( (strcasecmp( argv [i], "--mbox" )) == 0 || (strcasecmp( argv [i], "-m" )) == 0 )
+		{
+			char *argv_mbox [] = { "hypermail", "-m", "/dev/input", "-d", TEMP_DIR };
+			int argc_mbox = sizeof ( argv_mbox ) / sizeof ( char * );
+			int result = main_mbox( argc_mbox, argv_mbox );
+			printf ( "%d\n", result );
+			return "/dev/input";
+		}
+	}
 	return real_obj_name;
 }
+
+
+char buff_stdin [0x1000];
+char buff_stdout [0x1000];
 
 
 
 int main (int argc, char ** argv )
 {
 
-	char *real_obj_name = NULL;
+	setvbuf(stdin, buff_stdin, _IOFBF, 0x1000);
+	setvbuf(stdout, buff_stdout, _IOFBF, 0x1000);
+
+
+		char *real_obj_name = NULL;
 
 	if ( save_settings_to_fs () < 0 )
 		return -1;
 
-	if ( ( real_obj_name = prepare_object ()) == NULL )
+	if ( ( real_obj_name = prepare_object (argc, argv)) == NULL )
 		return -1;
-
+	printf ( "OK\n" );
+/*
 	docs_to_xml( real_obj_name );
+	printf ( "OK\n" );
 	do_index_xml ();
+	printf ( "OK\n" );
 	save_index ();
-
-
+	printf ( "OK\n" );
+*/
+	mylistdir_( "/" );
 
 	return 0;
 }

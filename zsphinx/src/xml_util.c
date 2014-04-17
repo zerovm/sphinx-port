@@ -141,6 +141,16 @@ int write_XML_Elemet_Size (int fd, char *elemeNtname, char *element, size_t e_si
 	return bwrite;
 }
 
+int XML_filter ( char *buff, size_t size_buff )
+{
+	size_t i;
+
+	for ( i = 0; i < size_buff; i++)
+		if ( (buff [i] == '<') || (buff [i] == '>') || (buff [i] == '\"') || (buff [i] == '&') )
+			buff [i] = ' ';
+	return 0;
+}
+
 int do_XML ( char * XML_name )
 {
 

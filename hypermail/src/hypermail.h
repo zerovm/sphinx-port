@@ -181,6 +181,8 @@ typedef enum {
 ** Daniel 1998-11-17.
 */
 
+int main_mbox(int, char **);
+
 struct Push {
     char *string;
     size_t len;

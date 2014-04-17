@@ -58,7 +58,7 @@ MAILOBJS=	mail.o ../libcgi/libcgi.a
 .c.o:
 	$(CC) -c $(CFLAGS) $<
 
-all:    pcre/.libs/libpcre.a @FNV_DEP@ hypermail$(SUFFIX) mail$(SUFFIX) lang$(SUFFIX)
+all:    pcre/.libs/libpcre.a @FNV_DEP@ hypermail$(SUFFIX) #mail$(SUFFIX) lang$(SUFFIX)
 
 pcre/.libs/libpcre.a:
 	@cd pcre; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" ; rm -f .libs/lib*.so*

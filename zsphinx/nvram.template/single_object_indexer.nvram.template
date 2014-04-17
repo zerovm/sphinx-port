@@ -6,7 +6,7 @@
 channel=/dev/mount/presettings.tar, mountpoint=/, access=ro, removable=no
 
 [args]
-args=single_object_indexer
+args=single_object_indexer {ARGS}
 
 #[debug]
 #verbosity=3

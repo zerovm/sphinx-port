@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <errno.h>
 #include "types_.h"
 #include "lists.h"
 #include "fileutil.h"
@@ -298,6 +299,25 @@ int prepare_temp_dir (char *dir_name)
 	return 0;
 }
 
+int check_dir_exist (char * dir_path )
+{
+	struct stat st;
+	int err = stat(dir_path, &st);
+	if(-1 == err) {
+		if(ENOENT == errno) {
+			return 0;
+		} else {
+			perror("stat");
+			exit(1);
+		}
+	} else {
+		if(S_ISDIR(st.st_mode)) {
+			return 1;
+		} else {
+			return 2;
+		}
+	}
+}
 
 
 
