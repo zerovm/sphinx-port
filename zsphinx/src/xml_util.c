@@ -156,3 +156,39 @@ int do_XML ( char * XML_name )
 
 	return 0;
 }
+
+void write_doc_toxml (int xml_fd, unsigned long int docID_CRC32, char * text, size_t size_text, char *fileName, char *fileLenBuff )
+{
+	open_xml_document_( xml_fd, docID_CRC32 );
+	write_XML_Elemet_Size( xml_fd, "CONTENT_FIELD", text, size_text );
+	write_XML_Elemet_( xml_fd, "PATH_INFO_FIELD", fileName );
+	write_XML_Elemet_( xml_fd, "PATH_INFO", fileName );
+	write_XML_Elemet_( xml_fd, "TIMESTAMP", "");
+	write_XML_Elemet_( xml_fd, "CONTENT_LENGTH", fileLenBuff );
+	close_xml_document_( xml_fd );
+	return;
+}
+
+char * get_message_ID_from_html ( char *file_name )
+{
+	printf ( "%s\n", file_name );
+	char *id_pattern = "<!-- id=";
+	char buff [0x1000];
+	char *message_id = NULL;
+	FILE *f;
+	f = fopen ( file_name, "r" );
+	while ( fgets (buff,sizeof(buff), f) != NULL)
+	{
+		//<!-- id="CAK2fmCx=8Cv6+s5O8Lt2FiQzbsxgoQd892ONLEuCrsRwTWDoMQ_at_mail.gmail.com" -->
+		if (strlen ( buff ) > 0)
+			if ( strstr ( buff, id_pattern ) != NULL )
+			{
+				message_id = (char *) malloc ( sizeof ( char ) * strlen (buff) );
+				memcpy ( message_id, buff + 9, strlen (buff) - 6 - 9 );
+				message_id [ strlen (buff) - 6 - 9 ] = '\0';
+				break;
+			}
+	}
+	fclose (f);
+	return message_id;
+}

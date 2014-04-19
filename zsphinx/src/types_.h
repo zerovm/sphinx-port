@@ -24,6 +24,7 @@ typedef struct {
 #define XML_PATH "xml.dat"
 #define TEMP_DIR "temp_dir"
 #define PATH_INFO_NAME "PATH_INFO"
+#define OLD_ZRT
 
 
 #endif /* TYPES__H_ */

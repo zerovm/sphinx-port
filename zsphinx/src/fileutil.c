@@ -319,6 +319,27 @@ int check_dir_exist (char * dir_path )
 	}
 }
 
+char * get_file_name_without_ext ( char * file_name )
+{
+	char *base_file_name = NULL;
+	char *file_name_without_ext = NULL;
+	int basename_len = 0, i = 0, file_name_without_ext_len = 0;
+
+	base_file_name = basename ( file_name );
+	basename_len = strlen ( base_file_name );
+
+	for ( i = basename_len; i > 0; i-- )
+	{
+		if ( base_file_name[i] == '.' )
+			break;
+	}
+	file_name_without_ext_len = basename_len - (basename_len - i);
+	file_name_without_ext = (char *) malloc( sizeof ( char ) * ( file_name_without_ext_len + 1 ) );
+	memcpy( file_name_without_ext, base_file_name, file_name_without_ext_len );
+	file_name_without_ext[file_name_without_ext_len] = '\0';
+	return file_name_without_ext;
+}
+
 
 
 

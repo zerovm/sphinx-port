@@ -89,6 +89,8 @@ int setFileTypeFilter ( SingleList_t *pList )
 	addToList( "pdf", pList );
 	addToList( "odt", pList );
 	addToList( "sh", pList );
+	addToList( "html", pList );
+	addToList( "c", pList );
 	return 0;
 }
 
@@ -101,7 +103,7 @@ int do_extract_text (char *input_file, char *output_file)
 	{
 		int ret = doc_to_text (input_file,  output_file );
 	}
-	else if (( strcasecmp( ext, "txt" ) == 0) || ( strcasecmp( ext, "sh" ) == 0) )
+	else if (( strcasecmp( ext, "txt" ) == 0) || ( strcasecmp( ext, "sh" ) == 0) || ( strcasecmp( ext, "html" ) == 0) || ( strcasecmp( ext, "c" ) == 0) )
 	{
 		output_file [ strlen ( output_file ) - 4 ] = '\0';
 	}
@@ -157,13 +159,13 @@ int filtering_buff ( char *buff, size_t buff_size )
 	size_t i = 0;
 	for ( i = 0; i < buff_size; i++)
 	{
-		if ( !isalnum( ( char * ) buff[i] )  )
+		if ( !isalnum( ( char * ) buff[i] ) )
 			buff[i] = ' ';
 	}
 	return 0;
 }
 
-int add_doc_to_xml (int xml_fd, char *fileName)
+int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
 {
 	struct stat st;
 	struct tm *t;
@@ -173,7 +175,6 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 	char *fileLenBuff = NULL;
 	char *tmpFile = NULL;
 	size_t size_text = 0;
-
 
 	if ((ret = stat(fileName , &st))!=0)
     {
@@ -198,13 +199,63 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 		filtering_buff ( text, size_text );
 	}
 
-	open_xml_document_( xml_fd, num_CRC32( fileName ) );
-	write_XML_Elemet_Size( xml_fd, "CONTENT_FIELD", text, size_text );
-	write_XML_Elemet_( xml_fd, "PATH_INFO_FIELD", fileName );
-	write_XML_Elemet_( xml_fd, "PATH_INFO", fileName );
-	write_XML_Elemet_( xml_fd, "TIMESTAMP", "");
-	write_XML_Elemet_( xml_fd, "CONTENT_LENGTH", fileLenBuff );
-	close_xml_document_( xml_fd );
+	if ( doc_type == 1 )
+		write_doc_toxml ( xml_fd, num_CRC32( fileName ), text, size_text, fileName, fileLenBuff );
+	else if ( doc_type ==2 )
+	{
+		char *base_name_without_ext = NULL;
+		char *temp_dir_name = NULL;
+		char *temp_base_name = NULL;
+		char *temp_file_name = NULL;
+		char *temp_pos = NULL;
+		char *temp_filepath = NULL;
+		char *temp_message_id = NULL;
+		char *temp_full_file_name = NULL;
+		char *do_not_index[] = {"date", "index", "subject", "author", "attachment"};
+		int do_not_index_count = sizeof ( do_not_index ) / sizeof ( char *);
+		int i = 0;
+		int skip_indexing = 0;
+		base_name_without_ext = get_file_name_without_ext( fileName );
+		for ( i = 0; i < do_not_index_count; i++ )
+		{
+			if (strcasecmp( base_name_without_ext , do_not_index[i]) == 0)
+			{
+				printf ( "skip %s\n", fileName );
+				skip_indexing = 1;
+				break;
+			}
+		}
+		if ( skip_indexing != 0 )
+		{
+			free (fileLenBuff);
+			free (tmpFile);
+			free ( text );
+			return 0;
+		}
+		// BUG in glibc. we need to save fileName
+		temp_filepath = strdup ( fileName );
+		temp_dir_name = dirname( temp_filepath );
+		temp_base_name  = basename ( temp_dir_name );
+		temp_file_name = ( char * ) malloc( sizeof ( char ) * ( strlen ( TEMP_DIR ) + strlen ( temp_base_name ) + 20) );
+		temp_pos = NULL;
+		temp_pos = strstr( temp_base_name, "-");
+		if ( temp_pos != NULL )
+		{
+			printf ( "attachment\n" );
+			temp_pos++;
+			sprintf ( temp_file_name, "%s/%s.html", TEMP_DIR, temp_pos);
+			temp_message_id = get_message_ID_from_html ( temp_file_name );
+			temp_full_file_name = (char *) malloc( sizeof ( char ) * ( strlen (temp_message_id) + strlen ( fileName ) + 5 ) );
+			sprintf ( temp_full_file_name, "%s/%s", temp_message_id, fileName);
+		}
+		else
+		{
+			printf ( "message\n" );
+			temp_full_file_name = get_message_ID_from_html ( fileName );
+		}
+		printf ( "%s, %s, %s\n",fileName, temp_file_name, temp_full_file_name );
+		write_doc_toxml ( xml_fd, num_CRC32( temp_full_file_name ), text, size_text, fileName, fileLenBuff );
+	}
 
 	free (fileLenBuff);
 	free (tmpFile);
@@ -213,9 +264,7 @@ int add_doc_to_xml (int xml_fd, char *fileName)
 	return 0;
 }
 
-
-
-int docs_to_xml (char * path)
+int docs_to_xml (char * path, int doc_type)
 {
 	int i = 0;
 	SingleList_t tFileList, *pFileList=&tFileList, tFileTypeFilter, *pFileTypeFilter = &tFileTypeFilter;
@@ -223,19 +272,16 @@ int docs_to_xml (char * path)
 	char *ext = NULL;
 	initList( pFileList );
 	setFileTypeFilter ( pFileTypeFilter );
+//	get_file_list ( path, pFileList, pFileTypeFilter );
 
-	int obj  = 0;
-	int fd_dev = 0;
-
+#ifndef OLD_ZRT
 	if ( strcmp ( getext_( path ), "zip") == 0 )
 	{
 		get_file_list_inzip ( path , pFileList );
 	}
 	else
-	{
-		get_file_list ( path, pFileList, pFileTypeFilter );
-	}
-
+#endif
+	get_file_list ( path, pFileList, pFileTypeFilter );
 
 	printf ( "list of indexed docs\n" );
 	for ( i = 0; i < pFileList->count; i++)
@@ -245,7 +291,8 @@ int docs_to_xml (char * path)
 	xml_fd = open_xml_( XML_PATH ); //FIXME const
 	for ( i = 0; i < pFileList->count; i++)
 	{
-		add_doc_to_xml ( xml_fd, pFileList->list[i] );
+		//
+		add_doc_to_xml ( xml_fd, pFileList->list[i], doc_type );
 	}
 	close_xml_( xml_fd );
 ///////////////////////
@@ -299,7 +346,6 @@ char * save_object_to_fs ()
 		fprintf ( stderr, "Indexer settings not loaded\n" );
 		return NULL;
 	}
-
 	return real_obj_name;
 }
 
@@ -325,64 +371,83 @@ int save_index ()
 	return 0;
 }
 
-char * prepare_object (int argc, char ** argv)
+int get_work_mode (int argc, char ** argv)
 {
-	char *real_obj_name = NULL;
+	int i = 0;
+
+	for ( i = 0; i < argc; i++ )
+	{
+		if ( (strcasecmp( argv [i], "--zip" )) == 0 || (strcasecmp( argv [i], "-z" )) == 0 )
+		{
+			return 1;
+		}
+		else if ( (strcasecmp( argv [i], "--mbox" )) == 0 || (strcasecmp( argv [i], "-m" )) == 0 )
+		{
+			return 2;
+		}
+	}
+	return 0;
+}
+
+
+int prepare_zip ()
+{
+ 	return extractfile ( OBJECT_DEVICE_NAME );
+}
+
+int prepare_mbox ()
+{
+	char *argv_mbox [] = { "hypermail", "-m", OBJECT_DEVICE_NAME, "-d", TEMP_DIR };
+	int argc_mbox = sizeof ( argv_mbox ) / sizeof ( char * );
+	return main_mbox( argc_mbox, argv_mbox );
+}
+
+char * prepare_object (int mode)
+{
 	int is_zip = 0;
 	int i = 0;
 
 	if ( prepare_temp_dir ( TEMP_DIR ) < 0 )
 		return NULL;
 
-	for ( i = 0; i < argc; i++ )
+	if ( mode == 1 )
 	{
-		if ( (strcasecmp( argv [i], "--zip" )) == 0 || (strcasecmp( argv [i], "-z" )) == 0 )
-		{
-			if ( (real_obj_name = save_object_to_fs()) == NULL )
-				return NULL;
-			extractfile ( basename ( getenv( PATH_INFO_NAME ) ) );
-		}
-		if ( (strcasecmp( argv [i], "--mbox" )) == 0 || (strcasecmp( argv [i], "-m" )) == 0 )
-		{
-			char *argv_mbox [] = { "hypermail", "-m", "/dev/input", "-d", TEMP_DIR };
-			int argc_mbox = sizeof ( argv_mbox ) / sizeof ( char * );
-			int result = main_mbox( argc_mbox, argv_mbox );
-			printf ( "%d\n", result );
-			return "/dev/input";
-		}
+		if (prepare_zip () != 0 )
+			return NULL;
 	}
-	return real_obj_name;
+	else if ( mode == 2 )
+	{
+		if (prepare_mbox() != 0)
+			return NULL;
+	}
+	return TEMP_DIR;
 }
-
 
 char buff_stdin [0x1000];
 char buff_stdout [0x1000];
 
-
-
 int main (int argc, char ** argv )
 {
 
-	setvbuf(stdin, buff_stdin, _IOFBF, 0x1000);
-	setvbuf(stdout, buff_stdout, _IOFBF, 0x1000);
+//	setvbuf(stdin, buff_stdin, _IOFBF, 0x1000);
+//	setvbuf(stdout, buff_stdout, _IOFBF, 0x1000);
 
+	char *real_obj_name = NULL;
+	int mode = 0;
 
-		char *real_obj_name = NULL;
+	mode = get_work_mode (argc, argv);
 
 	if ( save_settings_to_fs () < 0 )
 		return -1;
 
-	if ( ( real_obj_name = prepare_object (argc, argv)) == NULL )
+	if ( ( real_obj_name = prepare_object (mode)) == NULL )
 		return -1;
-	printf ( "OK\n" );
-/*
-	docs_to_xml( real_obj_name );
-	printf ( "OK\n" );
+
+
+	docs_to_xml( TEMP_DIR, mode );
+
 	do_index_xml ();
-	printf ( "OK\n" );
 	save_index ();
-	printf ( "OK\n" );
-*/
 	mylistdir_( "/" );
 
 	return 0;

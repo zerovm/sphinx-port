@@ -16,5 +16,6 @@ void newbufferedpack_ (char *, char *);
 int prepare_temp_dir (char *);
 void get_list_from_file ( SingleList_t* );
 int check_dir_exist (char *);
+char * get_file_name_without_ext ( char *);
 
 #endif /* FILEUTIL_H_ */
