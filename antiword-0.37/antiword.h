@@ -228,7 +228,7 @@
 #define FONTNAMES_FILE		"fontnames"
 #else	/* All others */
 #define GLOBAL_ANTIWORD_DIR	""
-#define ANTIWORD_DIR		"antiword"
+#define ANTIWORD_DIR		"/antiword"
 #define FONTNAMES_FILE		"fontnames"
 #endif /* __dos */
 /* The names of grouped mapping files */

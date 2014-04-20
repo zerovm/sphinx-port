@@ -171,7 +171,6 @@ void write_doc_toxml (int xml_fd, unsigned long int docID_CRC32, char * text, si
 
 char * get_message_ID_from_html ( char *file_name )
 {
-	printf ( "%s\n", file_name );
 	char *id_pattern = "<!-- id=";
 	char buff [0x1000];
 	char *message_id = NULL;

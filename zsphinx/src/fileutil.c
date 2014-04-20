@@ -30,7 +30,31 @@ void reverse_ (char s[])
 	}
 }
 
-char *getext_ (const char *fname)
+char *getext_ (char * fname)
+{
+	int i = 0;
+	int len = 0;
+	char *buff = NULL;
+	if ( fname == NULL )
+		return NULL;
+	len = strlen ( fname );
+	for (i = len; i >= 0; i--)
+	{
+		if ( fname [i] == '.')
+		{
+			buff = (char *) malloc ( CHARSIZE(len - i + 1) );
+			strncpy ( buff, fname + i + 1, len - i + 1);
+			return buff;
+		}
+		if (fname [i] == '/')
+		{
+			return NULL;
+		}
+	}
+	return NULL;
+}
+
+char *getext__ (const char *fname)
 {
 	if (fname == NULL)
 		return NULL;
@@ -50,6 +74,7 @@ char *getext_ (const char *fname)
 			len--;
 	}
 	ext[i] = '\0';
+	printf("%s\n", ext);
 	reverse_ (ext);
 	return ext;
 }
@@ -114,7 +139,7 @@ int get_file_list (char *path, SingleList_t *pList, SingleList_t *pFileTypeList)
 			sprintf( filePath, "%s/%s", path,  entry->d_name);
 			int i = 0;
 			char *fileExt = NULL;
-			fileExt = getext_( filePath );
+			//fileExt = getext_( filePath );
 /*
 			for ( i = 0; i < pFileTypeList->count; i++)
 				if ( strcmp ( fileExt , pFileTypeList->list[i]) == 0 )
@@ -131,7 +156,7 @@ int get_file_list (char *path, SingleList_t *pList, SingleList_t *pFileTypeList)
 				filePath++;
 			addToList( filePath, pList );
 			free ( freeFilePath );
-			free (fileExt);
+			//free (fileExt);
 		}
 	}
 	closedir(dir);
@@ -283,9 +308,7 @@ void newbufferedpack_ (char *devname, char *dirname)
 
 			close (fd);
 
-			// for statistic data
 			filecount++;
-			//statistic
 		}
 	}
 	free (buff);

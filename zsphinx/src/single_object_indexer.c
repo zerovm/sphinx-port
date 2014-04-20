@@ -75,7 +75,7 @@ char * str_CRC32 (const char * str)
 	unsigned long int crc = crc32(0L, Z_NULL, 0);
 	char *	buff = NULL;
 	crc = crc32(crc, str, strlen(str));
-	buff = (char *) malloc (sizeof (char) * 20);
+	buff = (char *) malloc (CHARSIZE( 20 ));
 	sprintf( buff, "%zu", crc );
 	return buff;
 }
@@ -99,9 +99,17 @@ int do_extract_text (char *input_file, char *output_file)
 	char *ext = NULL;
 	ext = (char *) getext_( input_file );
 
+	if (ext == NULL)
+		return 1;
 	if ( strcasecmp( ext, "doc" ) == 0)
 	{
-		int ret = doc_to_text (input_file,  output_file );
+/*
+		char *temp_fname = NULL, *p = NULL;
+		temp_fname = strdup (input_file );
+		p = temp_fname;
+		for ( ; *p; ++p) *p = tolower(*p);
+*/
+		doc_to_text (input_file,  output_file );
 	}
 	else if (( strcasecmp( ext, "txt" ) == 0) || ( strcasecmp( ext, "sh" ) == 0) || ( strcasecmp( ext, "html" ) == 0) || ( strcasecmp( ext, "c" ) == 0) )
 	{
@@ -138,7 +146,7 @@ char *get_text_from_file ( char * file_name, size_t *text_size  )
 	int ret_stat = stat ( file_name, &st );
 	fsize = st.st_size;
 
-	buff = (char *) malloc ( sizeof ( char ) * ( fsize + 10 ) );
+	buff = (char *) malloc ( CHARSIZE(fsize + 10) );
 
 	fd = open ( file_name, O_RDONLY );
 	if ( fd <= 0)
@@ -182,10 +190,10 @@ int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
 		return -1;
     }
 
-	fileLenBuff  = (char *) malloc ( sizeof ( char ) * ( 25 ) );
+	fileLenBuff  = (char *) malloc ( CHARSIZE(25) );
 	sprintf ( fileLenBuff, "%zu", st.st_size );
 
-	tmpFile = (char *) malloc ( sizeof (char) * ( strlen ( fileName ) + 10) );
+	tmpFile = (char *) malloc ( CHARSIZE( strlen ( fileName ) + 10) );
 	sprintf ( tmpFile, "%s.tmp" , fileName );
 
 	if (do_extract_text ( fileName, tmpFile ) == 1)
@@ -212,7 +220,7 @@ int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
 		char *temp_message_id = NULL;
 		char *temp_full_file_name = NULL;
 		char *do_not_index[] = {"date", "index", "subject", "author", "attachment"};
-		int do_not_index_count = sizeof ( do_not_index ) / sizeof ( char *);
+		int do_not_index_count = PCHARSIZE(do_not_index);
 		int i = 0;
 		int skip_indexing = 0;
 		base_name_without_ext = get_file_name_without_ext( fileName );
@@ -220,7 +228,6 @@ int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
 		{
 			if (strcasecmp( base_name_without_ext , do_not_index[i]) == 0)
 			{
-				printf ( "skip %s\n", fileName );
 				skip_indexing = 1;
 				break;
 			}
@@ -229,37 +236,35 @@ int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
 		{
 			free (fileLenBuff);
 			free (tmpFile);
-			free ( text );
+			free (text);
 			return 0;
 		}
 		// BUG in glibc. we need to save fileName
 		temp_filepath = strdup ( fileName );
 		temp_dir_name = dirname( temp_filepath );
 		temp_base_name  = basename ( temp_dir_name );
-		temp_file_name = ( char * ) malloc( sizeof ( char ) * ( strlen ( TEMP_DIR ) + strlen ( temp_base_name ) + 20) );
 		temp_pos = NULL;
 		temp_pos = strstr( temp_base_name, "-");
 		if ( temp_pos != NULL )
 		{
-			printf ( "attachment\n" );
 			temp_pos++;
+			temp_file_name = ( char * ) malloc( CHARSIZE( strlen ( TEMP_DIR ) + strlen ( temp_base_name ) + 20) );
 			sprintf ( temp_file_name, "%s/%s.html", TEMP_DIR, temp_pos);
 			temp_message_id = get_message_ID_from_html ( temp_file_name );
-			temp_full_file_name = (char *) malloc( sizeof ( char ) * ( strlen (temp_message_id) + strlen ( fileName ) + 5 ) );
+			temp_full_file_name = (char *) malloc( CHARSIZE( strlen (temp_message_id) + strlen ( fileName ) + 5 ) );
 			sprintf ( temp_full_file_name, "%s/%s", temp_message_id, fileName);
+			free ( temp_file_name );
 		}
 		else
 		{
-			printf ( "message\n" );
 			temp_full_file_name = get_message_ID_from_html ( fileName );
 		}
-		printf ( "%s, %s, %s\n",fileName, temp_file_name, temp_full_file_name );
 		write_doc_toxml ( xml_fd, num_CRC32( temp_full_file_name ), text, size_text, fileName, fileLenBuff );
+		free ( temp_full_file_name );
 	}
-
 	free (fileLenBuff);
 	free (tmpFile);
-	free ( text );
+	free (text);
 
 	return 0;
 }
@@ -288,10 +293,10 @@ int docs_to_xml (char * path, int doc_type)
 		printf ( "%s\n", pFileList->list[i] );
 
 ///////////////////////
+
 	xml_fd = open_xml_( XML_PATH ); //FIXME const
 	for ( i = 0; i < pFileList->count; i++)
 	{
-		//
 		add_doc_to_xml ( xml_fd, pFileList->list[i], doc_type );
 	}
 	close_xml_( xml_fd );
@@ -330,8 +335,6 @@ char * save_object_to_fs ()
 	real_obj_path = getenv ( PATH_INFO_NAME );
 	if ( !real_obj_path )
 		return NULL;
-	// detect obj type
-
 	real_obj_name = basename ( real_obj_path );
 	if ( !real_obj_name )
 		return NULL;
@@ -352,7 +355,7 @@ char * save_object_to_fs ()
 int do_index_xml ()
 {
 	char *ind_argv[] = {"indexer", "--config", SPHINX_CONFIG_FILE, SPHINX_INDEX_NAME};
-	int ind_argc = sizeof (ind_argv) / sizeof (char *);
+	int ind_argc = PCHARSIZE(ind_argv);
 
 	if ( mkdir( "/index", 0777 ) != 0 )
 	{
@@ -366,7 +369,7 @@ int do_index_xml ()
 
 int save_index ()
 {
-	rename ( SPHINX_CONFIG_FILE, "/index/sphinx.conf" );
+	rename ( SPHINX_CONFIG_FILE, "/index/zsphinx.conf" );
 	newbufferedpack_ ( INDEX_SAVE_PATH, "/index" );
 	return 0;
 }
@@ -398,7 +401,7 @@ int prepare_zip ()
 int prepare_mbox ()
 {
 	char *argv_mbox [] = { "hypermail", "-m", OBJECT_DEVICE_NAME, "-d", TEMP_DIR };
-	int argc_mbox = sizeof ( argv_mbox ) / sizeof ( char * );
+	int argc_mbox = PCHARSIZE(argv_mbox);
 	return main_mbox( argc_mbox, argv_mbox );
 }
 
@@ -441,14 +444,15 @@ int main (int argc, char ** argv )
 		return -1;
 
 	if ( ( real_obj_name = prepare_object (mode)) == NULL )
+	{
 		return -1;
-
+	}
 
 	docs_to_xml( TEMP_DIR, mode );
-
 	do_index_xml ();
 	save_index ();
-	mylistdir_( "/" );
+
+	mylistdir_("/");
 
 	return 0;
 }

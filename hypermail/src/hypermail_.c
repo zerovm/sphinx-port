@@ -202,12 +202,6 @@ int main_mbox(int argc, char **argv)
     opterr = 0;
 
 
-    for ( i = 0; i < argc; i++)
-    {
-    	printf ( "argv[%d]=%s \n", i, argv[i] );
-    }
-
-
 #define GETOPT_OPTSTRING ("a:Ab:c:d:gil:L:m:n:o:ps:tTuvVxX0:1M?")
 
     /* get pre config options here */

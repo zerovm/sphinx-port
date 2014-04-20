@@ -16,6 +16,9 @@ typedef struct {
 
 //typedef enum { zip, mail, error_type } obj_type;
 
+#define CHARSIZE(A) sizeof(char)*(A)
+#define PCHARSIZE(A) sizeof ( A ) / sizeof ( char * )
+
 #define INITIAL_LIST_SIZE 10
 #define SPHINX_CONFIG_FILE "/settings/sphinx.conf"
 #define SPHINX_INDEX_NAME "mainindex"
@@ -25,6 +28,7 @@ typedef struct {
 #define TEMP_DIR "temp_dir"
 #define PATH_INFO_NAME "PATH_INFO"
 #define OLD_ZRT
+//#undef OLD_ZRT
 
 
 #endif /* TYPES__H_ */

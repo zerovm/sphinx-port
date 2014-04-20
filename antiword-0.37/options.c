@@ -388,7 +388,15 @@ iReadOptions(int argc, char **argv)
 	strncpy(szLeafname, szGetDefaultMappingFile(), sizeof(szLeafname) - 1);
 	szLeafname[sizeof(szLeafname) - 1] = '\0';
 /* Command line */
-	while ((iChar = getopt(argc, argv, "La:fhi:m:p:rstw:x")) != -1) {
+
+/*
+	int i = 0;
+	for ( i = 0; i <= argc; i++ )
+		printf ( "argv[%d]=%s\n", i, argv[i] );
+	argv[argc] = NULL;
+*/
+
+	while ((iChar = getopt((int)argc, argv, "La:fhi:m:p:rstw:x")) != -1) {
 		switch (iChar) {
 		case 'L':
 			tOptionsCurr.bUseLandscape = TRUE;
@@ -478,6 +486,8 @@ iReadOptions(int argc, char **argv)
 			return -1;
 		}
 	}
+
+
 
 	tOptionsCurr.eEncoding = eMappingFile2Encoding(szLeafname);
 	DBG_DEC(tOptionsCurr.eEncoding);

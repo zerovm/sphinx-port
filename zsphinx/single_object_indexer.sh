@@ -29,3 +29,5 @@ sed s@{FILE_NAME}@"$FILE_NAME"@g > nvram/single_object_indexer.nvram
 
 #time $ZVM_PREFIX/bin/zerovm manifest/single_object_indexer.manifest -T /home/volodymyr/qwe.txt
 time $ZVM_PREFIX/bin/zerovm manifest/single_object_indexer.manifest
+
+mv data/saved_index.data data/rwindex

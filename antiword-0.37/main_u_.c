@@ -241,7 +241,7 @@ bProcessFile(const char *szFilename, const char *fname_save)
 
 int doc_to_text (char *input_file, char *file_save)
 {
-	char *argv[] = { "single_object_indexer", input_file };
+	char *argv[] = { "doc", input_file };
 	int argc = sizeof ( argv ) / sizeof (char *);
 	return wmain ( argc, argv, file_save );
 }
@@ -261,13 +261,16 @@ wmain(int argc, char **argv, char *file_save)
 
 	szTask = szBasename(argv[0]);
 
+	argc = 1;
+
 	if (argc <= 1) {
 		iFirst = 1;
 		bUsage = TRUE;
 	} else {
-		iFirst = iReadOptions(argc, argv);
+		iFirst = iReadOptions((int)argc, (char **)argv);
 		bUsage = iFirst <= 0;
 	}
+
 
 
 	if (bUsage) {
