@@ -194,6 +194,7 @@
 #define FONT_SANS_SERIF_ITALIC		"Helvetica-Oblique"
 #define FONT_SANS_SERIF_BOLDITALIC	"Helvetica-BoldOblique"
 /* The name of the antiword directories and the font information file */
+
 #if defined(__dos)
 #define GLOBAL_ANTIWORD_DIR	"C:\\antiword"
 #define ANTIWORD_DIR		"antiword"
@@ -226,10 +227,12 @@
 #define GLOBAL_ANTIWORD_DIR	"/usr/local/share/antiword"
 #define ANTIWORD_DIR		".antiword"
 #define FONTNAMES_FILE		"fontnames"
+
 #else	/* All others */
-#define GLOBAL_ANTIWORD_DIR	""
+#define GLOBAL_ANTIWORD_DIR	"/"
 #define ANTIWORD_DIR		"/antiword"
 #define FONTNAMES_FILE		"fontnames"
+
 #endif /* __dos */
 /* The names of grouped mapping files */
 	/* ASCII */

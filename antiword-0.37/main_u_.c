@@ -254,6 +254,10 @@ wmain(int argc, char **argv, char *file_save)
 	int	iFirst, iIndex, iGoodCount;
 	BOOL	bUsage, bMultiple, bUseTXT, bUseXML;
 
+	printf ( "GLOBAL_ANTIWORD_DIR=%s\n", GLOBAL_ANTIWORD_DIR);
+	printf ( "ANTIWORD_DIR=%s\n", ANTIWORD_DIR);
+	printf ( "FONTNAMES_FILE=%s\n", FONTNAMES_FILE);
+
 
 	if (argc <= 0) {
 		return EXIT_FAILURE;

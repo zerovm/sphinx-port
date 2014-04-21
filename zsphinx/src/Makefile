@@ -15,8 +15,8 @@ OBJS = zvmfileutil.o other.o other_.o xmlpipecreator.o filesender.o main_indexer
 OBJS_MAIN_INDEXER = main_indexer.o opt.o other_.o xmlpipecreator_.o filesender_.o zvmfileutil.o fileutil.o lists.o
 
 OBJS_SINGLE_OBJECT_INDEXER = single_object_indexer.o fileutil.o lists.o xml_util.o
-LIBS_SINGLE_OBJECT_INDEXER = ../../antiword-0.37/libdoc.a ../../docxextract/libdocx.a ../../src/libindexer.a -lz 
-#
+LIBS_SINGLE_OBJECT_INDEXER =  ../../docxextract/libdocx.a ../../src/libindexer.a -lz 
+#../../antiword-0.37/libdoc.a
 
 all:  other$(EXE) xmlpipecreator$(EXE) filesender$(EXE) main_indexer$(EXE) single_object_indexer$(EXE)
 
@@ -69,7 +69,7 @@ main_indexer$(EXE): $(OBJS_MAIN_INDEXER) ../../antiword-0.37/libdoc.a ../../docx
 	$(CC) -o main_indexer$(EXE) $(OBJS_MAIN_INDEXER) ../../antiword-0.37/libdoc.a ../../docxextract/libdocx.a ../../zxpdf-3.03/xpdf/libpdf.a ../../src/libindexer.a ../../src/libsphinx.a $(LIBS) $(LIBS_PDF)   
 
 single_object_indexer$(EXE): $(OBJS_SINGLE_OBJECT_INDEXER)
-	$(CC) -o  $@ $(OBJS_SINGLE_OBJECT_INDEXER) $(CFLAGS) ../../zxpdf-3.03/xpdf/libpdf.a $(LIBS_SINGLE_OBJECT_INDEXER) $(LIBS_PDF) $(LIBS) ../../hypermail/src/hypermail.a -liconv -lpcre -lm
+	$(CC) -o  $@ $(OBJS_SINGLE_OBJECT_INDEXER) $(CFLAGS) ../../zxpdf-3.03/xpdf/libpdf.a $(LIBS_SINGLE_OBJECT_INDEXER) $(LIBS_PDF) $(LIBS) ../../hypermail/src/hypermail.a -liconv -lpcre -lm ../../catdoc-0.94.4/src/catdoc.a
 
 
 clean:

@@ -293,8 +293,6 @@ void newbufferedpack_ (char *devname, char *dirname)
 			sprintf(tempstr, "%10zu%s%10zu", strlen (newpath), newpath, size);
 			bwrite = write (fdpackfile, tempstr, strlen (tempstr));
 			// write header (10 bytes size of filename + filename)
-
-
 			//read and write file data
 			if (size > 0)
 			{
@@ -305,9 +303,7 @@ void newbufferedpack_ (char *devname, char *dirname)
 				}
 			} else
 				bytecount = 0;
-
 			close (fd);
-
 			filecount++;
 		}
 	}

@@ -23,10 +23,12 @@
 
 
 //extractors
-#include "../../antiword-0.37/main_u_.h"
+//#include "../../antiword-0.37/main_u_.h"
 #include "../../zxpdf-3.03/xpdf/pdftotext_.h"
 #include "../../docxextract/docxtotext_.h"
 #include "../../hypermail/src/hypermail.h"
+#include "../../catdoc-0.94.4/src/catdoc.h"
+
 
 
 
@@ -91,6 +93,7 @@ int setFileTypeFilter ( SingleList_t *pList )
 	addToList( "sh", pList );
 	addToList( "html", pList );
 	addToList( "c", pList );
+	addToList( "rtf", pList );
 	return 0;
 }
 
@@ -101,15 +104,12 @@ int do_extract_text (char *input_file, char *output_file)
 
 	if (ext == NULL)
 		return 1;
-	if ( strcasecmp( ext, "doc" ) == 0)
+	if ( (strcasecmp( ext, "doc" ) == 0) || (strcasecmp( ext, "rtf" ) == 0) )
 	{
-/*
-		char *temp_fname = NULL, *p = NULL;
-		temp_fname = strdup (input_file );
-		p = temp_fname;
-		for ( ; *p; ++p) *p = tolower(*p);
-*/
-		doc_to_text (input_file,  output_file );
+		char *argv_catdoc [] = {"catdoc", input_file};
+		int argc_catdoc = PCHARSIZE( argv_catdoc );
+		catdoc_main((int)argc_catdoc, argv_catdoc ); //
+		//doc_to_text (input_file,  output_file ); // old doc extractor. antiword
 	}
 	else if (( strcasecmp( ext, "txt" ) == 0) || ( strcasecmp( ext, "sh" ) == 0) || ( strcasecmp( ext, "html" ) == 0) || ( strcasecmp( ext, "c" ) == 0) )
 	{
@@ -190,7 +190,7 @@ int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
 		return -1;
     }
 
-	fileLenBuff  = (char *) malloc ( CHARSIZE(25) );
+	fileLenBuff  = (char *) malloc ( CHARSIZE(50) );
 	sprintf ( fileLenBuff, "%zu", st.st_size );
 
 	tmpFile = (char *) malloc ( CHARSIZE( strlen ( fileName ) + 10) );
@@ -277,7 +277,6 @@ int docs_to_xml (char * path, int doc_type)
 	char *ext = NULL;
 	initList( pFileList );
 	setFileTypeFilter ( pFileTypeFilter );
-//	get_file_list ( path, pFileList, pFileTypeFilter );
 
 #ifndef OLD_ZRT
 	if ( strcmp ( getext_( path ), "zip") == 0 )
@@ -326,7 +325,6 @@ int save_settings_to_fs ()
 
 char * save_object_to_fs ()
 {
-	//
 	char *real_obj_path = NULL;
 	char *real_obj_name = NULL;
 	int obj  = 0;
@@ -451,8 +449,6 @@ int main (int argc, char ** argv )
 	docs_to_xml( TEMP_DIR, mode );
 	do_index_xml ();
 	save_index ();
-
-	mylistdir_("/");
 
 	return 0;
 }
