@@ -1650,7 +1650,6 @@ void mylistdir (char *path)
 	}
 	while((entry = readdir(dir)))
 	{
-
 		printf ("%s/%s D_TYPE = %d\n",path, entry->d_name, entry->d_type);
 		if(entry->d_type == DT_DIR)
 		{

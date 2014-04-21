@@ -154,6 +154,7 @@ int get_file_list (char *path, SingleList_t *pList, SingleList_t *pFileTypeList)
 			char *freeFilePath = filePath;
 			if ( filePath[0] == '/' && filePath[1] == '/' )
 				filePath++;
+			printf ( "add %s, %d \n", filePath, pList->count );
 			addToList( filePath, pList );
 			free ( freeFilePath );
 			//free (fileExt);
@@ -166,6 +167,7 @@ int get_file_list (char *path, SingleList_t *pList, SingleList_t *pFileTypeList)
 int print_dir_tree (char *path)
 {
 //	static int a;
+	printf("path = %s\n");
 	DIR *dir;
 	struct dirent *entry;
 	dir = opendir(path);
@@ -176,6 +178,8 @@ int print_dir_tree (char *path)
 	}
 	while((entry = readdir(dir)))
 	{
+
+		printf ( "%s\n", entry->d_name );
 		if ( strcmp (path, "/") == 0 )
 			printf ("/%s D_TYPE = %d\n", entry->d_name, entry->d_type);
 		else
@@ -243,9 +247,8 @@ int copy_to_file_from_fd (int fd_in, char *filename )
 
 void newbufferedpack_ (char *devname, char *dirname)
 {
-
+#define READDIR_FIX
 	int fdpackfile;
-
 	fdpackfile = open (devname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 	if ( fdpackfile  <= 0 )
 	{
@@ -260,6 +263,15 @@ void newbufferedpack_ (char *devname, char *dirname)
 	dir = opendir(indexpath);
 	char *newpath;
 
+#ifdef READDIR_FIX
+	char *save_file_list [] = { "mainindex.sps", "mainindex.spm", "mainindex.spa", "mainindex.spk",
+			"mainindex.spd", "mainindex.spp", "mainindex.spe", "mainindex.spi",
+			"mainindex.sph", "zsphinx.conf" };
+	int save_file_list_count = PCHARSIZE(save_file_list);
+	int i = 0;
+#endif
+
+
 	if (!dir)
 		printf ("*** ZVM Error open DIR %s\n", indexpath);
 	int blocksize = 1024 * 64; // 10 Mb
@@ -271,20 +283,30 @@ void newbufferedpack_ (char *devname, char *dirname)
 	long mainbytes = 0;
 	int filecount = 0;
 
+#ifndef READDIR_FIX
 	while((entry = readdir(dir)))
 	{
 		if(entry->d_type != DT_DIR)
 		{
+#else
+	for ( i = 0; i < save_file_list_count; i++)
+	{
+		{
+#endif
 			size_t size;
 			size_t bread = 0;
 			size_t bwrite;
 			size_t bytecount;
 			bytecount = 0;
-
-			newpath = (char *) malloc (strlen (entry->d_name) + strlen(indexpath) + 2);
-			sprintf(newpath, "%s/%s", indexpath, entry->d_name);
 			int fd;
 
+#ifndef READDIR_FIX
+			newpath = (char *) malloc (strlen (entry->d_name) + strlen(indexpath) + 2);
+			sprintf(newpath, "%s/%s", indexpath, entry->d_name);
+#else
+			newpath = (char *) malloc (strlen ( save_file_list[i] ) + strlen(indexpath) + 2);
+			sprintf(newpath, "%s/%s", indexpath, save_file_list[i]);
+#endif
 			fd = open (newpath, O_RDONLY);
 			size = getfilesize_fd(fd, NULL, 0);
 
