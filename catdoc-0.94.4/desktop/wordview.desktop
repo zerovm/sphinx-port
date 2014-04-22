@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Wordview Microsoft doc Viewer
+Comment=Microsoft doc document file viewer
+Exec=wordview
+Icon=wordview.xpm
+Terminal=false
+Categories=Office;GNOME;
+Type=Application
+StartupNotify=false
+X-SingleInstance=false

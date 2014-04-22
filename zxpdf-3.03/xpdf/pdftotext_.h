@@ -12,6 +12,7 @@ extern "C"
 {
 #endif
 
+int pdf_to_text(char *, char *);
 int pdf_main (int, char **);
 
 #ifdef __cplusplus

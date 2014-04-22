@@ -349,8 +349,7 @@ int main ( int argc, char ** argv )
 	setvbuf(stdout, stdout_buffer, _IOFBF, stdout_size_buf);
 
 
-	char *serversoft = getenv ("SERVER_SO"
-			"FTWARE");
+	char *serversoft = getenv ("SERVER_SOFTWARE");
 	LOG_SERVER_SOFT;
 	LOG_NODE_NAME;
 

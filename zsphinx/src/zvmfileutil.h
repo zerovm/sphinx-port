@@ -15,7 +15,7 @@ extern "C"
 
 typedef enum {dev_stdin, dev_input} InputDevice_t;
 typedef enum {txt, docx, odt, doc, rtf, pdf, other} Extractortype_t;
-typedef enum {single_operation, cluster} OperationMode_t;
+typedef enum {single_operation, cluster, none} OperationMode_t;
 
 
 

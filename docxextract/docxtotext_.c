@@ -52,6 +52,10 @@
 #include <sys/stat.h>
 #include "../zsphinx/src/zvmfileutil.h"
 #include "docxtotext_.h"
+#include "../zsphinx/src/lists.h"
+#include "../zsphinx/src/types_.h"
+
+
 //#include <unistd.h>
 
 #ifdef _WIN32
@@ -66,7 +70,8 @@
 #include "unzip.h"
 
 #define CASESENSITIVITY (0)
-#define WRITEBUFFERSIZE (8192)
+//#define WRITEBUFFERSIZE (8192)
+#define WRITEBUFFERSIZE (1048576)
 #define MAXFILENAME (256)
 #define FILENAME "file.docx"
 #ifdef _WIN32
@@ -195,7 +200,7 @@ void do_banner()
 void do_help()
 {
     printf("Usage : miniunz [-e] [-x] [-v] [-l] [-o] [-p password] file.zip [file_to_extr.] [-d extractdir]\n\n" \
-           "  -e  Extract without pathname (junk paths)\n" \
+           "  -e  	 without pathname (junk paths)\n" \
            "  -x  Extract with pathname\n" \
            "  -v  list files\n" \
            "  -l  list files\n" \
@@ -310,6 +315,51 @@ int do_list(uf)
 }
 
 
+int do_list_new(uf, list)
+    unzFile uf;
+	SingleList_t *list;
+{
+    uLong i;
+    int j = 0;
+    unz_global_info64 gi;
+    int err;
+
+    err = unzGetGlobalInfo64(uf,&gi);
+    if (err!=UNZ_OK)
+        printf("error %d with zipfile in unzGetGlobalInfo \n",err);
+    for (i=0;i<gi.number_entry;i++)
+    {
+        char filename_inzip[256];
+        unz_file_info64 file_info;
+        uLong ratio=0;
+        const char *string_method;
+        char charCrypt=' ';
+        err = unzGetCurrentFileInfo64(uf,&file_info,filename_inzip,sizeof(filename_inzip),NULL,0,NULL,0);
+
+        char *abs_path = NULL;
+  		abs_path = (char *) malloc ( sizeof ( char ) * ( strlen( filename_inzip ) + strlen ( TEMP_DIR ) + 3 ) );
+   		sprintf ( abs_path, "/%s/%s", TEMP_DIR, basename (filename_inzip) );
+   		addToList( abs_path, list );
+  		free (abs_path);
+
+        if (err!=UNZ_OK)
+        {
+            printf("error %d with zipfile in unzGetCurrentFileInfo\n",err);
+            break;
+        }
+        if ((i+1)<gi.number_entry)
+        {
+            err = unzGoToNextFile(uf);
+            if (err!=UNZ_OK)
+            {
+                printf("error %d with zipfile in unzGoToNextFile\n",err);
+                break;
+            }
+        }
+    }
+    return 0;
+}
+
 int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
     unzFile uf;
     const int* popt_extract_without_path;
@@ -328,10 +378,15 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
     uLong ratio=0;
     err = unzGetCurrentFileInfo64(uf,&file_info,filename_inzip,sizeof(filename_inzip),NULL,0,NULL,0);
 
+
    	if ((strcmp (filename_inzip, "word/document.xml") != 0) && dt == 1)
+   	{
    		return UNZ_OK;
+   	}
    	if ((strcmp (filename_inzip, "content.xml") != 0) && dt == 2)
+   	{
    		return UNZ_OK;
+   	}
 
     if (err!=UNZ_OK)
     {
@@ -372,6 +427,16 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
             write_filename = filename_inzip;
         else
             write_filename = filename_withoutpath;
+
+
+        if (dt == 0)
+        {
+        	char *write_filename_temp;
+        	write_filename_temp = (char * ) malloc ( sizeof (char *) * (strlen ( write_filename ) + strlen ("/temp_dir/") + 2) );
+        	sprintf ( write_filename_temp, "/temp_dir/%s", write_filename );
+        	write_filename = write_filename_temp;
+
+        }
 
         err = unzOpenCurrentFilePassword(uf,password);
         if (err!=UNZ_OK)
@@ -454,11 +519,16 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
             }
             while (err>0);
             if (fout)
-                    fclose(fout);
+            {
+            	fclose(fout);
 
+            }
+
+/*
             if (err==0)
                 change_file_date(write_filename,file_info.dosDate,
                                  file_info.tmu_date);
+*/
         }
 
         if (err==UNZ_OK)
@@ -477,7 +547,6 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
     return err;
 }
 
-
 int do_extract(uf,opt_extract_without_path,opt_overwrite,password)
     unzFile uf;
     int opt_extract_without_path;
@@ -488,20 +557,21 @@ int do_extract(uf,opt_extract_without_path,opt_overwrite,password)
     unz_global_info64 gi;
     int err;
     FILE* fout=NULL;
-
     err = unzGetGlobalInfo64(uf,&gi);
     if (err!=UNZ_OK)
         printf("error %d with zipfile in unzGetGlobalInfo \n",err);
 
     for (i=0;i<gi.number_entry;i++)
     {
-        if (do_extract_currentfile(uf,&opt_extract_without_path,
-                                      &opt_overwrite,
-                                      password) != UNZ_OK)
-            break;
-
-        if ((i+1)<gi.number_entry)
+    	if (do_extract_currentfile(uf,&opt_extract_without_path, &opt_overwrite, password) != UNZ_OK)
         {
+            break;
+        }
+
+
+    	if ((i+1)<gi.number_entry)
+        {
+
             err = unzGoToNextFile(uf);
             if (err!=UNZ_OK)
             {
@@ -510,7 +580,6 @@ int do_extract(uf,opt_extract_without_path,opt_overwrite,password)
             }
         }
     }
-
     return 0;
 }
 
@@ -536,6 +605,150 @@ int do_extract_onefile(uf,filename,opt_extract_without_path,opt_overwrite,passwo
         return 1;
 }
 
+int new_text_form_xml_docx ( char * xml_file, char * text_file )
+{
+	int fdin; // input file descriptor
+	int fdout; // output file descriptor
+	int fsize = 0;
+	struct stat st;
+
+	char *opentag1 = "<w:t>";
+	char *opentag2 = "<w:t ";
+	char *closetag1 = "";
+	char *closetag2 = "</w:t>";
+	char *buff; // buffer for readed data from xml doc
+	char *textbuff; // buffer for text, extracted from xml file
+
+	stat ( xml_file, &st);
+	fsize = st.st_size;
+
+	fdin = open (xml_file, O_RDONLY);
+	if (fdin < 0)
+	{
+		printf ("*** ZVM Error open %s\n", xml_file);
+		return -1;
+	}
+
+	buff = (char*)  malloc (fsize + 10);
+	textbuff = (char*)  malloc (fsize + 10);
+
+	int bread = read (fdin, buff, fsize);
+	close (fdin);
+	int i;
+	int ei; //счетчик извлеченный текст
+	ei = 0;
+	for (i = 0; i < fsize - 8; i++){
+		if (strncmp(opentag1,buff + i, 5) == 0)
+		{
+			i = i + 5;
+			while (strncmp(closetag2,buff + i, 6)) // пока не закрывается тег <\\w:t>
+			{
+				textbuff [ei++] = buff [i++];
+			}
+			textbuff[ei++] = ' ';
+		}
+		else if ((strncmp(opentag2, buff + i, 5) == 0))
+		{
+			// перематываем до начала текста
+			while (buff[i++] != '>')
+				;
+			//i++;
+			while (strncmp(closetag2,buff + i, 6))// пока не закрывается тег <\\w:t>
+			{
+				textbuff [ei++] = buff [i++];
+			}
+			textbuff[ei++] = ' ';
+		}
+	}
+	// remove &quot;&apos;
+	char *q= "&quot;";
+	char *ap="&apos;";
+	int cq;
+	for (i = 0; i < ei; i++)
+	{
+		if ((strncmp(q,textbuff + i,6) == 0) || (strncmp(ap,textbuff + i,6) == 0))
+			for (cq = 0; cq < 6; cq++)
+				textbuff[i+cq] = ' ';
+	}
+	fdout = open ( text_file, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
+	int wbrite = 0;
+	wbrite = write ( fdout, textbuff, ei );
+	close ( fdout );
+	free(buff);
+	free (textbuff);
+	return ei;
+}
+
+int new_text_form_xml_odt ( char * xml_file, char * text_file )
+{
+	int fdin; // input file descriptor
+	int fdout; // output file descriptor
+	fdin = open (xml_file, O_RDONLY);
+	if (fdin < 0)
+	{
+		printf ("*** ZVM Error open %s\n", xml_file);
+		return -1;
+	}
+	char *opentag1 = "<text:p";
+	char *closetag2 = "</text:p>";
+	char *buff;
+	char *textbuff;
+	size_t fsize = 0;
+	struct stat st;
+
+	stat ( xml_file, &st);
+
+	fsize = st.st_size;
+
+	//fsize = getfilesize_fd (fdin, NULL, 0);
+	buff = (char*)  malloc (fsize + 10);
+	textbuff = (char*)  malloc (fsize + 10);
+	int bread = read (fdin, buff, fsize);
+	close (fdin);
+	int i;
+	int ei; //счетчик извлеченный текст
+	ei = 0;
+	for (i = 0; i < fsize - 8; i++){
+		if ((strncmp(opentag1, buff + i, 7) == 0))
+		{
+			// перематываем до начала текста
+			while ((buff[i] != '>'))
+				i++;
+			if (buff [i-1] != '/')
+			{
+				while (strncmp(closetag2,buff + i, 6))// пока не закрывается тег </text:p>
+				{
+					textbuff [ei++] = buff [i++];
+				}
+				textbuff[ei++] = ' ';
+			}
+			else
+			{
+				continue;
+			}
+		}
+	}
+	// remove &quot;&apos;
+	char *h = "&#x0d;";
+	char *q = "&quot;";
+	char *a = "&apos;";
+	int cq;
+	for (i = 0; i < ei; i++)
+	{
+		if ((strncmp(q,textbuff + i,6) == 0) || (strncmp(a,textbuff + i,6) == 0) || (strncmp(h,textbuff + i,6) == 0))
+			for (cq = 0; cq < 6; cq++)
+				textbuff[i+cq] = ' ';
+	}
+
+	fdout = open ( text_file, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
+	int wbrite = 0;
+	wbrite = write ( fdout, textbuff, ei );
+	close ( fdout );
+	free(buff);
+	free (textbuff);
+	return wbrite;
+}
+
 /*
  * takes the text between the text docx tags, fills the buffer with the filtered text. Return size of filtered text in buffer,
  * */
@@ -545,29 +758,22 @@ int gettextfromxml (char *filteredbuff)
 	//
 	int fdin; // input file descriptor
 	char *finname = "document.xml"; // input file name
-
 	fdin = open (finname, O_RDONLY);
 	if (fdin < 0)
 	{
 		printf ("*** ZVM Error open %s\n", finname);
 		return -1;
 	}
-
 	char *opentag1 = "<w:t>";
 	char *opentag2 = "<w:t ";
 	char *closetag1 = "";
 	char *closetag2 = "</w:t>";
 	char *buff; // buffer for readed data from xml doc
 	char *textbuff; // buffer for text, extracted from xml file
-
 	int fsize = getfilesize_fd (fdin, NULL, 0);
-
 	buff = (char*)  malloc (fsize + 10);
 	textbuff = (char*)  malloc (fsize + 10);
-
-
 	int bread = read (fdin, buff, fsize);
-	//printf ("bread=%d\n", bread);
 	close (fdin);
 	int i;
 	int ei; //счетчик извлеченный текст
@@ -621,29 +827,24 @@ int gettextfromxml (char *filteredbuff)
 
 int gettextfromxmlodt (char *filteredbuff)
 {
-	//
 	int fdin; // input file descriptor
 	char *finname = "content.xml"; // input file name
-
 	fdin = open (finname, O_RDONLY);
 	if (fdin < 0)
 	{
 		printf ("*** ZVM Error open %s\n", finname);
 		return -1;
 	}
-
 	char *opentag1 = "<text:p";
 	char *closetag2 = "</text:p>";
 	char *buff;
 	char *textbuff;
 
 	int fsize = getfilesize_fd (fdin, NULL, 0);
-
 	buff = (char*)  malloc (fsize + 10);
 	textbuff = (char*)  malloc (fsize + 10);
 	int bread = read (fdin, buff, fsize);
 	close (fdin);
-
 	int i;
 	int ei; //счетчик извлеченный текст
 	ei = 0;
@@ -666,15 +867,12 @@ int gettextfromxmlodt (char *filteredbuff)
 				continue;
 			}
 		}
-
 	}
 	free (buff);
-
 	// remove &quot;&apos;
 	char *h = "&#x0d;";
 	char *q = "&quot;";
 	char *a = "&apos;";
-
 	int cq;
 	for (i = 0; i < ei; i++)
 	{
@@ -682,7 +880,6 @@ int gettextfromxmlodt (char *filteredbuff)
 			for (cq = 0; cq < 6; cq++)
 				textbuff[i+cq] = ' ';
 	}
-
 	int filteredbuffsize;
 	filteredbuffsize = getfilteredbuffer (textbuff, ei, filteredbuff);
 	LOG_ZVM (ZLOGTIT, "extracted from xml(odt)", "d", filteredbuffsize, 1);
@@ -700,7 +897,87 @@ int getdoctype (char *filename)
 		return 2;
 	if (strncmp (doctypename, "txt", 3) == 0)
 		return 3;
-	return 3;
+	return 0;
+}
+
+int docx_to_text (char * filename, char *filename_out)
+{
+	char *zipFileName = NULL;
+	char *tempBuff = NULL;
+	int doc_type = 0;
+	struct stat st;
+
+	if ( filename  == NULL)
+		return -1;
+
+	zipFileName = (char * ) malloc ( sizeof (char) * ( strlen ( filename ) + 9 ) ); // .tmp.zip
+
+	sprintf( zipFileName, "%s.tmp.zip", filename );
+	if (rename( filename, zipFileName ) != 0)
+		return -1;
+
+	doc_type = getdoctype (filename);
+	dt = doc_type;
+
+	int retval = extractfile( zipFileName);
+
+	char *docfile = NULL;
+
+	if ( doc_type == 1 )
+	{
+		docfile = "document.xml";
+		new_text_form_xml_docx ( docfile, filename_out );
+	}
+	if ( doc_type == 2 )
+	{
+		docfile = "content.xml";
+		new_text_form_xml_odt( docfile, filename_out );
+	}
+
+	rename( zipFileName, filename );
+	remove ( docfile );
+	free ( zipFileName );
+	return 0;
+}
+
+int get_file_list_inzip (char *zipfilename, SingleList_t *list)
+{
+    //const char zipfilename[strlen(filename)];
+    char filename_try[MAXFILENAME+16] = "";
+    int ret_value=0;
+    int opt_do_list=1;
+    char *ret_path;
+    unzFile uf=NULL;
+
+    if (zipfilename!=NULL)
+    {
+        strncpy(filename_try, zipfilename,MAXFILENAME-1);
+        filename_try[ MAXFILENAME ] = '\0';
+        uf = unzOpen64(zipfilename);
+        if (uf==NULL)
+        {
+            strcat(filename_try,".zip");
+            uf = unzOpen64(filename_try);
+        }
+    }
+
+    if (uf==NULL)
+    {
+        printf("Cannot open %s or %s.zip\n",zipfilename,zipfilename);
+        return 1;
+    }
+
+    int aa = initList( list );
+
+    ret_value = do_list_new(uf, list);
+
+    unzClose(uf);
+    if (ret_value != 0)
+    {
+    	printf ("Error\n");
+    	return ret_value;
+    }
+    return ret_value;
 }
 
 int extractfile (char *zipfilename)
@@ -717,13 +994,8 @@ int extractfile (char *zipfilename)
     int opt_overwrite=1;
     int opt_extractdir=0;
     const char *dirname=NULL;
+    char *ret_path;
     unzFile uf=NULL;
-    //ret_value = savefromstdin ();
-    //if (ret_value != 0)
-    //{
-    //	return ret_value;
-    //}
-
 
     if (zipfilename!=NULL)
     {
@@ -747,6 +1019,7 @@ int extractfile (char *zipfilename)
 #            endif
         }
     }
+
     if (uf==NULL)
     {
         printf("Cannot open %s or %s.zip\n",zipfilename,zipfilename);
@@ -773,13 +1046,29 @@ int extractfile (char *zipfilename)
     unzClose(uf);
     if (ret_value != 0)
     {
-    	printf ("Error\n");
     	return ret_value;
     }
     return ret_value;
 }
 
+int docx_to_text_ ( char *zip_file, char *file_in_zip, char *output_text_file )
+{
+	int ret_value = 0;
+	int fout = 0;
 
+    unzFile uf=NULL;
+    uf = unzOpen64(zip_file);
+    if (uf == NULL)
+    {
+    	printf ("can not open %s file\n", zip_file);
+    	return -77;
+    }
+
+    printf ("try open %s\n", zip_file);
+	ret_value = do_extract_onefile(uf, file_in_zip, 1, 1, NULL);
+
+	return ret_value;
+}
 
 void printbuff (char*buff, int bufflen)
 {
@@ -813,7 +1102,7 @@ int textconv_docx (char * path, char *d_name, char * prefix, int bTextSearchMode
 	{
 		/// add check if big file
 		sprintf (fmap.tempfilename, "%s/temp.tmp", prefix);
-		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ);
+		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ, dev_stdin);
 		if (getenv ("PATH_INFO") != NULL)
 			sprintf (fmap.realfilename, "%s", getenv ("PATH_INFO"));
 	}
@@ -827,8 +1116,8 @@ int textconv_docx (char * path, char *d_name, char * prefix, int bTextSearchMode
 	LOG_ZVM (ZLOGTIT, "real filename", "s", fmap.realfilename, 2);
 	LOG_ZVM (ZLOGTIT, "real filesize", "ld", fmap.realfilesize, 2);
 
-	struct fileTypeInfo fti;
-	fti = checkMAxFileSize (fmap.realfilename, fmap.realfilesize);
+	fileTypeInfo_t fti;
+	fti = checkMAxFileSize ();
 
 	if (fmap.realfilesize <= 0 && fti.bSaveFile == 1)
 	{
@@ -969,6 +1258,8 @@ int docx_main (int argc, char ** argv)
         	sprintf (devoutname, "%s", "/dev/output");
         else
         	sprintf (devoutname, "%s", DEVOUTNAME);
+    	if (Mode == single_operation)
+        	sprintf (devoutname, "%s", EXTRACTOR_SINGLE_MODE_OUTPUT_FILE);
 
         fdout = open (devoutname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 		if (fdout < 0 )
@@ -987,9 +1278,6 @@ int docx_main (int argc, char ** argv)
 	char *buff = NULL; 		// temp buffer for readed data trom txt file.
 	long buffsize = 1024 * 1024 * 10;// 10 Mb
 
-//	LOG_ZVM (ZLOGTIT, "output device name", "s", devoutname, 1);
-//	LOG_ZVM (ZLOGTIT, "buffer size for incoming files", "ld", buffsize, 2);
-
 	filteredbuff = (char *) malloc (buffsize);
 	buff = (char *) malloc (buffsize);
 
@@ -999,23 +1287,32 @@ int docx_main (int argc, char ** argv)
 	else
 	{
 		dir = opendir(path);
-		if (dir ==0)
+		if (dir ==0 && Mode != single_operation)
 		{
 			printf ("*** ZVM Error read dir %s, %d\n", path, dir);
 			return 1;
 		}
-		while((entry = readdir(dir)))
+		if (Mode != single_operation)
 		{
-			int temp;
-			int filteredbufflen;
-			filteredbufflen =0;
-			LOG_ZVM (ZLOGTIT, "incoming channel name", "s", entry->d_name, 1);
-
-			if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
+			while((entry = readdir(dir)))
 			{
-				tempwritebytes2channel = textconv_docx (path, entry->d_name, prefix, popt.bTextSearchMode, filteredbuff, buff, fdout, popt.tStart, popt.tEnd);
-				totalbyteswrite2text += tempwritebytes2channel;
+				int temp;
+				int filteredbufflen;
+				filteredbufflen =0;
+				LOG_ZVM (ZLOGTIT, "incoming channel name", "s", entry->d_name, 1);
+
+				if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
+				{
+					tempwritebytes2channel = textconv_docx (path, entry->d_name, prefix, popt.bTextSearchMode, filteredbuff, buff, fdout, popt.tStart, popt.tEnd);
+					totalbyteswrite2text += tempwritebytes2channel;
+				}
 			}
+		}
+		else
+		{
+			LOG_ZVM (ZLOGTIT, "incoming channel name", "s", FILESENDER_SINGLE_MODE_OUTPUT_FILE, 1);
+			tempwritebytes2channel = textconv_docx ("", FILESENDER_SINGLE_MODE_OUTPUT_FILE, prefix, popt.bTextSearchMode, filteredbuff, buff, fdout, popt.tStart, popt.tEnd);
+			totalbyteswrite2text += tempwritebytes2channel;
 		}
 		close (fdout);
 	}

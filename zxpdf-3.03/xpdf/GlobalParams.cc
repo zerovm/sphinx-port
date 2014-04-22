@@ -637,14 +637,10 @@ GlobalParams::GlobalParams(char *cfgFileName) {
 
   // scan the encoding in reverse because we want the lowest-numbered
   // index for each char name ('space' is encoded twice)
-  /*TEST*/
-  printf ("  macRomanReverseMap = new NameToCharCode();\n");
-
   macRomanReverseMap = new NameToCharCode();
   for (i = 255; i >= 0; --i) {
     if (macRomanEncoding[i]) {
       macRomanReverseMap->add(macRomanEncoding[i], (CharCode)i);
-      printf (" macRomanReverseMap->lookup(macRomanEncoding[%d]=%s)= %u\n", i, macRomanEncoding[i], macRomanReverseMap->lookup(macRomanEncoding[i]));
     }
   }
 
@@ -654,19 +650,12 @@ GlobalParams::GlobalParams(char *cfgFileName) {
 #else
   baseDir = appendToPath(getHomeDir(), ".xpdf");
 #endif
-  printf ("nameToUnicode = new NameToCharCode();\n");
   nameToUnicode = new NameToCharCode();
-  printf ("cidToUnicodes = new GHash(gTrue);\n");
   cidToUnicodes = new GHash(gTrue);
-  printf ("cidToUnicodes = new GHash(gTrue);\n");
   unicodeToUnicodes = new GHash(gTrue);
-  printf ("residentUnicodeMaps = new GHash();\n");
   residentUnicodeMaps = new GHash();
-  printf ("unicodeMaps = new GHash(gTrue);\n");
   unicodeMaps = new GHash(gTrue);
-  printf ("cMapDirs = new GHash(gTrue);\n");
   cMapDirs = new GHash(gTrue);
-  printf ("toUnicodeDirs = new GList();\n");
   toUnicodeDirs = new GList();
   fontFiles = new GHash(gTrue);
   fontDirs = new GList();
@@ -752,13 +741,9 @@ GlobalParams::GlobalParams(char *cfgFileName) {
   printCommands = gFalse;
   errQuiet = gFalse;
 
-  printf ("cidToUnicodeCache = new CharCodeToUnicodeCache(cidToUnicodeCacheSize);\n");
   cidToUnicodeCache = new CharCodeToUnicodeCache(cidToUnicodeCacheSize);
-  printf ("unicodeToUnicodeCache = new CharCodeToUnicodeCache(unicodeToUnicodeCacheSize);\n");
   unicodeToUnicodeCache = new CharCodeToUnicodeCache(unicodeToUnicodeCacheSize);
-  printf ("unicodeMapCache = new UnicodeMapCache();\n");
   unicodeMapCache = new UnicodeMapCache();
-  printf ("cMapCache = new CMapCache();\n");
   cMapCache = new CMapCache();
 
 #ifdef ENABLE_PLUGINS
@@ -769,7 +754,6 @@ GlobalParams::GlobalParams(char *cfgFileName) {
   // set up the initial nameToUnicode table
   for (i = 0; nameToUnicodeTab[i].name; ++i) {
     nameToUnicode->add(nameToUnicodeTab[i].name, nameToUnicodeTab[i].u);
-    printf (" nameToUnicodeTab[%d].name=%s, nameToUnicodeTab[%d].u = %u\n", i, nameToUnicodeTab[i].name, i, nameToUnicodeTab[i].u);
   }
 
   // set up the residentUnicodeMaps table

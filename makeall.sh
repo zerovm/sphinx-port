@@ -1,10 +1,11 @@
-make -j4
+ARGS=$1
+make $ARGS
 cd antiword-0.37
-make -j4
+make $ARGS
 cd ../zxpdf-3.03
-make -j4
+make $ARGS
 cd ../docxextract
-make -j4
+make $ARGS
 cd ../zsphinx/src
 make clean
-make
+make $ARGS

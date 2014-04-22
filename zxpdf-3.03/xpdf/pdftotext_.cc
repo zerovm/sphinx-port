@@ -213,15 +213,22 @@ int wmain(int argc, char *argv[]) {
 //#ifdef ZVMDEBUG
 //#endif
   // copy from stdin incoming pdf file to temp file
-  fileName = new GString("temp.pdf");
+
+
+  if ( argc > 1 )
+	  fileName = new GString(argv[1]);
+  else
+	  fileName = new GString("temp.pdf");
   if (fixedPitch) {
     physLayout = gTrue;
   }
 
+
+
   // read config file
   globalParams = new GlobalParams(cfgFileName);
   Unicode UU = globalParams->mapNameToUnicode("A");
-  printf ("**** %d\n", UU);
+//  printf ("**** %d\n", UU);
   if (textEncName[0]) {
     globalParams->setTextEncoding(textEncName);
   }
@@ -294,7 +301,10 @@ int wmain(int argc, char *argv[]) {
   }
 */
 
-  textFileName = new GString("temp.txt");
+  if (argc > 1)
+	  textFileName = new GString(argv[2]);
+  else
+	  textFileName = new GString("temp.txt");
 
   // get page range
   if (firstPage < 1) {
@@ -345,6 +355,15 @@ int wmain(int argc, char *argv[]) {
   return exitCode;
 }
 
+int pdf_to_text ( char *input_file, char *output_file )
+{
+
+	char *argv_pdf[] = {"pdf", input_file, output_file};
+	int argc = sizeof ( argv_pdf ) / sizeof (char *);
+	return wmain( argc, argv_pdf );
+}
+
+
 int textconv_pdf (char * path, char *d_name, char * prefix, int bTextSearchMode, char * filteredbuff, char * buff, int fdout, size_t tStart, size_t tEnd, int argc, char *argv[])
 {
 	long txtbufflen;
@@ -366,15 +385,17 @@ int textconv_pdf (char * path, char *d_name, char * prefix, int bTextSearchMode,
 	else
 	{
 		sprintf (fmap.tempfilename, "%s/temp.tmp", prefix);
-		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ);
+		fmap.realfilesize = SaveFileFromInput (fmap.tempfilename, environ, dev_stdin);
 		fmap.json = generateJson(environ);
 		if (getenv ("PATH_INFO") != NULL)
 			sprintf (fmap.realfilename, "%s", getenv ("PATH_INFO"));
 
 	}
 
-	struct fileTypeInfo fti;
-	fti = checkMAxFileSize (fmap.realfilename, fmap.realfilesize);
+	fileTypeInfo_t fti;
+	fti = checkMAxFileSize ();
+
+	printf ("%p\n", fti.sExt);
 
 	if ( strcmp (fti.sExt, "pdf") != 0)
 	{
@@ -443,7 +464,12 @@ int textconv_pdf (char * path, char *d_name, char * prefix, int bTextSearchMode,
 	{
 		if (bTextSearchMode == 0)
 		{
-			tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fmap.json, fdout);
+			if (Mode == single_operation)
+			{
+				WRITE_TO_LOCAL_FILE_EXTRACTOR;
+			}
+			else
+				tempwritebytes2channel = puttext2channel (filteredbuff, filteredbufflen, fmap.realfilename, fmap.json, fdout);
 			LOG_ZVM (ZLOGTIT, "bytes write to output channel by current document", "d", tempwritebytes2channel, 1);
 		}
 		else
@@ -474,8 +500,6 @@ int pdf_main (int argc, char *argv[])
 
 	struct filemap fmap;
 
-	mylistdir ("/");
-
     char *filename;
     char *chname; //
     int fdout;
@@ -491,6 +515,8 @@ int pdf_main (int argc, char *argv[])
     	sprintf (devoutname, "%s", "/dev/output");
     else
     	sprintf (devoutname, "%s", DEVOUTNAME);
+	if (Mode == single_operation)
+    	sprintf (devoutname, "%s", EXTRACTOR_SINGLE_MODE_OUTPUT_FILE);
 
 
   	DIR *dir;
@@ -509,23 +535,32 @@ int pdf_main (int argc, char *argv[])
 		}
 		LOG_ZVM(ZLOGTIT, "output channel", "s", devoutname, 1);
 
-		dir = opendir(path);
-		if (dir ==0)
+		if (Mode == cluster)
 		{
-			printf ("*** ZVM Error read dir %s, %d\n", path, dir);
-			return 1;
-		}
-		LOG_ZVM (ZLOGTIT, "incoming channels dir", "s", path, 1);
-		while((entry = readdir(dir)))
-		{
-			int filteredbufflen;
-			filteredbufflen =0;
-			if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
+			dir = opendir(path);
+			if (dir ==0)
 			{
-				char *filteredbuff = NULL; // buffer for filtered text extracted from file of any format
-				char *buff = NULL; // temp buffer for readed data from txt file.
-				tempwritebytes2channel = textconv_pdf (path, entry->d_name, prefix, popt.bTextSearchMode, filteredbuff, buff, fdout, popt.tStart, popt.tEnd, argc, argv);
+				printf ("*** ZVM Error read dir %s, %d\n", path, dir);
+				return 1;
 			}
+			LOG_ZVM (ZLOGTIT, "incoming channels dir", "s", path, 1);
+			while((entry = readdir(dir)))
+			{
+				int filteredbufflen;
+				filteredbufflen =0;
+				if(entry->d_type != DT_DIR && (strcmp (entry->d_name, "input")) != 0)
+				{
+					char *filteredbuff = NULL; // buffer for filtered text extracted from file of any format
+					char *buff = NULL; // temp buffer for readed data from txt file.
+					tempwritebytes2channel = textconv_pdf (path, entry->d_name, prefix, popt.bTextSearchMode, filteredbuff, buff, fdout, popt.tStart, popt.tEnd, argc, argv);
+				}
+			}
+		}
+		else
+		{
+			char *filteredbuff = NULL; // buffer for filtered text extracted from file of any format
+			char *buff = NULL; // temp buffer for readed data from txt file.
+			tempwritebytes2channel = textconv_pdf ("", FILESENDER_SINGLE_MODE_OUTPUT_FILE, prefix, popt.bTextSearchMode, filteredbuff, buff, fdout, popt.tStart, popt.tEnd, argc, argv);
 		}
 	}
 	else
@@ -537,7 +572,6 @@ int pdf_main (int argc, char *argv[])
 	close (fdout);
 	LOG_ZVM (ZLOGTIT, "total bytes write to output channel", "ld", totalbyteswrite2text, 1);
 	LOG_ZVM (ZLOGTIT, "OK!", "s", "", 1);
-
 	return 0;
 }
 

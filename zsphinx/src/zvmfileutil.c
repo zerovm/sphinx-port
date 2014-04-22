@@ -19,7 +19,7 @@
 
 
 extern char **environ;
-OperationMode_t Mode = cluster;
+OperationMode_t Mode = none;
 
 char *blank_attr_list[] = {
 		"PATH_INFO", // objectname - PATH_INFO str
@@ -1047,6 +1047,9 @@ int getfilteredbuffer (const char *buff, long bufflen, char *filteredbuff)
 
 	saveTextToFile (filteredbuff, filteredbuffsize);
 
+	//
+
+
 	return filteredbuffsize;
 }
 
@@ -1647,7 +1650,6 @@ void mylistdir (char *path)
 	}
 	while((entry = readdir(dir)))
 	{
-
 		printf ("%s/%s D_TYPE = %d\n",path, entry->d_name, entry->d_type);
 		if(entry->d_type == DT_DIR)
 		{
