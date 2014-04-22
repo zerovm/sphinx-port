@@ -89,7 +89,7 @@ clean:
 	rm -f $(LIBDOC)
 
 libdoc.a: $(LIBOBJS)
-	rm -f libdoc.a.a
+	rm -f libdoc.a
 	$(AR) libdoc.a $(LIBOBJS) 
 	$(RANLIB) libdoc.a 
 

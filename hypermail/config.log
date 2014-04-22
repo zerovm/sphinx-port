@@ -1,0 +1,94 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:607: checking host system type
+configure:628: checking target system type
+configure:646: checking build system type
+configure:671: checking cached information
+configure:691: checking for gcc
+configure:804: checking whether the C compiler (gcc  ) works
+configure:820: gcc -o conftest    conftest.c  1>&5
+configure:846: checking whether the C compiler (gcc  ) is a cross-compiler
+configure:851: checking whether we are using GNU C
+configure:879: checking whether gcc accepts -g
+configure:911: checking how to run the C preprocessor
+configure:995: checking for bison
+configure:1037: checking for a BSD compatible install
+configure:1090: checking whether ln -s works
+configure:1111: checking whether make sets ${MAKE}
+configure:1140: checking for ar
+configure:1171: checking for ranlib
+configure:1232: checking that the compiler works
+configure:1241: gcc -o conftest -g -O2   conftest.c  1>&5
+configure:1265: checking whether to enable -Wall
+configure:1353: checking for ANSI C header files
+configure:1464: checking for alloca.h
+configure:1464: checking for arpa/inet.h
+configure:1464: checking for ctype.h
+configure:1464: checking for dirent.h
+configure:1464: checking for errno.h
+configure:1464: checking for fcntl.h
+configure:1464: checking for locale.h
+configure:1464: checking for malloc.h
+configure:1464: checking for netdb.h
+configure:1464: checking for netinet/in.h
+configure:1464: checking for pwd.h
+configure:1464: checking for stdarg.h
+configure:1464: checking for stdio.h
+configure:1464: checking for stdlib.h
+configure:1464: checking for string.h
+configure:1464: checking for sys/dir.h
+configure:1464: checking for sys/param.h
+configure:1464: checking for sys/socket.h
+configure:1464: checking for sys/stat.h
+configure:1464: checking for sys/time.h
+configure:1464: checking for sys/types.h
+configure:1464: checking for time.h
+configure:1464: checking for unistd.h
+configure:1502: checking whether stat file-mode macros are broken
+configure:1562: checking for dirent.h that defines DIR
+configure:1600: checking for opendir in -ldir
+configure:1683: checking whether time.h and sys/time.h may both be included
+configure:1720: checking whether struct tm is in sys/time.h or time.h
+configure:1755: checking for strftime
+configure:1854: checking for mkdir
+configure:1854: checking for strdup
+configure:1854: checking for strstr
+configure:1854: checking for strtol
+configure:1854: checking for memcpy
+configure:1854: checking for memset
+configure:1854: checking for lstat
+configure:1854: checking for strcasecmp
+configure:1854: checking for strcasestr
+configure:1854: checking for getpwuid
+configure:1854: checking for getopt
+configure:1854: checking for snprintf
+configure:1854: checking for memmove
+configure:1854: checking for strerror
+configure:1908: checking for size_t
+configure:1983: checking for gdbm_open in -lgdbm
+configure:2002: gcc -o conftest -g -O2  -L/lib  conftest.c -lgdbm   1>&5
+/usr/bin/ld: cannot find -lgdbm
+collect2: ld returned 1 exit status
+configure: failed program was:
+#line 1991 "configure"
+#include "confdefs.h"
+/* Override any gcc2 internal prototype to avoid an error.  */
+/* We use char because int might match the return type of a gcc2
+    builtin and then its argument prototype would still apply.  */
+char gdbm_open();
+
+int main() {
+gdbm_open()
+; return 0; }
+configure:2032: checking for GDBM support
+configure:2036: checking for gdbm_open in -lgdbm
+configure:2080: checking gdbm library
+configure:2288: checking for iconv
+configure:2344: checking for iconv.h
+configure:2384: checking whether the fnv hash library exists
+configure:2466: checking for gethostbyaddr in -lsocket
+configure:2510: checking for gethostbyaddr in -lsocket
+configure:2555: checking for inet_addr in -lsocket
+configure:2599: checking for inet_addr in -lsocket
+configure:2648: checking for inet_addr in -lnsl

@@ -1,0 +1,27 @@
+This file contains any messages produced by compilers while
+running configure, to aid debugging if configure makes a mistake.
+
+configure:549: checking for gcc
+configure:662: checking whether the C compiler (x86_64-nacl-gcc  ) works
+configure:678: x86_64-nacl-gcc -o conftest    conftest.c  1>&5
+configure:704: checking whether the C compiler (x86_64-nacl-gcc  ) is a cross-compiler
+configure:709: checking whether we are using GNU C
+configure:737: checking whether x86_64-nacl-gcc accepts -g
+configure:776: checking whether byte ordering is bigendian
+configure:896: checking for a BSD compatible install
+configure:960: checking for wish
+configure:960: checking for wish8.1
+configure:960: checking for wish8.2
+configure:960: checking for wish8.3
+configure:960: checking for wish8.4
+configure:1080: checking how to run the C preprocessor
+configure:1160: checking for ANSI C header files
+configure:1267: checking for unistd.h
+configure:1314: checking for langinfo.h
+configure:1342: checking For nl_langinfo(CODESET)
+configure:1351: x86_64-nacl-gcc -c -g -O2  conftest.c 1>&5
+configure:1381: checking for working const
+configure:1457: checking whether setvbuf arguments are reversed
+configure:1530: checking for strdup
+configure:1530: checking for strtol
+configure:1585: checking for strftime

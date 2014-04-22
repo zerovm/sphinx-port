@@ -5,9 +5,9 @@ CFLAGS=-g2 -O2
 AR = ar cru
 RANLIB = x86_64-nacl-ranlib
 
-UNZ_OBJS = docxtotext.o docxtotext_.o unzip.o ioapi.o zip.o zvmfileutil.o
+UNZ_OBJS = docxtotext.o docxtotext_.o unzip.o ioapi.o zip.o zvmfileutil.o fileutil.o lists.o 
 LIB_OBJS = docxtotext_.o unzip.o ioapi.o zip.o 
-ZVM_SRC = ../zsphinx/src/zvmfileutil.c
+ZVM_SRC = ../zsphinx/src/zvmfileutil.c  
 
 
 LIBDOCX = libdocx.a
@@ -22,6 +22,12 @@ docxtotext:  $(UNZ_OBJS)
 
 zvmfileutil.o:
 	$(CC) $(CFLAGS) -c $(ZVM_SRC)
+	
+fileutil.o: 
+	$(CC) $(CFLAGS) -c ../zsphinx/src/fileutil.c 
+
+lists.o:
+	$(CC) $(CFLAGS) -c ../zsphinx/src/lists.c
 	
 libdocx.a: $(LIB_OBJS)
 	rm -f libdocx.a

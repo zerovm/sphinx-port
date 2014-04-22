@@ -80,6 +80,7 @@ static	char   *letP = NULL;	/* remember next option char's location */
 int
 getopt(int argc, char **argv, const char *optionS)
 {
+
 	char ch;
 	char *optP;
  

@@ -153,7 +153,7 @@ bAddDummyImage(diagram_type *pDiag, const imagedata_type *pImg)
  * remark: does not return if the diagram can't be created
  */
 diagram_type *
-pCreateDiagram(const char *szTask, const char *szFilename)
+pCreateDiagram(const char *szTask, const char *szFilename, const char *file_save)
 {
 	diagram_type	*pDiag;
 
@@ -163,7 +163,8 @@ pCreateDiagram(const char *szTask, const char *szFilename)
 
 	FILE *f;
 
-	f = fopen (DOC_TEMP_FILE_FOR_EXTRACTED_TEXT, "w");
+//	f = fopen (DOC_TEMP_FILE_FOR_EXTRACTED_TEXT, "w");
+	f = fopen (file_save, "w");
 
 	if (!f)
 	{

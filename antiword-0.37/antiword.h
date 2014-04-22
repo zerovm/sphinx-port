@@ -48,7 +48,7 @@
 #define CHAR_BIT		8
 #endif /* CHAR_BIT */
 
-#define DOC_TEMP_FILE_FOR_EXTRACTED_TEXT "tempextracted.txt"
+#define DOC_TEMP_FILE_FOR_EXTRACTED_TEXT "temp.txt"
 
 #if !defined(TIME_T_MIN)
 #define TIME_T_MIN		((time_t)0 < (time_t)-1 ?\
@@ -194,6 +194,7 @@
 #define FONT_SANS_SERIF_ITALIC		"Helvetica-Oblique"
 #define FONT_SANS_SERIF_BOLDITALIC	"Helvetica-BoldOblique"
 /* The name of the antiword directories and the font information file */
+
 #if defined(__dos)
 #define GLOBAL_ANTIWORD_DIR	"C:\\antiword"
 #define ANTIWORD_DIR		"antiword"
@@ -226,10 +227,12 @@
 #define GLOBAL_ANTIWORD_DIR	"/usr/local/share/antiword"
 #define ANTIWORD_DIR		".antiword"
 #define FONTNAMES_FILE		"fontnames"
+
 #else	/* All others */
-#define GLOBAL_ANTIWORD_DIR	""
-#define ANTIWORD_DIR		"antiword"
+#define GLOBAL_ANTIWORD_DIR	"/"
+#define ANTIWORD_DIR		"/antiword"
 #define FONTNAMES_FILE		"fontnames"
+
 #endif /* __dos */
 /* The names of grouped mapping files */
 	/* ASCII */
@@ -312,7 +315,7 @@ extern void	vCreateDocumentInfoList(const document_block_type *);
 extern UCHAR	ucGetDopHdrFtrSpecification(void);
 /* draw.c & output.c */
 extern BOOL	bAddDummyImage(diagram_type *, const imagedata_type *);
-extern diagram_type *pCreateDiagram(const char *, const char *);
+extern diagram_type *pCreateDiagram(const char *, const char *, const char*);
 extern void	vPrologue2(diagram_type *, int);
 extern void	vMove2NextLine(diagram_type *, drawfile_fontref, USHORT);
 extern void	vSubstring2Diagram(diagram_type *,

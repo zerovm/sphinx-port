@@ -10,7 +10,7 @@ channel=/dev/mount/import, mountpoint=/, access=ro
 args=doc temp.doc
 
 [env]
-name=ZVM_LogLevel, value=2
+name=ZVM_LogLevel, value=3
 
 [debug]
 verbosity=3

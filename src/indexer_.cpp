@@ -40,6 +40,7 @@
 
 bool			g_bQuiet		= false;
 bool			g_bProgress		= true;
+bool			g_bPackIndex	= true;
 bool			g_bPrintQueries	= false;
 bool			g_bKeepAttrs	= false;
 
@@ -756,7 +757,17 @@ CSphSource * SpawnSourceXMLPipe ( const CSphConfigSection & hSource, const char 
 
 	CSphSource * pSrcXML = NULL;
 
-	CSphString sCommand = hSource["xmlpipe_command"];
+
+	CSphString sCommand;
+	if (Mode == cluster)
+	{
+		sCommand.SetSprintf(INDEXER_XML_INPUT_DEVICE_CLUSTER_MODE);
+	}
+	else
+	{
+		sCommand.SetSprintf(XML_SINGLE_MODE_OUTPUT_FILE);
+	}
+
 	const int MAX_BUF_SIZE = 1024;
 	BYTE dBuffer [MAX_BUF_SIZE];
 	int iBufSize = 0;
@@ -1598,8 +1609,24 @@ int indexer_main ( int argc, char ** argv )
 
 	int i;
 
-	newbufferedunpack( (char *) I_DEVINPUTDATA);
+/*
+	if (Mode == cluster)
+		printf ("cluster\n");
+	else
+		printf ("not a cluster\n");
 
+	if (Mode == single_operation)
+		printf ("single_operation\n");
+	else
+		printf ("not a single_operation\n");
+*/
+
+	if (Mode == cluster)
+	{
+		LOG_ZVM (ZLOGTIT, "indexer work mode", "s", "cluster", 1);
+		newbufferedunpack( (char *) I_DEVINPUTDATA);
+	}
+/*
 	FILE *test;
 
 	test = fopen ("index/zsphinx.conf", "r");
@@ -1609,6 +1636,7 @@ int indexer_main ( int argc, char ** argv )
 		return 1;
 	}
 	fclose (test);
+*/
 
 
 	for ( i=1; i<argc; i++ )
@@ -1676,6 +1704,10 @@ int indexer_main ( int argc, char ** argv )
 		} else if ( strcasecmp ( argv[i], "--noprogress" )==0 )
 		{
 			g_bProgress = false;
+
+		}else if ( strcasecmp ( argv[i], "--packindex" )==0 )
+		{
+			g_bPackIndex = false;
 
 		} else if ( strcasecmp ( argv[i], "--all" )==0 )
 		{
@@ -1965,9 +1997,8 @@ int indexer_main ( int argc, char ** argv )
 	sphAllocsStats ();
 #endif
 	LOG_ZVM ("***ZVMLog", "indexing", "s", "OK", 1);
-	//mylistdir ("/");
 
-	if (bIndexedOk)
+	if (bIndexedOk && (Mode == cluster))
 		newbufferedpack((char *)I_DEVOUTPUTDATA, (char *) INDEXDIRNAME);
 
 	printf ("*** ZVM indexer works OK!\n");
