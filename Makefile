@@ -133,13 +133,13 @@ AUTOMAKE = ${SHELL} /home/volodymyr/git/work/sphinx_port/config/missing --run au
 AWK = mawk
 CC = x86_64-nacl-gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG
+CFLAGS = -Wall -g -D_FILE_OFFSET_BITS=64 -O0 -DNDEBUG
 CONFDIR = /var
 CPP = x86_64-nacl-gcc -E
 CPPFLAGS =  -I/usr/local/include      
 CXX = x86_64-nacl-g++
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -Wall -g -D_FILE_OFFSET_BITS=64 -O3 -DNDEBUG
+CXXFLAGS = -Wall -g -D_FILE_OFFSET_BITS=64 -O0 -DNDEBUG
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps

@@ -22,6 +22,6 @@ sed s@{ABS_PATH}@$ABS_PATH/@g manifest.template/search.manifest.template > manif
 sed s@{command}@"$query"@g nvram.template/search.nvram.template > nvram/search.nvram
 
 
-time ${ZVM_PREFIX}/bin/zerovm -P -Mmanifest/search.manifest -T /home/volodymyr/searchlog -s
+time zerovm -P -Mmanifest/search.manifest -T /home/volodymyr/searchlog -s
 cat data/out/search_stdout.data
 
