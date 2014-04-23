@@ -249,7 +249,7 @@ void newbufferedpack_ (char *devname, char *dirname)
 {
 #define READDIR_FIX
 	int fdpackfile;
-	fdpackfile = open (devname, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+	fdpackfile = open (devname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 	if ( fdpackfile  <= 0 )
 	{
 		printf ("*** ZVM Error open packfile (write)%s\n", devname);
