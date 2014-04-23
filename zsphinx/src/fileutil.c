@@ -154,10 +154,8 @@ int get_file_list (char *path, SingleList_t *pList, SingleList_t *pFileTypeList)
 			char *freeFilePath = filePath;
 			if ( filePath[0] == '/' && filePath[1] == '/' )
 				filePath++;
-			printf ( "add %s, %d \n", filePath, pList->count );
 			addToList( filePath, pList );
 			free ( freeFilePath );
-			//free (fileExt);
 		}
 	}
 	closedir(dir);
@@ -248,8 +246,10 @@ int copy_to_file_from_fd (int fd_in, char *filename )
 void newbufferedpack_ (char *devname, char *dirname)
 {
 #define READDIR_FIX
+#undef READDIR_FIX
 	int fdpackfile;
 	fdpackfile = open (devname, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
+	fdpackfile = open (devname, O_WRONLY | O_CREAT , S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR);
 	if ( fdpackfile  <= 0 )
 	{
 		printf ("*** ZVM Error open packfile (write)%s\n", devname);
@@ -309,7 +309,7 @@ void newbufferedpack_ (char *devname, char *dirname)
 #endif
 			fd = open (newpath, O_RDONLY);
 			size = getfilesize_fd(fd, NULL, 0);
-
+			printf ( "%s, %zu bytes\n", newpath, size );
 			char tempstr [strlen (newpath) + 12];
 			// write header (10 bytes size of filename + filename + 10 bytes size of filedata)
 			sprintf(tempstr, "%10zu%s%10zu", strlen (newpath), newpath, size);

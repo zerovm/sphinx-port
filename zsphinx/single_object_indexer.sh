@@ -11,6 +11,17 @@ fi
 FILE_NAME=$1
 ARGS=$2
 
+if ! [ -f manifest ]; then
+	mkdir -p manifest
+fi
+
+if ! [ -f data/out ]; then
+	mkdir -p data/out
+fi
+
+if ! [ -f nvram ]; then
+	mkdir -p nvram
+fi
 
 SCRIPT=$(readlink -f "$0")
 ABS_PATH=`dirname "$SCRIPT"`/
@@ -28,6 +39,6 @@ sed s@{FILE_NAME}@"$FILE_NAME"@g > nvram/single_object_indexer.nvram
 
 
 #time $ZVM_PREFIX/bin/zerovm manifest/single_object_indexer.manifest -T /home/volodymyr/qwe.txt
-time $ZVM_PREFIX/bin/zerovm manifest/single_object_indexer.manifest
+time zerovm manifest/single_object_indexer.manifest -T ~/qwe.txt
 
 mv data/saved_index.data data/rwindex

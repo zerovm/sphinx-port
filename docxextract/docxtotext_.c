@@ -404,14 +404,16 @@ int do_extract_currentfile(uf,popt_extract_without_path,popt_overwrite,password)
 
     p = filename_withoutpath = filename_inzip;
     while ((*p) != '\0')
-    {
-        if (((*p)=='/') || ((*p)=='\\'))
-            filename_withoutpath = p+1;
-        p++;
-    }
+	{
+		if (((*p)=='/') || ((*p)=='\\'))
+			filename_withoutpath = p+1;
+		p++;
+	}
+
 
     if ((*filename_withoutpath)=='\0')
-    {
+   {
+
         if ((*popt_extract_without_path)==0)
         {
             printf("creating directory: %s\n",filename_inzip);
@@ -990,12 +992,15 @@ int extractfile (char *zipfilename)
     int ret_value=0;
     int opt_do_list=0;
     int opt_do_extract=1;
-    int opt_do_extract_withoutpath=1;
+
+    int opt_do_extract_withoutpath=1;// docx, odt
     int opt_overwrite=1;
     int opt_extractdir=0;
     const char *dirname=NULL;
     char *ret_path;
     unzFile uf=NULL;
+
+    opt_do_extract_withoutpath = set_opt_by_filepath (zipfilename);
 
     if (zipfilename!=NULL)
     {
@@ -1019,6 +1024,7 @@ int extractfile (char *zipfilename)
 #            endif
         }
     }
+
 
     if (uf==NULL)
     {
@@ -1049,6 +1055,25 @@ int extractfile (char *zipfilename)
     	return ret_value;
     }
     return ret_value;
+}
+
+int set_opt_by_filepath ( char * zip_file )
+{
+
+	if (zip_file == NULL)
+		return 1;
+	char *buff = strdup ( zip_file );
+	int i = 0;
+	for(i = 0; buff[i]; i++){
+		buff[i] = tolower((int)buff[i]);
+	}
+	if ( (( strstr (buff, (char *)".docx." )) == NULL) && ((strstr (buff, (char *)"odt" )) == NULL)  )
+	{
+		free (buff);
+		return 0;
+	}
+	free (buff);
+	return 1;
 }
 
 int docx_to_text_ ( char *zip_file, char *file_in_zip, char *output_text_file )

@@ -285,7 +285,6 @@ int docs_to_xml (char * path, int doc_type)
 	}
 	else
 #endif
-	print_dir_tree (path);
 	get_file_list ( path, pFileList, pFileTypeFilter );
 
 	printf ( "list of indexed docs\n" );
@@ -428,35 +427,11 @@ char * prepare_object (int mode)
 char buff_stdin [0x1000];
 char buff_stdout [0x1000];
 
-void test_read_dir ( char * file)
-{
-
-	FILE *f;
-	char buff[200];
-	struct stat st;
-
-	f = fopen ( "/docs/list.txt", "r" );
-	if (!f)
-	{
-		printf ( "file %s nof found\n", file );
-		return;
-	}
-
-	while ( fgets( buff, 200, f ) != NULL )
-	{
-		buff [strlen(buff) - 1] = '\0';
-		stat( buff, &st );
-		printf ( "%s, %zu,\n", buff, st.st_size );
-	}
-	fclose (f);
-	return;
-}
-
 int main (int argc, char ** argv )
 {
 
-//	setvbuf(stdin, buff_stdin, _IOFBF, 0x1000);
-//	setvbuf(stdout, buff_stdout, _IOFBF, 0x1000);
+	setvbuf(stdin, buff_stdin, _IOFBF, 0x1000);
+	setvbuf(stdout, buff_stdout, _IOFBF, 0x1000);
 
 	char *real_obj_name = NULL;
 	int mode = 0;
@@ -471,13 +446,12 @@ int main (int argc, char ** argv )
 		return -1;
 	}
 
-	test_read_dir( "/docs/list.txt" );
 
 	docs_to_xml( TEMP_DIR, mode );
 	do_index_xml ();
 	save_index ();
 
-	mylistdir( "/" );
+	//mylistdir( "/" );
 
 	return 0;
 }
