@@ -2,35 +2,23 @@
 
 ## Prerequisites
 
-### pcre
-
-    git clone https://github.com/zerovm/zerovm-ports
-    cd zerovm-ports/pcre-8.33/
-    cat README.md
-    <follow instrucations>
-
-### libexpat
-
-    git clone https://github.com/zerovm/zerovm-ports
-    cd zerovm-ports/libexpat/
-    cat README.md
-    <follow instrucations>
+Install in the following order
 
 ### zlib
 
-    git clone https://github.com/zerovm/zerovm-ports
-    cd zerovm-ports/zlib/
-    cat README.md
-    <follow instrucations>
+[README](https://github.com/zerovm/zerovm-ports/blob/master/zlib/README.md)
 
 ### bzip2
 
-    git clone https://github.com/zerovm/zerovm-ports
-    cd zerovm-ports/bzip2/
-    cat README.md
-    <follow instrucations>
+[README](https://github.com/zerovm/zerovm-ports/blob/master/bzip2/README.md)
 
+### libexpat
 
+[README](https://github.com/zerovm/zerovm-ports/blob/master/libexpat/README.md)
+
+### pcre
+
+[README](https://github.com/zerovm/zerovm-ports/blob/master/pcre-8.33/README.md)
 
 ## Installing sphinx-port
 
@@ -45,7 +33,8 @@
     ./indexingandsearch.sh {~/search path}
 
 #Run sphinx search on zwift
-https://github.com/zerovm/sphinx-port/blob/master/zsphinx/zwift/README.md
+
+[README](https://github.com/zerovm/sphinx-port/blob/master/zsphinx/zwift/README.md)
 
 
 [zerovm-ports]: https://github.com/zerovm/zerovm-ports
