@@ -16,8 +16,3 @@ cd zxpdf-3.03
 
 ./configure --host=x86_64-nacl 
 
-echo -------------------------
-echo "patch bzip2"
-echo -------------------------	
-cd ../bzip2-1.0.6
-patch -p0 < ../Makefile.patch
