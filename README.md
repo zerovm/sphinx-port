@@ -16,7 +16,7 @@ Install in the following order
     cd zxpdf-3.03; make
     cd ../docxextract; make
     cd ../antiword-0.37; make
-    cd ../hypermail; make
+    cd ../hypermail; ./configure --host=x86_64-nacl; make
     cd ../catdoc-0.94.4; make
     cd ../zsphinx/src; make
 
