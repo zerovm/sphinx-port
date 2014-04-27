@@ -20,19 +20,21 @@ SUFFIX=@suffix@
 
 # Compiler to use
 CC=@CC@
+AR=@AR@
+ARFLAGS=cru
 
 # Installation program to use
 INSTALL_PROG=@INSTALL@ 
 
-SPLINTFLAGS=-Ipcre 
+SPLINTFLAGS=
  
 #WNOERROR=-Werror
 #WARNINGS=$(WNOERROR) -ansi -pedantic -Wall -Wtraditional -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wnested-externs -Winline -Dlint
 
-CFLAGS=@CFLAGS@ @INCLUDES@ -Ipcre -DTRIO_MINIMAL $(WARNINGS)
+CFLAGS=@CFLAGS@ @INCLUDES@ -DTRIO_MINIMAL $(WARNINGS)
 YACC=@YACC@
 NETLIBS=@LIBS@
-LDFLAGS=@LDFLAGS@ -Lpcre/.libs
+LDFLAGS=@LDFLAGS@
 MISC_LIBS= -lm -lpcre
 OPT_LIBS=@EXTRA_LIBS@
 
@@ -45,26 +47,26 @@ SRCS=		base64.c date.c domains.c file.c hypermail.c lang.c lock.c \
 		mem.c parse.c print.c printfile.c string.c struct.c uudecode.c\
 		dmatch.c setup.c threadprint.c getdate.c getname.c\
 		finelink.c txt2html.c search.c quotes.c trio.c triostr.c \
-		trionan.c
+		trionan.c hypermail_.c
 
 OBJS=		base64.o date.o domains.o file.o hypermail.o lang.o lock.o \
 		mem.o parse.o print.o printfile.o string.o struct.o uudecode.o\
 		dmatch.o setup.o threadprint.o getdate.o getname.o\
 		finelink.o txt2html.o search.o quotes.o trio.o triostr.o \
-		trionan.o
+		trionan.o hypermail_.o
 
 MAILOBJS=	mail.o ../libcgi/libcgi.a
 
 .c.o:
 	$(CC) -c $(CFLAGS) $<
 
-all:    pcre/.libs/libpcre.a @FNV_DEP@ hypermail$(SUFFIX) #mail$(SUFFIX) lang$(SUFFIX)
-
-pcre/.libs/libpcre.a:
-	@cd pcre; $(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" ; rm -f .libs/lib*.so*
+all: @FNV_DEP@ hypermail$(SUFFIX) hypermail.a #mail$(SUFFIX) lang$(SUFFIX)
 
 fnv/libfnv.a:
 	@cd fnv; $(MAKE) libfnv.a CC="$(CC)" CFLAGS="$(CFLAGS)"
+
+hypermail.a: $(OBJS)
+	$(AR) $(ARFLAGS) $@ $(OBJS)
 
 hypermail$(SUFFIX): $(OBJS) 
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(OPT_LIBS) $(MISC_LIBS)
@@ -124,17 +126,14 @@ clean:
 	rm -f *.o .pure *qx *qv *.ln core
 	rm -f .inslog tca.map lint.out splint.out
 	rm -f getdate.c
-	@cd pcre; $(MAKE) clean
 	@(if test "$(FNV_DEP)" != "" ; then cd fnv; $(MAKE) clean; fi)
 	@cd ../libcgi; $(MAKE) clean
 
 clobber: clean
-	@cd pcre; rm -f *.lock
 	@(if test "$(FNV_DEP)" != "" ; then cd fnv; $(MAKE) clobber; fi)
 	@cd ../libcgi; $(MAKE) clobber
 
 distclean: clobber
-	@cd pcre; $(MAKE) distclean
 	@(if test "$(FNV_DEP)" != "" ; then cd fnv; $(MAKE) distclean; fi)
 	@cd ../libcgi; $(MAKE) distclean
 
