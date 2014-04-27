@@ -11,7 +11,6 @@ INCLUDES=""
 GDBM_INCLUDE=""
 GDBM_LIB=""
 FNV_DEP=""
-SUBDIRS="src/pcre"
 
 dnl ===========================================================================
 dnl Get host, target and build variables filled with appropriate info.
@@ -81,11 +80,6 @@ export CFLAGS CC
 AC_SUBST(INSTALL)
 
 AC_MSG_CHECKING([that the compiler works])
-AC_TRY_RUN([ main(int ac, char **av) { return 0; } ],
-    AC_MSG_RESULT(yes),
-    AC_MSG_RESULT(no)
-    AC_MSG_ERROR(Could not compile and run even a trivial ANSI C program - check CC.),
-    AC_MSG_ERROR(Could not compile and run even a trivial ANSI C program - check CC.))
 
 dnl ===========================================================================
 dnl Determine if building on a Cygwin system so that 
