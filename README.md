@@ -20,13 +20,20 @@ Install in the following order
 
 [README](https://github.com/zerovm/zerovm-ports/blob/master/pcre-8.33/README.md)
 
+### iconv
+
+[README](https://github.com/zerovm/zerovm-ports/blob/master/libicnov/README.md)
+
 ## Installing sphinx-port
 
     ./configureall.sh; make
     cd zxpdf-3.03; make
     cd ../docxextract; make
     cd ../antiword-0.37; make
+    cd ../hypermail; make
+    cd ../catdoc-0.94.4; make
     cd ../zsphinx/src; make
+
 
 ## Usage
 
