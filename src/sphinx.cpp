@@ -6999,7 +6999,6 @@ int CSphReader::GetBytesZerocopy ( const BYTE ** ppData, int iMax )
 		if ( m_iBuffPos>=m_iBuffUsed )
 			return 0; // unexpected io failure
 	}
-
 	int iChunk = Min ( m_iBuffUsed-m_iBuffPos, iMax );
 	*ppData = m_pBuff + m_iBuffPos;
 	m_iBuffPos += iChunk;
@@ -28718,22 +28717,23 @@ bool CWordlist::ReadCP ( CSphAutofile & tFile, DWORD uVersion, bool bWordDict, C
 /*ZVM ADD*/
 
 		// please forgive me for that
-		const BYTE* buffer = NULL;
+		//const BYTE* buffer = NULL;
 		// get pointer to raw data, will iterate over buffer
 		// tRerader should have read data at once, instead of reading in subsequent cycle
-		tReader.GetBytesZerocopy(&buffer, m_dCheckpoints.GetSizeBytes());
+
+		//tReader.GetBytesZerocopy( &buffer, m_dCheckpoints.GetSizeBytes());
 /*ZVM ADD*/
 
 		// read v.14 checkpoints
 		ARRAY_FOREACH ( i, m_dCheckpoints )
 		{
 /*ZVM ADD*/
-			//			m_dCheckpoints[i].m_iWordID = (SphWordID_t)tReader.GetOffset();
-			//			m_dCheckpoints[i].m_iWordlistOffset = tReader.GetOffset();
-						m_dCheckpoints[i].m_iWordID = *(SphOffset_t*)buffer;
-						buffer += sizeof(SphOffset_t);
-						m_dCheckpoints[i].m_iWordlistOffset = *(SphOffset_t*)buffer;
-						buffer += sizeof(SphOffset_t);
+						m_dCheckpoints[i].m_iWordID = (SphWordID_t)tReader.GetOffset();
+						m_dCheckpoints[i].m_iWordlistOffset = tReader.GetOffset();
+						//m_dCheckpoints[i].m_iWordID = *(SphOffset_t*)buffer;
+						//buffer += sizeof(SphOffset_t);
+						//m_dCheckpoints[i].m_iWordlistOffset = *(SphOffset_t*)buffer;
+						//buffer += sizeof(SphOffset_t);
 /*ZVM ADD*/
 		}
 	} else
