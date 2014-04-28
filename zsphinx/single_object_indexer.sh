@@ -23,6 +23,17 @@ if ! [ -f nvram ]; then
 	mkdir -p nvram
 fi
 
+if [ -a data/presettings.tar ]
+then
+	echo data/presettings.tar already exist
+else
+	echo create data/presettings.tar
+	cd data
+	tar -cvvf presettings.tar charsets/ antiword/ usr/
+	cd ..
+fi
+
+
 SCRIPT=$(readlink -f "$0")
 ABS_PATH=`dirname "$SCRIPT"`/
 
@@ -37,8 +48,6 @@ sed s@{ABS_PATH}@$ABS_PATH@ nvram.template/single_object_indexer.nvram.template 
 sed s@{ARGS}@"$ARGS"@g | \
 sed s@{FILE_NAME}@"$FILE_NAME"@g > nvram/single_object_indexer.nvram
 
-
-#time $ZVM_PREFIX/bin/zerovm manifest/single_object_indexer.manifest -T /home/volodymyr/qwe.txt
-time zerovm manifest/single_object_indexer.manifest -T ~/qwe.txt
+time zerovm manifest/single_object_indexer.manifest
 
 mv data/saved_index.data data/rwindex
