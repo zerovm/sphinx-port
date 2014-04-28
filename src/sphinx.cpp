@@ -6999,7 +6999,6 @@ int CSphReader::GetBytesZerocopy ( const BYTE ** ppData, int iMax )
 		if ( m_iBuffPos>=m_iBuffUsed )
 			return 0; // unexpected io failure
 	}
-	printf ( "%d\n", iMax );
 	int iChunk = Min ( m_iBuffUsed-m_iBuffPos, iMax );
 	*ppData = m_pBuff + m_iBuffPos;
 	m_iBuffPos += iChunk;
