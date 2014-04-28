@@ -12,13 +12,8 @@ Install in the following order
 
 ## Building sphinx-port
 
-    ./configureall.sh; make
-    cd zxpdf-3.03; make
-    cd ../docxextract; make
-    cd ../antiword-0.37; make
-    cd ../hypermail; ./configure --host=x86_64-nacl --disable-i18n; make
-    cd ../catdoc-0.94.4; make
-    cd ../zsphinx/src; make
+    ./configure --host=x86_64-nacl --disable-i18n --without-mysql --without-pgsql --without-unixodbc --without-iconv
+    make
 
 
 ## Usage
