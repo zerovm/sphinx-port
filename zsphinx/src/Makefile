@@ -68,7 +68,7 @@ main_indexer$(EXE): $(OBJS_MAIN_INDEXER) ../../antiword-0.37/libdoc.a ../../docx
 	$(CC) -o main_indexer$(EXE) $(OBJS_MAIN_INDEXER) ../../antiword-0.37/libdoc.a ../../docxextract/libdocx.a ../../zxpdf-3.03/xpdf/libpdf.a ../../src/libindexer.a ../../src/libsphinx.a $(LIBS) $(LIBS_PDF)   
 
 single_object_indexer$(EXE): $(OBJS_SINGLE_OBJECT_INDEXER)
-	$(CC) -o  $@ $(OBJS_SINGLE_OBJECT_INDEXER) $(CFLAGS) ../../zxpdf-3.03/xpdf/libpdf.a $(LIBS_SINGLE_OBJECT_INDEXER) $(LIBS_PDF) $(LIBS) ../../hypermail/src/hypermail.a -liconv -lpcre -lm ../../catdoc-0.94.4/src/catdoc.a
+	$(CC) -o  $@ $(OBJS_SINGLE_OBJECT_INDEXER) $(CFLAGS) ../../zxpdf-3.03/xpdf/libpdf.a $(LIBS_SINGLE_OBJECT_INDEXER) $(LIBS_PDF) $(LIBS) ../../hypermail/src/hypermail.a -lpcre -lm ../../catdoc-0.94.4/src/catdoc.a
 
 
 clean:
