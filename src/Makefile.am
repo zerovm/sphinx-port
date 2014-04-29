@@ -3,9 +3,8 @@ SRC_SPHINX = sphinx.cpp sphinxexcerpt.cpp sphinxquery.cpp \
 	sphinxutils.cpp sphinxstd.cpp sphinxsort.cpp sphinxexpr.cpp sphinxfilter.cpp \
 	sphinxsearch.cpp sphinxrt.cpp sphinxjson.cpp sphinxudf.c sphinxaot.cpp
 
-noinst_LIBRARIES = libsphinx.a libindexer.a
-libsphinx_a_SOURCES = $(SRC_SPHINX)
-libindexer_a_SOURCES = $(SRC_SPHINX) ../zsphinx/src/zvmfileutil.c indexer_.cpp
+noinst_LIBRARIES = libsphinx.a
+libsphinx_a_SOURCES = $(SRC_SPHINX) ../zsphinx/src/zvmfileutil.c indexer_.cpp
 
 bin_PROGRAMS = indexer search spelldump indextool wordbreaker
 noinst_PROGRAMS = tests
