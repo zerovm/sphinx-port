@@ -10,8 +10,9 @@ SPHINX_CONFIGURE_PART([checking build environment])
 AC_CONFIG_AUX_DIR([config])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 AM_MAINTAINER_MODE
-AC_CONFIG_SRCDIR([src/searchd.cpp])
+AC_CONFIG_SRCDIR([src/search.cpp])
 AC_CONFIG_HEADER([config/config.h])
+AC_CONFIG_SUBDIRS([zxpdf-3.03 hypermail catdoc-0.94.4])
 
 # hack to locate expat/iconv in /usr/local on BSD systems
 CPPFLAGS="$CPPFLAGS -I/usr/local/include"
@@ -103,8 +104,6 @@ SPHINX_CONFIGURE_PART([checking for library functions])
 
 # Checks for library functions.
 AC_FUNC_FORK
-AC_FUNC_MALLOC
-AC_FUNC_REALLOC
 AC_FUNC_SELECT_ARGTYPES
 AC_TYPE_SIGNAL
 AC_FUNC_STAT
