@@ -254,13 +254,13 @@ int add_doc_to_xml (int xml_fd, char *fileName, Input_Obj_Type tMode )
 			temp_message_id = get_message_ID_from_html ( temp_file_name );
 			temp_full_file_name = (char *) malloc( CHARSIZE( strlen (temp_message_id) + strlen ( fileName ) + 5 ) );
 			sprintf ( temp_full_file_name, "%s/%s", temp_message_id, fileName);
-			offset_email = get_element_from_html(temp_file_name, "offest_email" );
+			offset_email = get_element_from_html(temp_file_name, "offset_email" );
 			free ( temp_file_name );
 		}
 		else // if message body
 		{
 			temp_full_file_name = get_message_ID_from_html ( fileName );
-			offset_email = get_element_from_html(fileName, "offest_email" );
+			offset_email = get_element_from_html(fileName, "offset_email" );
 		}
 
 		write_doc_toxml ( xml_fd, num_CRC32( temp_full_file_name ), text, size_text, fileName, fileLenBuff );
