@@ -167,13 +167,13 @@ int filtering_buff ( char *buff, size_t buff_size )
 	size_t i = 0;
 	for ( i = 0; i < buff_size; i++)
 	{
-		if ( !isalnum( ( char * ) buff[i] ) )
+		if ( !isalnum( ( char ) buff[i] ) )
 			buff[i] = ' ';
 	}
 	return 0;
 }
 
-int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
+int add_doc_to_xml (int xml_fd, char *fileName, Input_Obj_Type tMode )
 {
 	struct stat st;
 	struct tm *t;
@@ -207,9 +207,9 @@ int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
 		filtering_buff ( text, size_text );
 	}
 
-	if ( doc_type == 1 )
+	if ( tMode == zip_obj )
 		write_doc_toxml ( xml_fd, num_CRC32( fileName ), text, size_text, fileName, fileLenBuff );
-	else if ( doc_type ==2 )
+	else if ( tMode == mail_obj )
 	{
 		char *base_name_without_ext = NULL;
 		char *temp_dir_name = NULL;
@@ -245,7 +245,8 @@ int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
 		temp_base_name  = basename ( temp_dir_name );
 		temp_pos = NULL;
 		temp_pos = strstr( temp_base_name, "-");
-		if ( temp_pos != NULL )
+		char *offset_email = NULL;
+		if ( temp_pos != NULL ) // if attachment
 		{
 			temp_pos++;
 			temp_file_name = ( char * ) malloc( CHARSIZE( strlen ( TEMP_DIR ) + strlen ( temp_base_name ) + 20) );
@@ -253,12 +254,15 @@ int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
 			temp_message_id = get_message_ID_from_html ( temp_file_name );
 			temp_full_file_name = (char *) malloc( CHARSIZE( strlen (temp_message_id) + strlen ( fileName ) + 5 ) );
 			sprintf ( temp_full_file_name, "%s/%s", temp_message_id, fileName);
+			offset_email = get_element_from_html(temp_file_name, "offest_email" );
 			free ( temp_file_name );
 		}
-		else
+		else // if message body
 		{
 			temp_full_file_name = get_message_ID_from_html ( fileName );
+			offset_email = get_element_from_html(fileName, "offest_email" );
 		}
+
 		write_doc_toxml ( xml_fd, num_CRC32( temp_full_file_name ), text, size_text, fileName, fileLenBuff );
 		free ( temp_full_file_name );
 	}
@@ -269,7 +273,7 @@ int add_doc_to_xml (int xml_fd, char *fileName, int doc_type)
 	return 0;
 }
 
-int docs_to_xml (char * path, int doc_type)
+int docs_to_xml (char * path, Input_Obj_Type tMode )
 {
 	int i = 0;
 	SingleList_t tFileList, *pFileList=&tFileList, tFileTypeFilter, *pFileTypeFilter = &tFileTypeFilter;
@@ -296,7 +300,7 @@ int docs_to_xml (char * path, int doc_type)
 	xml_fd = open_xml_( XML_PATH ); //FIXME const
 	for ( i = 0; i < pFileList->count; i++)
 	{
-		add_doc_to_xml ( xml_fd, pFileList->list[i], doc_type );
+		add_doc_to_xml ( xml_fd, pFileList->list[i], tMode );
 	}
 	close_xml_( xml_fd );
 ///////////////////////
@@ -372,22 +376,21 @@ int save_index ()
 	return 0;
 }
 
-int get_work_mode (int argc, char ** argv)
+Input_Obj_Type get_work_mode (int argc, char ** argv)
 {
 	int i = 0;
-
 	for ( i = 0; i < argc; i++ )
 	{
 		if ( (strcasecmp( argv [i], "--zip" )) == 0 || (strcasecmp( argv [i], "-z" )) == 0 )
 		{
-			return 1;
+			return zip_obj;
 		}
 		else if ( (strcasecmp( argv [i], "--mbox" )) == 0 || (strcasecmp( argv [i], "-m" )) == 0 )
 		{
-			return 2;
+			return mail_obj;
 		}
 	}
-	return 0;
+	return error_type;
 }
 
 
@@ -403,7 +406,7 @@ int prepare_mbox ()
 	return main_mbox( argc_mbox, argv_mbox );
 }
 
-char * prepare_object (int mode)
+char * prepare_object ( Input_Obj_Type tMode )
 {
 	int is_zip = 0;
 	int i = 0;
@@ -411,12 +414,12 @@ char * prepare_object (int mode)
 	if ( prepare_temp_dir ( TEMP_DIR ) < 0 )
 		return NULL;
 
-	if ( mode == 1 )
+	if ( tMode == zip_obj )
 	{
 		if (prepare_zip () != 0 )
 			return NULL;
 	}
-	else if ( mode == 2 )
+	else if ( tMode == mail_obj )
 	{
 		if (prepare_mbox() != 0)
 			return NULL;
@@ -434,20 +437,18 @@ int main (int argc, char ** argv )
 	setvbuf(stdout, buff_stdout, _IOFBF, 0x1000);
 
 	char *real_obj_name = NULL;
-	int mode = 0;
+	Input_Obj_Type tMode;
 
-	mode = get_work_mode (argc, argv);
+	tMode = get_work_mode (argc, argv);
 
 	if ( save_settings_to_fs () < 0 )
 		return -1;
 
-	if ( ( real_obj_name = prepare_object (mode)) == NULL )
+	if ( ( real_obj_name = prepare_object (tMode)) == NULL )
 	{
 		return -1;
 	}
-
-
-	docs_to_xml( TEMP_DIR, mode );
+	docs_to_xml( TEMP_DIR, tMode );
 	do_index_xml ();
 	save_index ();
 
