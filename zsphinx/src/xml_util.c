@@ -195,7 +195,6 @@ char * get_message_ID_from_html ( char *file_name )
 
 char * get_element_from_html ( char *file_name, char *element_name )
 {
-	printf ( "%s\n", file_name );
 	char *element_pattern = NULL;
 	char buff [0x1000];
 	char *element_val = NULL;
