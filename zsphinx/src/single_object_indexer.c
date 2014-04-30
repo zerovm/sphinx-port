@@ -297,7 +297,7 @@ int docs_to_xml (char * path, Input_Obj_Type tMode )
 
 ///////////////////////
 
-	xml_fd = open_xml_( XML_PATH ); //FIXME const
+	xml_fd = open_xml_( XML_PATH, tMode ); //FIXME const
 	for ( i = 0; i < pFileList->count; i++)
 	{
 		add_doc_to_xml ( xml_fd, pFileList->list[i], tMode );

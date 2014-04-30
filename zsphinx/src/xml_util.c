@@ -28,7 +28,7 @@ char * str_to_lower_case ( char *str )
 	return buff;
 }
 
-int open_xml_ ( char *XML_file )
+int open_xml_ ( char *XML_file, Input_Obj_Type tMode )
 {
 	char *XML_open =
 "<?xml version=\"1.0\" encoding=\"utf-8\"?> \n\
@@ -41,10 +41,33 @@ int open_xml_ ( char *XML_file )
 <sphinx:attr name=\"CONTENT_LENGTH\" type=\"int\" />\n\
 </sphinx:schema>\n\
 \n";
+
+	char *XML_open_mail =
+"<?xml version=\"1.0\" encoding=\"utf-8\"?> \n\
+<sphinx:docset>\n\
+<sphinx:schema>\n\
+<sphinx:field name=\"CONTENT_FIELD\" type=\"string\" />\n\
+<sphinx:field name=\"FROM_FIELD\" type=\"string\" />\n\
+<sphinx:field name=\"SUBJECT_FIELD\" type=\"string\" />\n\
+<sphinx:attr name=\"OFFSET_MESSAGE\" type=\"int\" />\n\
+<sphinx:attr name=\"CONTENT_LENGTH\" type=\"int\" />\n\
+<sphinx:attr name=\"SENT\" type=\"timestamp\" />\n\
+<sphinx:attr name=\"RECEIVED\" type=\"timestamp\" />\n\
+<sphinx:attr name=\"FROM\" type=\"string\" />\n\
+<sphinx:attr name=\"MESSAGE_ID\" type=\"string\" />\n\
+</sphinx:schema>\n\
+\n";
+	char *choose_head = NULL;
+	if (tMode == zip_obj)
+		choose_head = XML_open;
+	else if ( tMode == mail_obj )
+		choose_head = XML_open_mail;
+
 	int fd = 0;
 	int bwrite = 0;
 	char * XML_open_lower = NULL;
-	XML_open_lower = str_to_lower_case( XML_open );
+
+	XML_open_lower = str_to_lower_case( choose_head );
 	fd = open ( XML_file, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
 	if (fd <= 0)
 	{
