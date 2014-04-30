@@ -1405,9 +1405,9 @@ int parsemail(char *mbox,	/* file name */
 		printf("%s \"%s\"...\n", lang[MSG_LOADING_MAILBOX], mbox);
 	}
     }
-
     for ( ; fgets(line_buf, MAXLINE, fp) != NULL; 
-	  set_txtsuffix ? PushString(&raw_text_buf, line_buf) : 0) {
+    		set_txtsuffix ? PushString(&raw_text_buf, line_buf) : 0)
+    {
 #if DEBUG_PARSE
 	printf("IN: %s", line);
 #endif 
@@ -1427,7 +1427,10 @@ int parsemail(char *mbox,	/* file name */
 	}
 	if (isinheader) {
 	    if (!strncasecmp(line_buf, "From ", 5))
-		strcpymax(fromdate, dp = getfromdate(line), DATESTRLEN);
+	    {
+	    	offset_current_email = ftell (fp);
+	    	strcpymax(fromdate, dp = getfromdate(line), DATESTRLEN);
+	    }
 	    /* check for MIME */
 	    else if (!strncasecmp(line, "MIME-Version:", 13))
 		Mime_B = TRUE;
@@ -1472,7 +1475,7 @@ int parsemail(char *mbox,	/* file name */
 		 */
 
 		for (head = bp; head; head = head->next) {
-		    char head_name[128];
+			char head_name[128];
 		    if (head->header && !head->demimed) {
 		      head->line =
 			mdecodeRFC2047(head->line, strlen(head->line),charsetsave);

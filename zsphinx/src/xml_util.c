@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include "xml_util.h"
+#include "types_.h"
 
 char * str_to_lower_case ( char *str )
 {
@@ -190,4 +191,34 @@ char * get_message_ID_from_html ( char *file_name )
 	}
 	fclose (f);
 	return message_id;
+}
+
+char * get_element_from_html ( char *file_name, char *element_name )
+{
+	printf ( "%s\n", file_name );
+	char *element_pattern = NULL;
+	char buff [0x1000];
+	char *element_val = NULL;
+	FILE *f;
+	f = fopen ( file_name, "r" );
+	if ( !f )
+		return NULL;
+	element_pattern = (char *) malloc( CHARSIZE ( strlen ( element_name ) + strlen ( "<!-- " ) + 2) );
+	sprintf ( element_pattern, "<!-- %s", element_name);
+	while ( fgets (buff,sizeof(buff), f) != NULL)
+	{
+		//<!-- id="CAK2fmCx=8Cv6+s5O8Lt2FiQzbsxgoQd892ONLEuCrsRwTWDoMQ_at_mail.gmail.com" -->
+		if (strlen ( buff ) > 0)
+			if ( strstr ( buff, element_pattern ) != NULL )
+			{
+				int pattern_offset = strlen ( element_pattern ) + 2;
+				element_val = (char *) malloc ( sizeof ( char ) * strlen (buff) );
+				memcpy ( element_val, buff + pattern_offset, strlen (buff) - 6 - pattern_offset );
+				element_val [ strlen (buff) - 6 - pattern_offset ] = '\0';
+				break;
+			}
+	}
+	fclose (f);
+	free( element_pattern );
+	return element_val;
 }

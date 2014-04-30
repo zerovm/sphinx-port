@@ -14,7 +14,7 @@ typedef struct {
 	int max_count;
 } SingleList_t;
 
-//typedef enum { zip, mail, error_type } obj_type;
+typedef enum { zip_obj, mail_obj, error_type } Input_Obj_Type;
 
 #define CHARSIZE(A) sizeof(char)*(A)
 #define PCHARSIZE(A) sizeof ( A ) / sizeof ( char * )

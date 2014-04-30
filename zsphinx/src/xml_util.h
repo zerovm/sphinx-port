@@ -17,5 +17,6 @@ char * str_to_lower_case ( char * );
 int XML_filter ( char *, size_t );
 void write_doc_toxml (int , unsigned long int , char * , size_t , char *, char *);
 char * get_message_ID_from_html ( char * );
+char * get_element_from_html ( char *, char *);
 
 #endif /* XML_UTIL_H_ */
