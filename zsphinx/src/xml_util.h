@@ -8,8 +8,10 @@
 #ifndef XML_UTIL_H_
 #define XML_UTIL_H_
 
+#include "types_.h"
+
 int write_XML_Elemet_ (int, char *, char *);
-int open_xml_ ( char *, Input_Obj_Type );
+int open_xml_ ( char *, Input_Obj_Type);
 int close_xml_ (int);
 int open_xml_document_ ( int, unsigned long int);
 int close_xml_document_ (int);
