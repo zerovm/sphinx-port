@@ -392,7 +392,7 @@ int get_single_message_from_offset ( char* input_name, char *output_name, long i
 	if ( !fin || !fout )
 		return -1;
 	fseek( fin, offset, SEEK_CUR );
-	while(fgets( buff, 2048, fin ))
+	while( fgets( buff, 2048, fin ) )
 	{
 		if ( ( strncasecmp( buff, "From ", 5 ) == 0 ) && next_message++ == 1 )
 			break;
