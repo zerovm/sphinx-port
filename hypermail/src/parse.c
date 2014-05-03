@@ -1216,998 +1216,1665 @@ static void write_txt_file(struct emailinfo *emp, struct Push *raw_text_buf)
     char io_buffer[IO_SIZE_BUF];
 
 
-int parsemail(char *mbox,	/* file name */
-	      int use_stdin,	/* read from stdin */
-	      int readone,	/* only one mail */
-	      int increment,	/* update an existing archive */
-	      char *dir, int inlinehtml,	/* if HTML should be inlined */
-	      int startnum)
-{
-    FILE *fp;
-    struct Push raw_text_buf;
-    FILE *fpo = NULL;
-    char *date = NULL;
-    char *subject = NULL;
-    char *msgid = NULL;
-    char *inreply = NULL;
-    char *namep = NULL;
-    char *emailp = NULL;
-    char *line = NULL; 
-    char line_buf[MAXLINE], fromdate[DATESTRLEN] = "";
-    char *cp;
-    char *dp = NULL;
-    int num, isinheader, hassubject, hasdate;
-    int num_added = 0;
-    long exp_time = -1;
-    time_t delete_older_than = (set_delete_older ? convtoyearsecs(set_delete_older) : 0);
-    time_t delete_newer_than = (set_delete_newer ? convtoyearsecs(set_delete_newer) : 0);
-    int is_deleted = 0;
-    int pos;
-    bool *require_filter, *require_filter_full;
-    int require_filter_len, require_filter_full_len;
-    struct hmlist *tlist;
-    char filename[MAXFILELEN];
-    struct emailinfo *emp;
-    char *att_dir = NULL;	/* directory name to store attachments in */
-    char *meta_dir = NULL;	/* directory name where we're storing the meta data
-				   that describes the attachments */
-    typedef enum {
-	NO_FILE,
-	MAKE_FILE,
-	MADE_FILE
-    } FileStatus;		/* for attachments */
+int parsemail ( char *mbox, /* file name */
+int use_stdin, /* read from stdin */
+int readone, /* only one mail */
+int increment, /* update an existing archive */
+char *dir, int inlinehtml, /* if HTML should be inlined */
+int startnum ) {
+	FILE *fp;
+	struct Push raw_text_buf;
+	FILE *fpo = NULL;
+	char *date = NULL;
+	char *subject = NULL;
+	char *msgid = NULL;
+	char *inreply = NULL;
+	char *namep = NULL;
+	char *emailp = NULL;
+	char *line = NULL;
+	char line_buf[MAXLINE], fromdate[DATESTRLEN] = "";
+	char *cp;
+	char *dp = NULL;
+	int num, isinheader, hassubject, hasdate;
+	int num_added = 0;
+	long exp_time = -1;
+	time_t delete_older_than = ( set_delete_older ? convtoyearsecs( set_delete_older ) : 0 );
+	time_t delete_newer_than = ( set_delete_newer ? convtoyearsecs( set_delete_newer ) : 0 );
+	int is_deleted = 0;
+	int pos;
+	bool *require_filter, *require_filter_full;
+	int require_filter_len, require_filter_full_len;
+	struct hmlist *tlist;
+	char filename[MAXFILELEN];
+	struct emailinfo *emp;
+	char *att_dir = NULL; /* directory name to store attachments in */
+	char *meta_dir = NULL; /* directory name where we're storing the meta data
+	 that describes the attachments */
+	typedef enum
+	{
+		NO_FILE, MAKE_FILE, MADE_FILE
+	} FileStatus; /* for attachments */
 
-    /* -- variables for the multipart/alternative parser -- */
-    struct body *origbp = NULL;	/* store the original bp */
-    struct body *origlp = NULL;	/* ... and the original lp */
-    char alternativeparser = FALSE;	/* set when inside alternative parser mode */
-    int alternative_weight = -1;	/* the current weight of the prefered alternative content */
-    struct body *alternative_lp = NULL;	/* the previous alternative lp */
-    struct body *alternative_bp = NULL;	/* the previous alternative bp */
-    struct body *append_bp = NULL; /* text to append to body after parse done*/
-    struct body *append_lp = NULL;
-    FileStatus alternative_lastfile_created = NO_FILE;	/* previous alternative attachments, for non-inline MIME types */
-    char alternative_file[129];	/* file name where we store the non-inline alternatives */
-    char alternative_lastfile[129];	/* last file name where we store the non-inline alternatives */
-    int att_counter = 0;	/* used to generate a unique name for attachments */
-    /* 
-    ** keeps track of attachment file name used so far for this message 
-    */
-    struct hmlist *att_name_list = NULL; 
-    struct hmlist *att_name_last = NULL;
+	/* -- variables for the multipart/alternative parser -- */
+	struct body *origbp = NULL; /* store the original bp */
+	struct body *origlp = NULL; /* ... and the original lp */
+	char alternativeparser = FALSE; /* set when inside alternative parser mode */
+	int alternative_weight = -1; /* the current weight of the prefered alternative content */
+	struct body *alternative_lp = NULL; /* the previous alternative lp */
+	struct body *alternative_bp = NULL; /* the previous alternative bp */
+	struct body *append_bp = NULL; /* text to append to body after parse done*/
+	struct body *append_lp = NULL;
+	FileStatus alternative_lastfile_created = NO_FILE; /* previous alternative attachments, for non-inline MIME types */
+	char alternative_file[129]; /* file name where we store the non-inline alternatives */
+	char alternative_lastfile[129]; /* last file name where we store the non-inline alternatives */
+	int att_counter = 0; /* used to generate a unique name for attachments */
+	/*
+	 ** keeps track of attachment file name used so far for this message
+	 */
+	struct hmlist *att_name_list = NULL;
+	struct hmlist *att_name_last = NULL;
 
-    /* -- end of alternative parser variables -- */
+	/* -- end of alternative parser variables -- */
 
-    struct body *bp;
-    struct body *lp = NULL;	/* the last pointer, points to the last node in the
-				   body list. Initially set to NULL since we have
-				   none at the moment. */
+	struct body *bp;
+	struct body *lp = NULL; /* the last pointer, points to the last node in the
+	 body list. Initially set to NULL since we have
+	 none at the moment. */
 
-    struct body *headp = NULL;	/* stored pointer to the point where we last
-				   scanned the headers of this mail. */
+	struct body *headp = NULL; /* stored pointer to the point where we last
+	 scanned the headers of this mail. */
 
-    char Mime_B = FALSE;
-    char boundbuffer[256] = "";
+	char Mime_B = FALSE;
+	char boundbuffer[256] = "";
 
-    struct boundary *boundp = NULL;	/* This variable is used to store a stack 
-					   of boundary separators in cases with mimed 
-					   mails inside mimed mails */
+	struct boundary *boundp = NULL; /* This variable is used to store a stack
+	 of boundary separators in cases with mimed
+	 mails inside mimed mails */
 
-    char multilinenoend = FALSE;	/* This variable is set TRUE if we have read 
-					   a partial line off a multiline-encoded line, 
-					   and the next line we read is supposed to get
-					   appended to the previous one */
+	char multilinenoend = FALSE; /* This variable is set TRUE if we have read
+	 a partial line off a multiline-encoded line,
+	 and the next line we read is supposed to get
+	 appended to the previous one */
 
-    int bodyflags = 0;		/* This variable is set to extra flags that the 
-				   addbody() calls should OR in the flag parameter */
+	int bodyflags = 0; /* This variable is set to extra flags that the
+	 addbody() calls should OR in the flag parameter */
 
-    int binfile = -1;
+	int binfile = -1;
 
-    char *charset = NULL;	/* this is the LOCAL charset used in the mail */
-    char *charsetsave;      /* charset in MIME encoded text */
+	char *charset = NULL; /* this is the LOCAL charset used in the mail */
+	char *charsetsave; /* charset in MIME encoded text */
 
-    char *boundary_id = NULL;
-    char type[129];		/* for Content-Type type */
-    char charbuffer[129];	/* for Content-Type charset */
-    FileStatus file_created = NO_FILE;	/* for attachments */
+	char *boundary_id = NULL;
+	char type[129]; /* for Content-Type type */
+	char charbuffer[129]; /* for Content-Type charset */
+	FileStatus file_created = NO_FILE; /* for attachments */
 
-    char attachname[129];	/* for attachment file names */
-    char inline_force = FALSE;	/* show a attachment in-line, regardles of
-				   the content_disposition */
-    char *description = NULL;	/* user-supplied description for an attachment */
-    /* @@@ test for attachment */
-    char attach_force;
-    /* @@@ */
+	char attachname[129]; /* for attachment file names */
+	char inline_force = FALSE; /* show a attachment in-line, regardles of
+	 the content_disposition */
+	char *description = NULL; /* user-supplied description for an attachment */
+	/* @@@ test for attachment */
+	char attach_force;
+	/* @@@ */
 
-    EncodeType decode = ENCODE_NORMAL;
-    ContentType content = CONTENT_TEXT;
+	EncodeType decode = ENCODE_NORMAL;
+	ContentType content = CONTENT_TEXT;
 
-    charsetsave=malloc(256);
-    memset(charsetsave,0,255);
+	charsetsave = malloc( 256 );
+	memset( charsetsave, 0, 255 );
 
-
-    if (use_stdin || !mbox || !strcasecmp(mbox, "NONE"))
-	fp = stdin;
-    else if ((fp = fopen(mbox, "rb")) == NULL) {
-        snprintf(errmsg, sizeof(errmsg), "%s \"%s\".", 
-                 lang[MSG_CANNOT_OPEN_MAIL_ARCHIVE], mbox);
-	progerr(errmsg);
-    }
-
-	setvbuf(fp, io_buffer, _IOFBF, IO_SIZE_BUF);
-
-    if(set_append) {
-    
-    /* add to an mbox as we read */
-
-	if(set_append_filename && strncmp(set_append_filename, "$DIR/", 5)) {
-	    if(strlen(set_append_filename) >= sizeof(filename))
-	        progerr("append_filename too long");
-	    strcpy(filename, set_append_filename);
+	if ( use_stdin || !mbox || !strcasecmp( mbox, "NONE" ) )
+		fp = stdin;
+	else if ( ( fp = fopen( mbox, "rb" ) ) == NULL )
+	{
+		snprintf( errmsg, sizeof( errmsg ), "%s \"%s\".", lang[MSG_CANNOT_OPEN_MAIL_ARCHIVE], mbox );
+		progerr( errmsg );
 	}
-	else if(trio_snprintf(filename, sizeof(filename), "%s%s", dir,
-			      set_append_filename ? set_append_filename + 5
-			      : "mbox") 
-	   == sizeof(filename)) {
-	    progerr("Can't build mbox filename");
+
+	setvbuf( fp, io_buffer, _IOFBF, IO_SIZE_BUF );
+
+	if ( set_append )
+	{
+
+		/* add to an mbox as we read */
+
+		if ( set_append_filename && strncmp( set_append_filename, "$DIR/", 5 ) )
+		{
+			if ( strlen( set_append_filename ) >= sizeof( filename ) )
+				progerr( "append_filename too long" );
+			strcpy( filename, set_append_filename );
+		}
+		else if ( trio_snprintf( filename, sizeof( filename ), "%s%s", dir, set_append_filename ? set_append_filename + 5 : "mbox" ) == sizeof( filename ) )
+		{
+			progerr( "Can't build mbox filename" );
+		}
+		if ( !( fpo = fopen( filename, "a" ) ) )
+		{
+			trio_snprintf( errmsg, sizeof( errmsg ), "%s \"%s\".", lang[MSG_CANNOT_OPEN_MAIL_ARCHIVE], filename );
+			progerr( errmsg );
+		}
 	}
-	if(!(fpo = fopen(filename, "a"))) {
-	    trio_snprintf(errmsg, sizeof(errmsg), "%s \"%s\".",
-			  lang[MSG_CANNOT_OPEN_MAIL_ARCHIVE], filename);
-	    progerr(errmsg);
+
+	set_buffered_( &fpo );
+
+	num = startnum;
+
+	INIT_PUSH( raw_text_buf );
+
+	hassubject = 0;
+	hasdate = 0;
+	isinheader = 1;
+	inreply = NULL;
+	msgid = NULL;
+	bp = NULL;
+	subject = NOSUBJECT;
+
+	require_filter_len = require_filter_full_len = 0;
+	for( tlist = set_filter_require; tlist != NULL; require_filter_len++, tlist = tlist->next )
+		;
+	for( tlist = set_filter_require_full_body; tlist != NULL; require_filter_full_len++, tlist = tlist->next )
+		;
+	pos = require_filter_len + require_filter_full_len;
+	require_filter = ( pos ? (bool *) emalloc( pos * sizeof( *require_filter ) ) : NULL );
+	require_filter_full = require_filter + require_filter_len;
+	for( pos = 0; pos < require_filter_len; ++pos )
+		require_filter[pos] = FALSE;
+	for( pos = 0; pos < require_filter_full_len; ++pos )
+		require_filter_full[pos] = FALSE;
+
+	if ( !increment )
+	{
+		replylist = NULL;
+		subjectlist = NULL;
+		authorlist = NULL;
+		datelist = NULL;
 	}
-    }
 
-    set_buffered_ ( &fpo );
-
-
-    num = startnum;
-
-    INIT_PUSH(raw_text_buf);
-
-    hassubject = 0;
-    hasdate = 0;
-    isinheader = 1;
-    inreply = NULL;
-    msgid = NULL;
-    bp = NULL;
-    subject = NOSUBJECT;
-
-    require_filter_len = require_filter_full_len = 0;
-    for (tlist = set_filter_require; tlist != NULL; require_filter_len++, tlist = tlist->next)
-	;
-    for (tlist = set_filter_require_full_body; tlist != NULL;
-	 require_filter_full_len++, tlist = tlist->next)
-	;
-    pos = require_filter_len + require_filter_full_len;
-    require_filter = (pos ? (bool *)emalloc(pos * sizeof(*require_filter)) : NULL);
-    require_filter_full = require_filter + require_filter_len;
-    for (pos = 0; pos < require_filter_len; ++pos)
-	require_filter[pos] = FALSE;
-    for (pos = 0; pos < require_filter_full_len; ++pos)
-	require_filter_full[pos] = FALSE;
-
-    if (!increment) {
-	replylist = NULL;
-	subjectlist = NULL;
-	authorlist = NULL;
-	datelist = NULL;
-    }
-
-    /* now what has this to do if readone is set or not? (Daniel) */
-    if (set_showprogress) {
-	if (readone)
-	    printf("%s\n", lang[MSG_READING_NEW_HEADER]);
-	else {
-	    if ((mbox && !strcasecmp(mbox, "NONE")) || use_stdin)
-		printf("%s...\n", lang[MSG_LOADING_MAILBOX]);
-	    else
-		printf("%s \"%s\"...\n", lang[MSG_LOADING_MAILBOX], mbox);
+	/* now what has this to do if readone is set or not? (Daniel) */
+	if ( set_showprogress )
+	{
+		if ( readone )
+			printf( "%s\n", lang[MSG_READING_NEW_HEADER] );
+		else
+		{
+			if ( ( mbox && !strcasecmp( mbox, "NONE" ) ) || use_stdin )
+				printf( "%s...\n", lang[MSG_LOADING_MAILBOX] );
+			else
+				printf( "%s \"%s\"...\n", lang[MSG_LOADING_MAILBOX], mbox );
+		}
 	}
-    }
-    for ( ; fgets(line_buf, MAXLINE, fp) != NULL; 
-    		set_txtsuffix ? PushString(&raw_text_buf, line_buf) : 0)
-    {
+	int a = 0;
+	for( ; fgets( line_buf, MAXLINE, fp ) != NULL; set_txtsuffix ? PushString( &raw_text_buf, line_buf ) : 0 )
+	{
 #if DEBUG_PARSE
-	printf("IN: %s", line);
+		printf("IN: %s", line);
 #endif 
-	if(set_append) {
-	    if(fputs(line_buf, fpo) < 0) {
-	        progerr("Can't write to \"mbox\""); /* revisit me */
-	    }
-	}
-	line = line_buf + set_ietf_mbox; 
-	if (!is_deleted &&
-	    inlist_regex_pos(set_filter_out_full_body, line) != -1) {
-	    is_deleted = FILTERED_OUT;
-	}
-	pos = inlist_regex_pos(set_filter_require_full_body, line);
-	if (pos != -1 && pos < require_filter_full_len) {
-	    require_filter_full[pos] = TRUE;
-	}
-	if (isinheader) {
-	    if (!strncasecmp(line_buf, "From ", 5))
-	    {
-	    	offset_current_email = ftell (fp);
-	    	strcpymax(fromdate, dp = getfromdate(line), DATESTRLEN);
-	    }
-	    /* check for MIME */
-	    else if (!strncasecmp(line, "MIME-Version:", 13))
-		Mime_B = TRUE;
-	    else if (isspace(line[0]) && ('\n' != line[0]) \
-		     && !('\r' == line[0] && '\n' == line[1])) {
-		/*
-		 * since this begins with a whitespace, it means the 
-		 * previous line is continued on this line, leave only 
-		 * one space character and go! 
-		 */
-		char *ptr = line;
-		while (isspace(*ptr))
-		    ptr++;
-		ptr--;		/* leave one space */
-		*ptr = ' ';	/* make it a true space, no tabs here! */
-		bp =
-		    addbody(bp, &lp, ptr,
-			    BODY_CONTINUE | BODY_HEADER | bodyflags);
-	    }
-
-	    else if (line[0] == '\n' || (line[0] == '\r' && line[1] == '\n')) {
-		struct body *head;
-
-		char savealternative;
-
-		/* 
-		 * we mark this as a header-line, and we use it to 
-		 * track end-of-header displays 
-		 */
-
-		/* skip the alternate "\n", otherwise, we'll have
-		   an extra "\n" in the HTMLized message */
-		if (!alternativeparser)
-		    bp = addbody(bp, &lp, line, BODY_HEADER | bodyflags);
-		isinheader--;
-
-		/*
-		 * This signals us that we are no longer in the header, 
-		 * let's fill in all those fields we are interested in. 
-		 * Parse the headers up to now and copy to the target 
-		 * variables 
-		 */
-
-		for (head = bp; head; head = head->next) {
-			char head_name[128];
-		    if (head->header && !head->demimed) {
-		      head->line =
-			mdecodeRFC2047(head->line, strlen(head->line),charsetsave);
-		    }
-
-		    if (head->parsedheader || head->attached ||
-			!head->header) {
-			continue;
-		    }
-		    if (!sscanf(head->line, "%127[^:]", head_name))
-		        continue;
-		    
-		    if (inlist(set_deleted, head_name)) {
-		        char *val = getsubject(head->line); /* revisit me */
-			if (!strcasecmp(val, "yes"))
-			    is_deleted = FILTERED_DELETE;
-			free(val);
-		    }
-
-		    if (inlist(set_expires, head_name)) {
-		        char *val = getmaildate(head->line);
-			exp_time = convtoyearsecs(val);
-			if (exp_time != -1 && exp_time < time(NULL))
-			    is_deleted = FILTERED_EXPIRE;
-			free(val);
-		    }
-
-		    if (!is_deleted &&
-			inlist_regex_pos(set_filter_out, head->line) != -1) {
-		        is_deleted = FILTERED_OUT;
-		    }
-
-		    pos = inlist_regex_pos(set_filter_require, head->line);
-		    if (pos != -1 && pos < require_filter_len) {
-		        require_filter[pos] = TRUE;
-		    }
-
-		    if (!strncasecmp(head->line, "Date:", 5)) {
-			date = getmaildate(head->line);
-			head->parsedheader = TRUE;
-			hasdate = 1;
-		    }
-		    else if (!strncasecmp(head->line, "From:", 5)) {
-			getname(head->line, &namep, &emailp);
-			head->parsedheader = TRUE;
-            if (set_spamprotect) {
-			    emailp=spamify(emailp);
-			    /* we need to "fix" the name as well, as sometimes
-			       the email ends up in the name part */
-			    namep=spamify(namep);
-                        }
-		    }
-		    else if (!strncasecmp(head->line, "Message-Id:", 11)) {
-			msgid = getid(head->line);
-			head->parsedheader = TRUE;
-		    }
-		    else if (!strncasecmp(head->line, "Subject:", 8)) {
-			subject = getsubject(head->line);
-			hassubject = 1;
-			head->parsedheader = TRUE;
-		    }
-		    else if (!strncasecmp(head->line, "In-Reply-To:", 12)) {
-			inreply = getreply(head->line);
-			head->parsedheader = TRUE;
-		    }
-		    else if (!strncasecmp(head->line, "References:", 11)) {
-			/*
-			 * Adding threading capability for the "References" 
-			 * header, ala RFC 822, used only for messages that 
-			 * have "References" but do not have an "In-reply-to"
-			 * field. This is partically a concession for Netscape's
-			 * email composer, which erroneously uses "References"
-			 * when it should use "In-reply-to". 
-			 */
-			if (!inreply)
-			    inreply = getid(head->line);
-			if (set_linkquotes) {
-			    bp = addbody(bp, &lp, line, 0);
+		if ( strncasecmp( line_buf, "From ", 5 ) == 0 )
+		{
+			offset_current_email = ftell( fp ) - strlen( line_buf );
+		}
+		if ( set_append )
+		{
+			if ( fputs( line_buf, fpo ) < 0 )
+			{
+				progerr( "Can't write to \"mbox\"" ); /* revisit me */
 			}
-		    }
 		}
-
-		if (!is_deleted && set_delete_older && (date || fromdate)) {
-		    time_t email_time = convtoyearsecs(date);
-		    if (email_time == -1)
-		        email_time = convtoyearsecs(fromdate);
-		    if (email_time != -1 && email_time < delete_older_than)
-		        is_deleted = FILTERED_OLD;
+		line = line_buf + set_ietf_mbox;
+		if ( !is_deleted && inlist_regex_pos( set_filter_out_full_body, line ) != -1 )
+		{
+			is_deleted = FILTERED_OUT;
 		}
-		if (!is_deleted && set_delete_newer && (date || fromdate)) {
-		    time_t email_time = convtoyearsecs(date);
-		    if (email_time == -1)
-		        email_time = convtoyearsecs(fromdate);
-		    if (email_time != -1 && email_time > delete_newer_than)
-		        is_deleted = FILTERED_NEW;
+		pos = inlist_regex_pos( set_filter_require_full_body, line );
+		if ( pos != -1 && pos < require_filter_full_len )
+		{
+			require_filter_full[pos] = TRUE;
 		}
-		if (!headp)
-		    headp = bp;
+		if ( isinheader )
+		{
 
-
-		savealternative = FALSE;
-		attach_force = FALSE;
-
-		description = NULL;
-		for (head = headp; head; head = head->next) {
-		    if (head->parsedheader || !head->header)
-			continue;
-		    /* Content-Description is defined ... where?? */
-		    if (!strncasecmp(head->line, "Content-Description:", 20)) {
-			char *ptr = head->line;
-			description = ptr + 21;
-		    }
-		    /* Content-Disposition is defined in RFC 2183 */
-		    else
-			if (!strncasecmp (head->line, "Content-Disposition:", 20)) {
-			char *ptr = head->line + 20;
-			char *fname;
-			char *jp;
-			char *np;
-
-			while (*ptr && isspace(*ptr))
-			    ptr++;
-			if (!strncasecmp(ptr, "attachment;", 11)
-			    && (content != CONTENT_IGNORE)) {
-			    /* signal we want to attach, rather than embeed this MIME 
-			       attachment */
-			    if (inlist(set_ignore_types, "$NONPLAIN")
-				|| inlist(set_ignore_types, "$BINARY"))
-			        content = CONTENT_IGNORE;
-			    else {
-				attach_force = TRUE;
-
-				/* make sure it is binary */
-				content = CONTENT_BINARY;
-
-				/* see if there's a file name to use: */
-				fname = strcasestr(ptr, "filename=");
-				if (fname) {
-                                    np = fname+9;
-				    if (*np == '"')
-                                	np++;
-				    for (jp = attachname; np && *np != '\n'
-					   && *np != '"' && jp < attachname + sizeof(attachname) - 1;) {
-                                	*jp++ = *np++;
-				    }
-				    *jp = '\0';
-				    safe_filename(attachname);
-				}
-				else {
-				    attachname[0] = '\0';  /* just clear it */
-				}
-				file_created = MAKE_FILE; /* please make one */
-			    }
+			if ( !strncasecmp( line_buf, "From ", 5 ) )
+			{
+				strcpymax( fromdate, dp = getfromdate( line ), DATESTRLEN );
 			}
+			/* check for MIME */
+			else if ( !strncasecmp( line, "MIME-Version:", 13 ) )
+				Mime_B = TRUE;
+			else if ( isspace( line[0] ) && ( '\n' != line[0] ) && !( '\r' == line[0] && '\n' == line[1] ) )
+			{
+				/*
+				 * since this begins with a whitespace, it means the
+				 * previous line is continued on this line, leave only
+				 * one space character and go!
+				 */
+				char *ptr = line;
+				while(isspace( *ptr ))
+					ptr++;
+				ptr--; /* leave one space */
+				*ptr = ' '; /* make it a true space, no tabs here! */
+				bp = addbody( bp, &lp, ptr, BODY_CONTINUE | BODY_HEADER | bodyflags );
+			}
+
+			else if ( line[0] == '\n' || ( line[0] == '\r' && line[1] == '\n' ) )
+			{
+				struct body *head;
+
+				char savealternative;
+
+				/*
+				 * we mark this as a header-line, and we use it to
+				 * track end-of-header displays
+				 */
+
+				/* skip the alternate "\n", otherwise, we'll have
+				 an extra "\n" in the HTMLized message */
+				if ( !alternativeparser )
+					bp = addbody( bp, &lp, line, BODY_HEADER | bodyflags );
+				isinheader--;
+
+				/*
+				 * This signals us that we are no longer in the header,
+				 * let's fill in all those fields we are interested in.
+				 * Parse the headers up to now and copy to the target
+				 * variables
+				 */
+
+				for( head = bp; head; head = head->next )
+				{
+					char head_name[128];
+					if ( head->header && !head->demimed )
+					{
+						head->line = mdecodeRFC2047( head->line, strlen( head->line ), charsetsave );
+					}
+
+					if ( head->parsedheader || head->attached || !head->header )
+					{
+						continue;
+					}
+					if ( !sscanf( head->line, "%127[^:]", head_name ) )
+						continue;
+
+					if ( inlist( set_deleted, head_name ) )
+					{
+						char *val = getsubject( head->line ); /* revisit me */
+						if ( !strcasecmp( val, "yes" ) )
+							is_deleted = FILTERED_DELETE;
+						free( val );
+					}
+
+					if ( inlist( set_expires, head_name ) )
+					{
+						char *val = getmaildate( head->line );
+						exp_time = convtoyearsecs( val );
+						if ( exp_time != -1 && exp_time < time( NULL ) )
+							is_deleted = FILTERED_EXPIRE;
+						free( val );
+					}
+
+					if ( !is_deleted && inlist_regex_pos( set_filter_out, head->line ) != -1 )
+					{
+						is_deleted = FILTERED_OUT;
+					}
+
+					pos = inlist_regex_pos( set_filter_require, head->line );
+					if ( pos != -1 && pos < require_filter_len )
+					{
+						require_filter[pos] = TRUE;
+					}
+
+					if ( !strncasecmp( head->line, "Date:", 5 ) )
+					{
+						date = getmaildate( head->line );
+						head->parsedheader = TRUE;
+						hasdate = 1;
+					}
+					else if ( !strncasecmp( head->line, "From:", 5 ) )
+					{
+						getname( head->line, &namep, &emailp );
+						head->parsedheader = TRUE;
+						if ( set_spamprotect )
+						{
+							emailp = spamify( emailp );
+							/* we need to "fix" the name as well, as sometimes
+							 the email ends up in the name part */
+							namep = spamify( namep );
+						}
+					}
+					else if ( !strncasecmp( head->line, "Message-Id:", 11 ) )
+					{
+						msgid = getid( head->line );
+						head->parsedheader = TRUE;
+					}
+					else if ( !strncasecmp( head->line, "Subject:", 8 ) )
+					{
+						subject = getsubject( head->line );
+						hassubject = 1;
+						head->parsedheader = TRUE;
+					}
+					else if ( !strncasecmp( head->line, "In-Reply-To:", 12 ) )
+					{
+						inreply = getreply( head->line );
+						head->parsedheader = TRUE;
+					}
+					else if ( !strncasecmp( head->line, "References:", 11 ) )
+					{
+						/*
+						 * Adding threading capability for the "References"
+						 * header, ala RFC 822, used only for messages that
+						 * have "References" but do not have an "In-reply-to"
+						 * field. This is partically a concession for Netscape's
+						 * email composer, which erroneously uses "References"
+						 * when it should use "In-reply-to".
+						 */
+						if ( !inreply )
+							inreply = getid( head->line );
+						if ( set_linkquotes )
+						{
+							bp = addbody( bp, &lp, line, 0 );
+						}
+					}
+				}
+
+				if ( !is_deleted && set_delete_older && ( date || fromdate ) )
+				{
+					time_t email_time = convtoyearsecs( date );
+					if ( email_time == -1 )
+						email_time = convtoyearsecs( fromdate );
+					if ( email_time != -1 && email_time < delete_older_than )
+						is_deleted = FILTERED_OLD;
+				}
+				if ( !is_deleted && set_delete_newer && ( date || fromdate ) )
+				{
+					time_t email_time = convtoyearsecs( date );
+					if ( email_time == -1 )
+						email_time = convtoyearsecs( fromdate );
+					if ( email_time != -1 && email_time > delete_newer_than )
+						is_deleted = FILTERED_NEW;
+				}
+				if ( !headp )
+					headp = bp;
+
+				savealternative = FALSE;
+				attach_force = FALSE;
+
+				description = NULL;
+				for( head = headp; head; head = head->next )
+				{
+					if ( head->parsedheader || !head->header )
+						continue;
+					/* Content-Description is defined ... where?? */
+					if ( !strncasecmp( head->line, "Content-Description:", 20 ) )
+					{
+						char *ptr = head->line;
+						description = ptr + 21;
+					}
+					/* Content-Disposition is defined in RFC 2183 */
+					else if ( !strncasecmp( head->line, "Content-Disposition:", 20 ) )
+					{
+						char *ptr = head->line + 20;
+						char *fname;
+						char *jp;
+						char *np;
+
+						while(*ptr && isspace( *ptr ))
+							ptr++;
+						if ( !strncasecmp( ptr, "attachment;", 11 ) && ( content != CONTENT_IGNORE ) )
+						{
+							/* signal we want to attach, rather than embeed this MIME
+							 attachment */
+							if ( inlist( set_ignore_types, "$NONPLAIN" ) || inlist( set_ignore_types, "$BINARY" ) )
+								content = CONTENT_IGNORE;
+							else
+							{
+								attach_force = TRUE;
+
+								/* make sure it is binary */
+								content = CONTENT_BINARY;
+
+								/* see if there's a file name to use: */
+								fname = strcasestr( ptr, "filename=" );
+								if ( fname )
+								{
+									np = fname + 9;
+									if ( *np == '"' )
+										np++;
+									for( jp = attachname; np && *np != '\n' && *np != '"' && jp < attachname + sizeof( attachname ) - 1; )
+									{
+										*jp++ = *np++;
+									}
+									*jp = '\0';
+									safe_filename( attachname );
+								}
+								else
+								{
+									attachname[0] = '\0'; /* just clear it */
+								}
+								file_created = MAKE_FILE; /* please make one */
+							}
+						}
 #if 0
-/*
-** Why was this limited to just type image ? There are more inline types than just image.
-** I removed the image restriction and all of a sudden more attachments had the proper name.
-*/
+						/*
+						 ** Why was this limited to just type image ? There are more inline types than just image.
+						 ** I removed the image restriction and all of a sudden more attachments had the proper name.
+						 */
 
-			else if (!strncasecmp(ptr, "inline;", 7)
-				 && (content != CONTENT_IGNORE)
-				 && (!strncasecmp(type, "image/", 5))) {	
-                          /* @@@ <-- here I should use the inline thingy */
+						else if (!strncasecmp(ptr, "inline;", 7)
+								&& (content != CONTENT_IGNORE)
+								&& (!strncasecmp(type, "image/", 5)))
+						{
+							/* @@@ <-- here I should use the inline thingy */
 #endif
-			else if (!strncasecmp(ptr, "inline;", 7)
-				 && (content != CONTENT_IGNORE)
-				 && inlinecontent(type)) {
-			    inline_force = TRUE;
-			    /* make sure it is binary */
-			    content = CONTENT_BINARY;
-			    /* see if there's a file name to use: */
-			    fname = strcasestr(ptr, "filename=");
-			    if (fname) {
-                                np = fname+9;
-                                if (*np == '"')
-                                     np++;
-                                for (jp = attachname; np && *np != '\n' && *np != '"'
-				       && jp < attachname + sizeof(attachname) - 1;) {
-                                     *jp++ = *np++;
-                                }
-                                *jp = '\0';
-				safe_filename(attachname);
-			    }
-			    else {
-				attachname[0] = '\0';	/* just clear it */
-			    }
-			    file_created = MAKE_FILE;	/* please make one */
-			}
-		    }
-		    else if (!strncasecmp(head->line, "Content-Base:", 13)) {
+						else if ( !strncasecmp( ptr, "inline;", 7 ) && ( content != CONTENT_IGNORE ) && inlinecontent( type ) )
+						{
+							inline_force = TRUE;
+							/* make sure it is binary */
+							content = CONTENT_BINARY;
+							/* see if there's a file name to use: */
+							fname = strcasestr( ptr, "filename=" );
+							if ( fname )
+							{
+								np = fname + 9;
+								if ( *np == '"' )
+									np++;
+								for( jp = attachname; np && *np != '\n' && *np != '"' && jp < attachname + sizeof( attachname ) - 1; )
+								{
+									*jp++ = *np++;
+								}
+								*jp = '\0';
+								safe_filename( attachname );
+							}
+							else
+							{
+								attachname[0] = '\0'; /* just clear it */
+							}
+							file_created = MAKE_FILE; /* please make one */
+						}
+					}
+					else if ( !strncasecmp( head->line, "Content-Base:", 13 ) )
+					{
 #ifdef NOTUSED
-			char *ptr = head->line + 13;
+						char *ptr = head->line + 13;
 #endif
-                        content=CONTENT_IGNORE;
-			/* we must make sure this is not parsed more times
-			   than this */
-			head->parsedheader = TRUE;
+						content = CONTENT_IGNORE;
+						/* we must make sure this is not parsed more times
+						 than this */
+						head->parsedheader = TRUE;
 
-                    }
-		    else if (!strncasecmp(head->line, "Content-Type:", 13)) {
-			char *ptr = head->line + 13;
+					}
+					else if ( !strncasecmp( head->line, "Content-Type:", 13 ) )
+					{
+						char *ptr = head->line + 13;
 #define DISP_HREF 1
 #define DISP_IMG  2
 #define DISP_IGNORE 3
-			/* we must make sure this is not parsed more times
-			   than this */
-			head->parsedheader = TRUE;
+						/* we must make sure this is not parsed more times
+						 than this */
+						head->parsedheader = TRUE;
 
-			while (isspace(*ptr))
-			    ptr++;
+						while(isspace( *ptr ))
+							ptr++;
 
-			sscanf(ptr, "%128[^;]", type);
-			cp = type + strlen(type) - 1;
-			while (cp > type && isspace(*cp)) {
-			    *cp = '\0';	/* rm newlines, etc */
-			    --cp;
-			}
+						sscanf( ptr, "%128[^;]", type );
+						cp = type + strlen( type ) - 1;
+						while(cp > type && isspace( *cp ))
+						{
+							*cp = '\0'; /* rm newlines, etc */
+							--cp;
+						}
 
-			/* now, check if there's a charset indicator here too! */
-			cp = strcasestr(ptr, "charset=");
-			if (cp) {
-			    cp += 8;	/* pass charset= */
-			    if ('\"' == *cp)
-				cp++;	/* pass a quote too if one is there */
+						/* now, check if there's a charset indicator here too! */
+						cp = strcasestr( ptr, "charset=" );
+						if ( cp )
+						{
+							cp += 8; /* pass charset= */
+							if ( '\"' == *cp )
+								cp++; /* pass a quote too if one is there */
 
-			    sscanf(cp, "%128[^;\"\n]", charbuffer);
-			    /* save the charset info */
-			    charset = strsav(charbuffer);
-			}
+							sscanf( cp, "%128[^;\"\n]", charbuffer );
+							/* save the charset info */
+							charset = strsav( charbuffer );
+						}
 
-			if (alternativeparser) {
-			    struct body *next;
-			    struct body *temp_bp = NULL;
+						if ( alternativeparser )
+						{
+							struct body *next;
+							struct body *temp_bp = NULL;
 
-			    /* We are parsing alternatives... */
+							/* We are parsing alternatives... */
 
-			    if (preferedcontent(&alternative_weight, type, decode)) {
-				/* ... this is a prefered type, we want to store
-				   this [instead of the earlier one]. */
-				/* erase the previous alternative info */
-				temp_bp = alternative_bp;	/* remember the value of bp for GC */
-				alternative_bp = alternative_lp = NULL;
-				alternative_lastfile_created = NO_FILE;
-				content = CONTENT_UNKNOWN;
-				if (alternative_lastfile[0] != '\0') {
-				    /* remove the previous attachment */
-				    unlink(alternative_lastfile);
-				    alternative_lastfile[0] = '\0';
-				}
-			    }
-			    else if (set_save_alts == 2)
-				content = CONTENT_BINARY;
-			    else {
-				/* ...and this type is not a prefered one. Thus, we
-				 * shall ignore it completely! */
-				content = CONTENT_IGNORE;
-				/* erase the current alternative info */
-				temp_bp = bp;	/* remember the value of bp for GC */
-				lp = alternative_lp;
-				bp = alternative_bp;
-				strcpy(alternative_file,
-				       alternative_lastfile);
-				file_created =
-				    alternative_lastfile_created;
-				alternative_bp = alternative_lp = NULL;
-				alternative_lastfile_created = NO_FILE;
-				alternative_lastfile[0] = '\0';
-				/* we haven't yet created any attachment file, so there's no need
-				   to erase it yet */
-			    }
-			    /* free any previous alternative */
-			    while (temp_bp) {
-				next = temp_bp->next;
-				if (temp_bp->line)
-				    free(temp_bp->line);
-				free(temp_bp);
-				temp_bp = next;
-			    }
-			    /* @@ not sure if I should add a diff flag to do this break */
-			    if (content == CONTENT_IGNORE)
-				/* end the header parsing... we already know what we want */
-				break;
-			}
+							if ( preferedcontent( &alternative_weight, type, decode ) )
+							{
+								/* ... this is a prefered type, we want to store
+								 this [instead of the earlier one]. */
+								/* erase the previous alternative info */
+								temp_bp = alternative_bp; /* remember the value of bp for GC */
+								alternative_bp = alternative_lp = NULL;
+								alternative_lastfile_created = NO_FILE;
+								content = CONTENT_UNKNOWN;
+								if ( alternative_lastfile[0] != '\0' )
+								{
+									/* remove the previous attachment */
+									unlink( alternative_lastfile );
+									alternative_lastfile[0] = '\0';
+								}
+							}
+							else if ( set_save_alts == 2 )
+								content = CONTENT_BINARY;
+							else
+							{
+								/* ...and this type is not a prefered one. Thus, we
+								 * shall ignore it completely! */
+								content = CONTENT_IGNORE;
+								/* erase the current alternative info */
+								temp_bp = bp; /* remember the value of bp for GC */
+								lp = alternative_lp;
+								bp = alternative_bp;
+								strcpy( alternative_file, alternative_lastfile );
+								file_created = alternative_lastfile_created;
+								alternative_bp = alternative_lp = NULL;
+								alternative_lastfile_created = NO_FILE;
+								alternative_lastfile[0] = '\0';
+								/* we haven't yet created any attachment file, so there's no need
+								 to erase it yet */
+							}
+							/* free any previous alternative */
+							while(temp_bp)
+							{
+								next = temp_bp->next;
+								if ( temp_bp->line )
+									free( temp_bp->line );
+								free( temp_bp );
+								temp_bp = next;
+							}
+							/* @@ not sure if I should add a diff flag to do this break */
+							if ( content == CONTENT_IGNORE )
+								/* end the header parsing... we already know what we want */
+								break;
+						}
 
-			if (content == CONTENT_IGNORE)
-			    continue;
-			else if (ignorecontent(type))
-			    /* don't save this */
-			    content = CONTENT_IGNORE;
-			else if (textcontent(type)
-				 || (inlinehtml &&
-				     !strcasecmp(type, "text/html"))) {
-			    /* text content or text/html follows.
-			     */
+						if ( content == CONTENT_IGNORE )
+							continue;
+						else if ( ignorecontent( type ) )
+							/* don't save this */
+							content = CONTENT_IGNORE;
+						else if ( textcontent( type ) || ( inlinehtml && !strcasecmp( type, "text/html" ) ) )
+						{
+							/* text content or text/html follows.
+							 */
 
-			    if (set_save_alts && alternativeparser
-				&& content == CONTENT_BINARY) {
-				file_created = MAKE_FILE; /* please make one */
-				description = set_alts_text ? set_alts_text
-				  : "alternate version of message";
-				if (strlen(description) >= sizeof(attachname))
-				  progerr("alts_text too long");
-				strcpy(attachname, description);
-				safe_filename(attachname);
-			    }
-			    else if (!strcasecmp(type, "text/html"))
-				content = CONTENT_HTML;
-			    else
-				content = CONTENT_TEXT;
-			    continue;
-			}
-			else if (!strncasecmp(type, "message/rfc822", 14)) {
-			    /* 
-			     * Here comes an attached mail! This can be ugly, 
-			     * since the attached mail may very well itself 
-			     * contain attached binaries, or why not another 
-			     * attached mail? :-)
-			     *
-			     * We need to store the current boundary separator 
-			     * in order to get it back when we're done parsing 
-			     * this particular mail, since each attached mail 
-			     * will have its own boundary separator that *might*
-			     * be used.
-			     */
-			    bp = addbody(bp, &lp,
-					 "<p><strong>attached mail follows:</strong></p><hr />",
-					 BODY_HTMLIZED | bodyflags);
-			    bodyflags |= BODY_ATTACHED;
-			    /* @@ should it be 1 or 2 ?? should we use another method? */
+							if ( set_save_alts && alternativeparser && content == CONTENT_BINARY )
+							{
+								file_created = MAKE_FILE; /* please make one */
+								description = set_alts_text ? set_alts_text : "alternate version of message";
+								if ( strlen( description ) >= sizeof( attachname ) )
+									progerr( "alts_text too long" );
+								strcpy( attachname, description );
+								safe_filename( attachname );
+							}
+							else if ( !strcasecmp( type, "text/html" ) )
+								content = CONTENT_HTML;
+							else
+								content = CONTENT_TEXT;
+							continue;
+						}
+						else if ( !strncasecmp( type, "message/rfc822", 14 ) )
+						{
+							/*
+							 * Here comes an attached mail! This can be ugly,
+							 * since the attached mail may very well itself
+							 * contain attached binaries, or why not another
+							 * attached mail? :-)
+							 *
+							 * We need to store the current boundary separator
+							 * in order to get it back when we're done parsing
+							 * this particular mail, since each attached mail
+							 * will have its own boundary separator that *might*
+							 * be used.
+							 */
+							bp = addbody( bp, &lp, "<p><strong>attached mail follows:</strong></p><hr />", BODY_HTMLIZED | bodyflags );
+							bodyflags |= BODY_ATTACHED;
+							/* @@ should it be 1 or 2 ?? should we use another method? */
 #if 0
-			    isinheader = 2;
+							isinheader = 2;
 #endif
-			    isinheader = 1;
-			    continue;
-			}
-			else if (strncasecmp(type, "multipart/", 10)) {
-			    /* 
-			     * This is not a multipart and not text 
-			     */
-			    char *fname = NULL;	/* attachment filename */
+							isinheader = 1;
+							continue;
+						}
+						else if ( strncasecmp( type, "multipart/", 10 ) )
+						{
+							/*
+							 * This is not a multipart and not text
+							 */
+							char *fname = NULL; /* attachment filename */
 
-			    /* 
-                             * only do anything here if we're not 
-                             * ignoring this content 
-                             */
-			    if (CONTENT_IGNORE != content) {
+							/*
+							 * only do anything here if we're not
+							 * ignoring this content
+							 */
+							if ( CONTENT_IGNORE != content )
+							{
 
-				fname = strcasestr(ptr, "name=");
-				if (fname) {
-				    fname += 5;
-				    if ('\"' == *fname)
-					fname++;
-				    sscanf(fname, "%128[^\"]", attachname);
-				    safe_filename(attachname);
-				}
-				else {
-				    attachname[0] = '\0';	/* just clear it */
-				}
+								fname = strcasestr( ptr, "name=" );
+								if ( fname )
+								{
+									fname += 5;
+									if ( '\"' == *fname )
+										fname++;
+									sscanf( fname, "%128[^\"]", attachname );
+									safe_filename( attachname );
+								}
+								else
+								{
+									attachname[0] = '\0'; /* just clear it */
+								}
 
-				file_created = MAKE_FILE;	/* please make one */
+								file_created = MAKE_FILE; /* please make one */
 
-				content = CONTENT_BINARY;	/* uknown turns into binary */
-			    }
-			    continue;
-			}
-			else {
-			    /*
-			     * Find the first boundary separator 
-			     */
+								content = CONTENT_BINARY; /* uknown turns into binary */
+							}
+							continue;
+						}
+						else
+						{
+							/*
+							 * Find the first boundary separator
+							 */
 
-			    boundary_id = strcasestr(ptr, "boundary=");
+							boundary_id = strcasestr( ptr, "boundary=" );
 #if DEBUG_PARSE
-			    printf("boundary found in %s\n", ptr);
+							printf("boundary found in %s\n", ptr);
 #endif
-			    if (boundary_id) {
-				boundary_id = strchr(boundary_id, '=');
-				if (boundary_id) {
-				    boundary_id++;
-				    while (isspace(*boundary_id))
-					boundary_id++;
-				    if ('\"' == *boundary_id) {
-					sscanf(++boundary_id, "%255[^\"]",
-					       boundbuffer);
-				    }
-				    else
-					sscanf(boundary_id, "%255[^;\n]",
-					       boundbuffer);
-				    boundary_id = boundbuffer;
-				}
+							if ( boundary_id )
+							{
+								boundary_id = strchr( boundary_id, '=' );
+								if ( boundary_id )
+								{
+									boundary_id++;
+									while(isspace( *boundary_id ))
+										boundary_id++;
+									if ( '\"' == *boundary_id )
+									{
+										sscanf( ++boundary_id, "%255[^\"]", boundbuffer );
+									}
+									else
+										sscanf( boundary_id, "%255[^;\n]", boundbuffer );
+									boundary_id = boundbuffer;
+								}
 
-				/* let's remember 'bp' and 'lp' */
-				origbp = bp;
-				origlp = lp;
-				/* restart on a new list: */
-				lp = bp = NULL;
+								/* let's remember 'bp' and 'lp' */
+								origbp = bp;
+								origlp = lp;
+								/* restart on a new list: */
+								lp = bp = NULL;
 
-				while (fgets(line_buf, MAXLINE, fp)) {
-				    if(set_append) {
-				        if(fputs(line_buf, fpo) < 0) {
-					    progerr("Can't write to \"mbox\""); /* revisit me */
+								while(fgets( line_buf, MAXLINE, fp ))
+								{
+									if ( set_append )
+									{
+										if ( fputs( line_buf, fpo ) < 0 )
+										{
+											progerr( "Can't write to \"mbox\"" ); /* revisit me */
+										}
+									}
+									if ( !strncmp( line_buf + set_ietf_mbox, "--", 2 )
+											&& !strncmp( line_buf + set_ietf_mbox + 2, boundbuffer, strlen( boundbuffer ) ) )
+									{
+										break;
+									}
+									if ( !strncasecmp( line_buf, "From ", 5 ) )
+									{
+										isinheader = 0;
+#if DEBUG_PARSE
+										printf("Error, new message found instead of boundary!\n");
+#endif
+										if ( bp != origbp )
+											origbp = append_body( origbp, &origlp, bp );
+										bp = origbp;
+										lp = origlp;
+										boundary_id = NULL;
+										goto leave_header;
+									}
+									/* save lines in case no boundary found */
+									bp = addbody( bp, &lp, line_buf, bodyflags );
+								}
+								if ( !strncmp( line_buf + set_ietf_mbox + 2 + strlen( boundary_id ), "--", 2 ) && bp != origbp )
+								{
+									/* end of mime found before mime start */
+									origbp = append_body( origbp, &origlp, bp );
+									bp = origbp;
+									lp = origlp;
+									boundary_id = NULL;
+									goto leave_header;
+								}
+								free_body( bp );
+								bp = origbp;
+								lp = origlp;
+
+								/*
+								 * This stores the boundary string in a stack
+								 * of strings:
+								 */
+								boundp = bound( boundp, boundbuffer );
+
+								/* printf("set new boundary: %s\n", boundp->line); */
+
+								/*
+								 * We set ourselves, "back in header" since there is
+								 * gonna come MIME headers now after the separator
+								 */
+								isinheader = 1;
+
+								/* Daniel Stenberg started adding the
+								 * "multipart/alternative" parser 13th of July
+								 * 1998!  We check if this is a 'multipart/
+								 * alternative' header, in which case we need to
+								 * treat it very special.
+								 */
+
+								if ( !strncasecmp( &ptr[10], "alternative", 11 ) )
+								{
+									/* It *is* an alternative session!  Alternative
+									 * means there will be X parts with the same text
+									 * using different content-types. We are supposed
+									 * to take the most prefered format of the ones
+									 * used and only output that one. MIME defines
+									 * the order of the texts to start with pure text
+									 * and then continue with more and more obscure
+									 * formats. (well, it doesn't use those terms but
+									 * that's what it means! ;-))
+									 */
+
+									/* How "we" are gonna deal with them:
+									 *
+									 * We create a "spare" linked list body for the
+									 * very first part. Since the first part is
+									 * defined to be the most readable, we save that
+									 * in case no content-type present is prefered!
+									 *
+									 * We skip all parts that are not prefered. All
+									 * prefered parts found will replace the first
+									 * one that is saved. When we reach the end of
+									 * the alternatives, we will use the last saved
+									 * one as prefered.
+									 */
+
+									savealternative = TRUE;
+#if DEBUG_PARSE
+									printf("SAVEALTERNATIVE: yes\n");
+#endif
+
+								}
+
+							}
+							else
+								boundary_id = NULL;
+						}
 					}
-				    }
-				    if (!strncmp(line_buf + set_ietf_mbox, "--", 2) &&
-					!strncmp(line_buf + set_ietf_mbox + 2, boundbuffer,
-						 strlen(boundbuffer))) {
-					break;
-				    }
-				    if (!strncasecmp(line_buf, "From ", 5)) {
-				        isinheader = 0;
+					else if ( !strncasecmp( head->line, "Content-Transfer-Encoding:", 26 ) )
+					{
+						char *ptr = head->line + 26;
+
+						head->parsedheader = TRUE;
+						while(isspace( *ptr ))
+							ptr++;
+						if ( !strncasecmp( ptr, "QUOTED-PRINTABLE", 16 ) )
+						{
+							decode = ENCODE_QP;
+						}
+						else if ( !strncasecmp( ptr, "BASE64", 6 ) )
+						{
+							decode = ENCODE_BASE64;
+						}
+						else if ( !strncasecmp( ptr, "8BIT", 4 ) )
+						{
+							decode = ENCODE_NORMAL;
+						}
+						else if ( !strncasecmp( ptr, "7BIT", 4 ) )
+						{
+							decode = ENCODE_NORMAL;
+						}
+						else if ( !strncasecmp( ptr, "x-uue", 5 ) )
+						{
+							decode = ENCODE_UUENCODE;
+							if ( !do_uudecode( fp, line, line_buf, &raw_text_buf, fpo ) )
+								break;
+						}
+						else
+						{
+							/* Unknown format, we use default decoding */
+							char code[64];
+
+							sscanf( ptr, "%63s", code );
+							snprintf( line, sizeof( line_buf ) - set_ietf_mbox, " ('%s' %s)\n", code, lang[MSG_ENCODING_IS_NOT_SUPPORTED] );
+
+							bp = addbody( bp, &lp, line, BODY_HTMLIZED | bodyflags );
+						}
 #if DEBUG_PARSE
-					printf("Error, new message found instead of boundary!\n");
+						printf("DECODE set to %d\n", decode);
 #endif
-					if (bp != origbp)
-					  origbp = append_body(origbp, &origlp, bp);
-					bp = origbp;
-					lp = origlp;
-					boundary_id = NULL;
-					goto leave_header;
-				    }
-				    /* save lines in case no boundary found */
-				    bp = addbody(bp, &lp, line_buf, bodyflags);
-				}
-				if (!strncmp(line_buf + set_ietf_mbox + 2 + strlen(boundary_id), "--", 2)
-				    && bp != origbp) {
-				    /* end of mime found before mime start */
-				    origbp = append_body(origbp, &origlp, bp);
-				    bp = origbp;
-				    lp = origlp;
-				    boundary_id = NULL;
-				    goto leave_header;
-				}
-				free_body(bp);
-				bp = origbp;
-				lp = origlp;
-
-				/* 
-				 * This stores the boundary string in a stack 
-				 * of strings: 
-				 */
-				boundp = bound(boundp, boundbuffer);
-
-				/* printf("set new boundary: %s\n", boundp->line); */
-
-				/*
-				 * We set ourselves, "back in header" since there is
-				 * gonna come MIME headers now after the separator
-				 */
-				isinheader = 1;
-
-				/* Daniel Stenberg started adding the
-				 * "multipart/alternative" parser 13th of July
-				 * 1998!  We check if this is a 'multipart/
-				 * alternative' header, in which case we need to
-				 * treat it very special.  
-				 */
-
-				if (!strncasecmp
-				    (&ptr[10], "alternative", 11)) {
-				    /* It *is* an alternative session!  Alternative
-				     * means there will be X parts with the same text
-				     * using different content-types. We are supposed
-				     * to take the most prefered format of the ones
-				     * used and only output that one. MIME defines
-				     * the order of the texts to start with pure text
-				     * and then continue with more and more obscure
-				     * formats. (well, it doesn't use those terms but
-				     * that's what it means! ;-)) 
-				     */
-
-				    /* How "we" are gonna deal with them:
-				     *
-				     * We create a "spare" linked list body for the
-				     * very first part. Since the first part is
-				     * defined to be the most readable, we save that
-				     * in case no content-type present is prefered!
-				     *
-				     * We skip all parts that are not prefered. All
-				     * prefered parts found will replace the first
-				     * one that is saved. When we reach the end of
-				     * the alternatives, we will use the last saved
-				     * one as prefered.
-				     */
-
-				    savealternative = TRUE;
-#if DEBUG_PARSE
-				    printf("SAVEALTERNATIVE: yes\n");
-#endif
-
+					}
 				}
 
-			    }
-			    else
-				boundary_id = NULL;
-			}
-		    }
-		    else 
-			if (!strncasecmp
-			    (head->line, "Content-Transfer-Encoding:", 26)) {
-			char *ptr = head->line + 26;
+				/* @@@ here we try to do a post parsing cleanup */
+				/* have to find out all the conditions to turn it off */
+				if ( attach_force )
+				{
+					savealternative = FALSE;
+					isinheader = 0;
+				}
 
-			head->parsedheader = TRUE;
-			while (isspace(*ptr))
-			    ptr++;
-			if (!strncasecmp(ptr, "QUOTED-PRINTABLE", 16)) {
-			    decode = ENCODE_QP;
-			}
-			else if (!strncasecmp(ptr, "BASE64", 6)) {
-			    decode = ENCODE_BASE64;
-			}
-			else if (!strncasecmp(ptr, "8BIT", 4)) {
-			    decode = ENCODE_NORMAL;
-			}
-			else if (!strncasecmp(ptr, "7BIT", 4)) {
-			    decode = ENCODE_NORMAL;
-			}
-			else if (!strncasecmp(ptr, "x-uue", 5)) {
-			    decode = ENCODE_UUENCODE;
-			    if (!do_uudecode(fp, line, line_buf,
-					     &raw_text_buf, fpo))
-			        break;
-			}
-			else {
-			    /* Unknown format, we use default decoding */
-			    char code[64];
+				if ( savealternative )
+				{
+					/* let's remember 'bp' and 'lp' */
 
-			    sscanf(ptr, "%63s", code);
-                            snprintf(line, sizeof(line_buf) - set_ietf_mbox,
-				     " ('%s' %s)\n", code, 
-                                     lang[MSG_ENCODING_IS_NOT_SUPPORTED]);
+					origbp = bp;
+					origlp = lp;
 
-			    bp = addbody(bp, &lp, line,
-					BODY_HTMLIZED | bodyflags);
+					alternativeparser = TRUE;
+					/* restart on a new list: */
+					lp = bp = NULL;
+					/* clean the alternative status variables */
+					alternative_weight = -1;
+					alternative_lp = alternative_bp = NULL;
+					alternative_lastfile_created = NO_FILE;
+					alternative_file[0] = alternative_lastfile[0] = '\0';
+				}
+				headp = lp; /* start at this point next time */
 			}
-#if DEBUG_PARSE
-			printf("DECODE set to %d\n", decode);
-#endif
-		    }
+			else
+			{
+				bp = addbody( bp, &lp, line, BODY_HEADER | bodyflags );
+			}
 		}
+		else
+		{
 
-		/* @@@ here we try to do a post parsing cleanup */
-		/* have to find out all the conditions to turn it off */
-		if (attach_force) {
-		    savealternative = FALSE;
-		    isinheader = 0;
-		}
-
-		if (savealternative) {
-		    /* let's remember 'bp' and 'lp' */
-
-		    origbp = bp;
-		    origlp = lp;
-
-		    alternativeparser = TRUE;
-		    /* restart on a new list: */
-		    lp = bp = NULL;
-		    /* clean the alternative status variables */
-		    alternative_weight = -1;
-		    alternative_lp = alternative_bp = NULL;
-		    alternative_lastfile_created = NO_FILE;
-		    alternative_file[0] = alternative_lastfile[0] = '\0';
-		}
-		headp = lp;	/* start at this point next time */
-	    }
-	    else {
-		bp = addbody(bp, &lp, line, BODY_HEADER | bodyflags);
-	    }
-	}
-	else {
-
-	    /* not in header */
-	leave_header:
-	    /* If this isn't a single mail: see if the line is a message
-	     * separator. If there is a "^From " found, check to see if there
-	     * is a valid date field in the line. If not then consider it a
-	     * part of the body of the message and skip it.
-	     * Daniel: I don't like this. I don't think there is something like
-	     * "a valid date field" in that line 100%.
-	     */
-	    if (!readone &&
-		!strncmp(line_buf, "From ", 5) &&
-		(*(dp = getfromdate(line)) != '\0')) {
-		if (-1 != binfile) {
-		    close(binfile);
-		    binfile = -1;
-		}
+			/* not in header */
+			leave_header:
+			/* If this isn't a single mail: see if the line is a message
+			 * separator. If there is a "^From " found, check to see if there
+			 * is a valid date field in the line. If not then consider it a
+			 * part of the body of the message and skip it.
+			 * Daniel: I don't like this. I don't think there is something like
+			 * "a valid date field" in that line 100%.
+			 */
+			if ( !readone && !strncmp( line_buf, "From ", 5 ) && ( *( dp = getfromdate( line ) ) != '\0' ) )
+			{
+				if ( -1 != binfile )
+				{
+					close( binfile );
+					binfile = -1;
+				}
 
 #ifdef HAVE_ICONV
-		if (!charset){
-		  if (*charsetsave!=0){
-		    /**
-		    if(set_showprogress){
-		      printf("\nput charset from subject header..\n");
-		    }
-		    **/
-		    charset=strsav(charsetsave);
-		  }else{
-		    /* default charset is US-ASCII */
-		    /* ISO-8859-1 is modern, however (DM) */
-		    charset=strsav("US-ASCII");
-		    /**
-		    if(set_showprogress){
-		      printf("\nfound no charset for body, set ISO-8859-1.\n");
-		    }
-		    **/
-		  }
-		}else{
-		  /* if body is us-ascii but subject is not,
-		     try to use subject's charset. */
-		  if (strncasecmp(charset,"us-ascii",8)==0){
-		    if (*charsetsave!=0 && strcasecmp(charsetsave,"us-ascii")!=0){
-		      free(charset);
-		      charset=strsav(charsetsave);
-		    }
-		  }
-		}
+				if (!charset)
+				{
+					if (*charsetsave!=0)
+					{
+						/**
+						 if(set_showprogress){
+						 printf("\nput charset from subject header..\n");
+						 }
+						 **/
+						charset=strsav(charsetsave);
+					}
+					else
+					{
+						/* default charset is US-ASCII */
+						/* ISO-8859-1 is modern, however (DM) */
+						charset=strsav("US-ASCII");
+						/**
+						 if(set_showprogress){
+						 printf("\nfound no charset for body, set ISO-8859-1.\n");
+						 }
+						 **/
+					}
+				}
+				else
+				{
+					/* if body is us-ascii but subject is not,
+					 try to use subject's charset. */
+					if (strncasecmp(charset,"us-ascii",8)==0)
+					{
+						if (*charsetsave!=0 && strcasecmp(charsetsave,"us-ascii")!=0)
+						{
+							free(charset);
+							charset=strsav(charsetsave);
+						}
+					}
+				}
 #endif
 
-		isinheader = 1;
-		if (!hassubject)
-		    subject = NOSUBJECT;
-		else
-		    hassubject = 1;
+				isinheader = 1;
+				if ( !hassubject )
+					subject = NOSUBJECT;
+				else
+					hassubject = 1;
 
-		if (!hasdate)
-		    date = NODATE;
-		else
-		    hasdate = 1;
+				if ( !hasdate )
+					date = NODATE;
+				else
+					hasdate = 1;
 
-		if (!inreply)
-		    inreply = oneunre(subject);
+				if ( !inreply )
+					inreply = oneunre( subject );
 
-		if (append_bp && append_bp != bp) {
-		   /* if we had attachments, close the structure */
-		    append_bp = 
-		      addbody(append_bp, &append_lp, "</div>\n",
-			      BODY_HTMLIZED | bodyflags);
-		    bp = append_body(bp, &lp, append_bp);
-		    append_bp = append_lp = NULL;
-		}
-		else if(!bp)	/* probably never used */
-		    bp = addbody(bp, &lp, "Hypermail was not able "
-				 "to parse this message correctly.\n",
-				 bodyflags);
+				if ( append_bp && append_bp != bp )
+				{
+					/* if we had attachments, close the structure */
+					append_bp = addbody( append_bp, &append_lp, "</div>\n", BODY_HTMLIZED | bodyflags );
+					bp = append_body( bp, &lp, append_bp );
+					append_bp = append_lp = NULL;
+				}
+				else if ( !bp ) /* probably never used */
+					bp = addbody( bp, &lp, "Hypermail was not able "
+							"to parse this message correctly.\n", bodyflags );
 
-		while (rmlastlines(bp));
+				while(rmlastlines( bp ))
+					;
 
-		if (set_mbox_shortened && !increment && num == startnum
-		    && max_msgnum >= set_startmsgnum) {
-		    emp = hashlookupbymsgid(msgid);
-		    if (!emp) {
-		      snprintf(errmsg, sizeof(errmsg),
-			       "Message with msgid '%s' not found in .hm2index",
-msgid);
-		      progerr(errmsg);
-		    }
-		    num = emp->msgnum;
-		    num_added = insert_older_msgs(num);
-		}
-		emp = NULL;
-		if (set_mbox_shortened) {
-		    if (hashnumlookup(num, &emp)) {
-			if(strcmp(msgid, emp->msgid)
-			   && !strstr(emp->msgid, "hypermail.dummy")) {
-			    snprintf(errmsg, sizeof(errmsg),
-				     "msgid mismatch %s %s", msgid, emp->msgid);
-			    progerr(errmsg);
+				if ( set_mbox_shortened && !increment && num == startnum && max_msgnum >= set_startmsgnum )
+				{
+					emp = hashlookupbymsgid( msgid );
+					if ( !emp )
+					{
+						snprintf( errmsg, sizeof( errmsg ), "Message with msgid '%s' not found in .hm2index", msgid );
+						progerr( errmsg );
+					}
+					num = emp->msgnum;
+					num_added = insert_older_msgs( num );
+				}
+				emp = NULL;
+				if ( set_mbox_shortened )
+				{
+					if ( hashnumlookup( num, &emp ) )
+					{
+						if ( strcmp( msgid, emp->msgid ) && !strstr( emp->msgid, "hypermail.dummy" ) )
+						{
+							snprintf( errmsg, sizeof( errmsg ), "msgid mismatch %s %s", msgid, emp->msgid );
+							progerr( errmsg );
+						}
+					}
+				}
+				if ( !emp )
+					emp = addhash( num, date, namep, emailp, msgid, subject, inreply, fromdate, charset, NULL, NULL, bp );
+				/*
+				 * dp, if it has a value, has a date from the "From " line of
+				 * the message after the one we are just finishing.
+				 * SMR 19 Oct 99: moved this *after* the addhash() call so it
+				 * isn't erroneously associate with the previous message
+				 */
+
+				strcpymax( fromdate, dp ? dp : "", DATESTRLEN );
+				emp->offset_message = offset_current_email;
+				if ( emp )
+				{
+					emp->exp_time = exp_time;
+					emp->is_deleted = is_deleted;
+					if ( insert_in_lists( emp, require_filter, require_filter_len + require_filter_full_len ) )
+						++num_added;
+					num++;
+				}
+				else if ( att_dir != NULL )
+				{
+					emptydir( att_dir );
+					rmdir( att_dir );
+				}
+				for( pos = 0; pos < require_filter_len; ++pos )
+					require_filter[pos] = FALSE;
+				for( pos = 0; pos < require_filter_full_len; ++pos )
+					require_filter_full[pos] = FALSE;
+				if ( set_txtsuffix && emp && set_increment != -1 )
+					write_txt_file( emp, &raw_text_buf );
+
+				if ( hasdate )
+					free( date );
+				if ( hassubject )
+					free( subject );
+				if ( inreply )
+				{
+					free( inreply );
+					inreply = NULL;
+				}
+				if ( charset )
+				{
+					free( charset );
+					charset = NULL;
+				}
+				if ( charsetsave )
+				{
+					*charsetsave = 0;
+				}
+				if ( msgid )
+				{
+					free( msgid );
+					msgid = NULL;
+				}
+				if ( namep )
+				{
+					free( namep );
+					namep = NULL;
+				}
+				if ( emailp )
+				{
+					free( emailp );
+					emailp = NULL;
+				}
+
+				bp = NULL;
+				bodyflags = 0; /* reset state flags */
+
+				/* go back to default mode: */
+				content = CONTENT_TEXT;
+				decode = ENCODE_NORMAL;
+				Mime_B = FALSE;
+				headp = NULL;
+				multilinenoend = FALSE;
+				if ( att_dir )
+				{
+					free( att_dir );
+					att_dir = NULL;
+				}
+				if ( set_usemeta && meta_dir )
+				{
+					free( meta_dir );
+					meta_dir = NULL;
+				}
+				att_counter = 0;
+				att_name_list = NULL;
+				inline_force = FALSE;
+				attachname[0] = '\0';
+
+				/* by default we have none! */
+				hassubject = 0;
+				hasdate = 0;
+
+				is_deleted = 0;
+				exp_time = -1;
+
+				alternativeparser = FALSE; /* there is none anymore */
+
+				if ( !( num % 10 ) && set_showprogress && !readone )
+				{
+					print_progress( num - startnum, NULL, NULL );
+				}
+#if DEBUG_PARSE
+				printf("LAST: %s", line);
+#endif
 			}
-		    }
-		}
-		if (!emp)
-		  emp =
-		    addhash(num, date, namep, emailp, msgid, subject,
-			    inreply, fromdate, charset, NULL, NULL, bp);
-                /* 
-                 * dp, if it has a value, has a date from the "From " line of
-                 * the message after the one we are just finishing. 
-                 * SMR 19 Oct 99: moved this *after* the addhash() call so it
-                 * isn't erroneously associate with the previous message 
-                 */
-   
-                strcpymax(fromdate, dp ? dp : "", DATESTRLEN);
+			else
+			{ /* decode MIME complient gibberish */
+				char newbuffer[MAXLINE];
+				char *data;
+				int datalen = -1; /* -1 means use strlen to get length */
 
-		if (emp) {
-		    emp->exp_time = exp_time;
-		    emp->is_deleted = is_deleted;
-		    if (insert_in_lists(emp, require_filter,
-					require_filter_len + require_filter_full_len))
-		        ++num_added;
-		    num++;
-		}
-		else if (att_dir != NULL) {
-		    emptydir(att_dir);
-		    rmdir(att_dir);
-		}
-		for (pos = 0; pos < require_filter_len; ++pos)
-		    require_filter[pos] = FALSE;
-		for (pos = 0; pos < require_filter_full_len; ++pos)
-		    require_filter_full[pos] = FALSE;
-		if (set_txtsuffix && emp && set_increment != -1)
-		    write_txt_file(emp, &raw_text_buf);
+				if ( set_linkquotes && !inreply )
+				{ /* why only if set_linkquotes? pcm */
+					char *new_inreply = getreply( line );
+					if ( new_inreply && !*new_inreply )
+						free( new_inreply );
+					else
+						inreply = new_inreply;
+				}
 
-		if (hasdate)
-		    free(date);
-		if (hassubject)
-		    free(subject);
-		if (inreply) {
-		    free(inreply);
-		    inreply = NULL;
+				if ( Mime_B )
+				{
+					if ( boundp && !strncmp( line, "--", 2 ) && !strncmp( line + 2, boundp->line, strlen( boundp->line ) ) )
+					{
+						/* right at this point, we have another part coming up */
+#if DEBUG_PARSE
+						printf("hit %s\n", line);
+#endif
+						if ( !strncmp( line + 2 + strlen( boundp->line ), "--", 2 ) )
+						{
+							/* @@@ don't know why we had this line here. Doesn't hurt to take
+							 it out, though */
+#if 0
+							bp = addbody(bp, &lp, "\n",
+									BODY_HTMLIZED | bodyflags);
+#endif
+							isinheader = 0; /* no header, the ending boundary
+							 can't have any describing
+							 headers */
+
+#if DEBUG_PARSE
+							printf("End boundary %s\n", line);
+#endif
+							boundp = bound( boundp, NULL );
+							if ( !boundp )
+							{
+								bodyflags &= ~BODY_ATTACHED;
+							}
+							if ( alternativeparser )
+							{
+#ifdef NOTUSED
+								struct body *next;
+#endif
+								/* we no longer have alternatives */
+								alternativeparser = FALSE;
+								/* reset the alternative variables (I think we can skip
+								 this step without problems */
+								alternative_weight = -1;
+								alternative_bp = NULL;
+								alternative_lastfile_created = NO_FILE;
+								alternative_file[0] = alternative_lastfile[0] = '\0';
+#if DEBUG_PARSE
+								printf("We DUMP the chosen alternative\n");
+#endif
+								if ( bp != origbp )
+									origbp = append_body( origbp, &origlp, bp );
+								bp = origbp;
+								lp = origlp;
+
+								headp = NULL;
+							}
+#if DEBUG_PARSE
+							if (boundp)
+							printf("back %s\n", boundp->line);
+							else
+							printf("back to NONE\n");
+#endif
+						}
+						else
+						{
+							if ( alternativeparser && !set_save_alts )
+							{
+								/*
+								 * parsing another alternative, so we save the
+								 * precedent values
+								 */
+								alternative_bp = bp;
+								alternative_lp = lp;
+								alternative_lastfile_created = file_created;
+								strcpy( alternative_lastfile, alternative_file );
+								/* and now reset them */
+								headp = bp = lp = NULL;
+								alternative_file[0] = '\0';
+							}
+							else
+							{
+								att_counter++;
+								if ( alternativeparser && set_save_alts == 1 )
+								{
+									bp = addbody( bp, &lp, set_alts_text ? set_alts_text : "<hr />", BODY_HTMLIZED | bodyflags );
+								}
+							}
+#if DEBUG_PARSE
+							printf("mime parsing isinheader set to 1\n");
+#endif
+							isinheader = 1; /* back on a kind-of-header */
+							/* @@@ why are we changing the status of this variable? */
+							file_created = NO_FILE; /* not created any file yet */
+						}
+						/* go back to the MIME attachment default mode */
+						content = CONTENT_TEXT;
+						decode = ENCODE_NORMAL;
+						multilinenoend = FALSE;
+
+						if ( -1 != binfile )
+						{
+							close( binfile );
+							binfile = -1;
+						}
+						continue;
+					}
+				}
+
+				switch (decode)
+				{
+				case ENCODE_QP:
+				{
+					char *p2 = mdecodeQP( fp, line, &data, &datalen, fpo );
+					if ( p2 )
+					{
+						if ( set_txtsuffix )
+						{
+							PushString( &raw_text_buf, line );
+							line_buf[0] = 0;
+							PushString( &raw_text_buf, p2 );
+						}
+						free( p2 );
+					}
+				}
+					break;
+				case ENCODE_BASE64:
+					base64Decode( line, newbuffer, &datalen );
+					data = newbuffer;
+					break;
+				case ENCODE_UUENCODE:
+					uudecode( NULL, line, newbuffer, &datalen, NULL );
+					data = newbuffer;
+					break;
+				case ENCODE_NORMAL:
+					data = line;
+					break;
+				default:
+					/* we have no clue! */
+					data = NULL;
+					break;
+				}
+#if DEBUG_PARSE
+				printf("LINE %s\n", data);
+#endif
+				if ( data )
+				{
+					if ( ( content == CONTENT_TEXT ) || ( content == CONTENT_HTML ) )
+					{
+						if ( decode > ENCODE_MULTILINED )
+						{
+							/*
+							 * This can be more than one resulting line,
+							 * as the decoded the string may look like:
+							 * "#!/bin/sh\r\n\r\nhelp() {\r\n echo 'Usage: difftree"
+							 */
+							char *p = data;
+							char *n;
+							char store;
+
+#if DEBUG_PARSE
+							printf("decode type %d\n", decode);
+#endif
+
+							while(( n = strchr( p, '\n' ) ))
+							{
+								store = n[1];
+								n[1] = 0;
+#if DEBUG_PARSE
+								printf("UNFOLDED %s", p);
+#endif
+								bp = addbody( bp, &lp, p,
+										( content == CONTENT_HTML ? BODY_HTMLIZED : 0 ) | ( multilinenoend ? BODY_CONTINUE : 0 ) | bodyflags );
+								multilinenoend = FALSE; /* full line pushed */
+								n[1] = store;
+								p = n + 1;
+							}
+							if ( strlen( p ) )
+							{
+								/*
+								 * This line doesn't really end here,
+								 * we will get another line soon that
+								 * should get appended!
+								 */
+#if DEBUG_PARSE
+								printf("CONTINUE %s\n", p);
+#endif
+								bp = addbody( bp, &lp, p,
+										( content == CONTENT_HTML ? BODY_HTMLIZED : 0 ) | ( multilinenoend ? BODY_CONTINUE : 0 ) | bodyflags );
+
+								/*
+								 * We want the next line to get appended to this!
+								 */
+								multilinenoend = TRUE;
+							}
+						}
+						else
+						{
+							bp = addbody( bp, &lp, data, ( content == CONTENT_HTML ? BODY_HTMLIZED : 0 ) | bodyflags );
+						}
+#if DEBUG_PARSE
+						printf("ALIVE?\n");
+#endif
+					}
+					else if ( content == CONTENT_BINARY )
+					{
+
+#ifndef REMOVED_990310
+						/* If there is no file created, we create and init one */
+						if ( file_created == MAKE_FILE )
+						{
+							char *fname;
+							char *binname;
+							char *file = NULL;
+							char buffer[512];
+
+							file_created = MADE_FILE; /* we have, or at least we tried */
+
+							/* create the attachment directory if it doesn't exist */
+							if ( att_dir == NULL )
+							{
+
+								/* first check the DIR_PREFIXER */
+#ifdef JOSE
+								trio_asprintf(&att_dir,"%s%c" DIR_PREFIXER "%s",
+										dir, PATH_SEPARATOR,
+										message_name (emp))
+#else
+								trio_asprintf( &att_dir, "%s%c" DIR_PREFIXER "%04d", dir, PATH_SEPARATOR, num );
+#endif
+								if ( set_increment != -1 )
+									check1dir( att_dir );
+								/* If this is a repeated run on the same archive we already
+								 * have HTML'ized, we risk extracting the same attachments
+								 * several times and therefore we need to remove all the
+								 * attachments currently present before we go ahead!
+								 *(Daniel -- August 6, 1999) */
+								/* jk: removed it for a while, as it's not so necessary
+								 once we can generate the same file names */
+#if DEBUG_PARSE
+								emptydir(att_dir);
+#endif
+								if ( set_usemeta && set_increment != -1 )
+								{
+									/* make the meta dir where we'll store the meta info,
+									 such as content-type */
+									trio_asprintf( &meta_dir, "%s%c" META_DIR, att_dir, PATH_SEPARATOR );
+									check1dir( meta_dir );
+								}
+							}
+
+							/* If the attachment has a name, we keep it and add the
+							 current value of the counter, to guarantee that we
+							 have a unique name. Otherwise, we use a fixed name +
+							 the counter. We go thru all this trouble so that we
+							 can easily regenerate the same archive, without breaking
+							 any links */
+
+							if ( att_counter > 99 )
+								binname = NULL;
+							else
+							{
+								if ( set_filename_base )
+									create_attachname( attachname, sizeof( attachname ) );
+								if ( attachname[0] )
+									fname = attachname;
+								else
+									fname = FILE_SUFFIXER;
+								if ( !attachname[0] || inlist( att_name_list, fname ) )
+									trio_asprintf( &binname, "%s%c%02d-%s", att_dir, PATH_SEPARATOR, att_counter, fname );
+								else
+									trio_asprintf( &binname, "%s%c%s", att_dir, PATH_SEPARATOR, fname );
+								if ( att_name_list == NULL )
+									att_name_list = att_name_last = (struct hmlist *) malloc( sizeof(struct hmlist) );
+								else
+								{
+									att_name_last->next = (struct hmlist *) malloc( sizeof(struct hmlist) );
+									att_name_last = att_name_last->next;
+								}
+								att_name_last->next = NULL;
+								att_name_last->val = strsav( fname );
+								/* @@ move this one up */
+								/* att_counter++; */
+							}
+
+							/*
+							 * Saving of the attachments is being done
+							 * inline as they are encountered. The
+							 * directories must exist first...
+							 */
+
+#ifdef O_BINARY
+#define OPENBITMASK O_WRONLY | O_CREAT | O_TRUNC | O_BINARY
+#else
+#define OPENBITMASK O_WRONLY | O_CREAT | O_TRUNC
+#endif
+							if ( binname )
+							{
+								binfile = open( binname, OPENBITMASK, set_filemode );
+
+#if DEBUG_PARSE
+								printf("%4d open attachment %s\n", num, binname);
+#endif
+								if ( -1 != binfile )
+								{
+									chmod( binname, set_filemode );
+									if ( set_showprogress )
+										print_progress( num, lang[MSG_CREATED_ATTACHMENT_FILE], binname );
+									if ( set_usemeta )
+									{
+										/* write the mime meta info */
+										FILE *file_ptr;
+										char *meta_file;
+										char *ptr;
+
+										ptr = strrchr( binname, PATH_SEPARATOR );
+										*ptr = '\0';
+										trio_asprintf( &meta_file, "%s%c%s"
+										META_EXTENSION, meta_dir, PATH_SEPARATOR, ptr + 1 );
+										*ptr = PATH_SEPARATOR;
+										file_ptr = fopen( meta_file, "w" );
+										set_buffered_( &file_ptr );
+										if ( file_ptr )
+										{
+											if ( type )
+											{
+												if ( charset )
+													fprintf( file_ptr, "Content-Type: %s; charset=\"%s\"\n", type, charset );
+												else
+													fprintf( file_ptr, "Content-Type: %s\n", type );
+											}
+											fclose( file_ptr );
+											chmod( meta_file, set_filemode );
+											free( meta_file );
+										}
+									}
+									if ( alternativeparser )
+										/* save the last name, in case we need to supress it */
+										strncpy( alternative_file, binname, sizeof( alternative_file ) - 1 );
+
+								}
+								else
+								{
+									if ( alternativeparser )
+										/* save the last name, in case we need to supress it */
+										alternative_file[0] = '\0';
+								}
+
+								/* point to the filename and skip the separator */
+								file = &binname[strlen( att_dir ) + 1];
+
+								/* protection against having a filename bigger than buffer */
+								if ( strlen( file ) <= 500 )
+								{
+									char *desc;
+									char *sp;
+									struct emailsubdir *subdir;
+
+									if ( description && description[0] != '\0' && hasblack( description ) )
+										desc = convchars( description, charset );
+									else if ( inline_force || inlinecontent( type ) )
+										desc = attachname[0] ? attachname : "picture";
+									else
+										desc = attachname[0] ? attachname : "stored";
+
+									if ( description )
+										description = NULL;
+
+									subdir = NULL;
+									if ( set_msgsperfolder || set_folder_by_date )
+									{
+										struct emailinfo e;
+										fill_email_dates( &e, date, fromdate, NULL, NULL );
+										subdir = msg_subdir( num, set_use_sender_date ? e.date : e.fromdate );
+									}
+
+									if ( inline_force || inlinecontent( type ) )
+									{
+										/* if we know our browsers can show this type of context
+										 as-is, we make a <img> tag instead of <a href>! */
+										if ( set_inline_addlink )
+										{
+											char *created_link = createlink( set_attachmentlink, &att_dir[strlen( dir ) + 1], file, num, type );
+											trio_snprintf( buffer, sizeof( buffer ),
+													"<p><img src=\"%s%s%c%s\" alt=\"%s\" />\n<br />\n(%s %s: <a href=\"%s%s\">%s</a>)</p>\n",
+													subdir ? subdir->rel_path_to_top : "", &att_dir[strlen( dir ) + 1], PATH_SEPARATOR, file, desc, type,
+													lang[MSG_ATTACHMENT], subdir ? subdir->rel_path_to_top : "", created_link, file );
+											free( created_link );
+										}
+										else
+										{
+											trio_snprintf( buffer, sizeof( buffer ), "<img src=\"%s%s%c%s\" alt=\"%s\" />\n",
+													subdir ? subdir->rel_path_to_top : "", &att_dir[strlen( dir ) + 1], PATH_SEPARATOR, file, desc );
+										}
+									}
+									else
+									{
+										char *created_link = createlink( set_attachmentlink, &att_dir[strlen( dir ) + 1], file, num, type );
+
+										if ( ( sp = strchr( desc, '\n' ) ) != NULL )
+											*sp = '\0';
+
+										trio_snprintf( buffer, sizeof( buffer ), "<ul>\n<li>%s %s: <a href=\"%s%s\">%s</a></li>\n</ul>\n", type,
+												lang[MSG_ATTACHMENT], subdir ? subdir->rel_path_to_top : "", created_link, desc );
+
+										free( created_link );
+									}
+
+									/* Print attachment comment before attachment */
+									/* add a DIV to store all this info first */
+									if ( !append_bp )
+										append_bp = addbody( append_bp, &append_lp, "<div>\n", BODY_HTMLIZED | bodyflags );
+									append_bp = addbody( append_bp, &append_lp, buffer, BODY_HTMLIZED | bodyflags );
+									trio_snprintf( buffer, sizeof( buffer ), "<!-- attachment=\"%.80s\" -->\n", file );
+									append_bp = addbody( append_bp, &append_lp, buffer, BODY_HTMLIZED | bodyflags );
+								}
+							}
+
+							inline_force = FALSE;
+							attachname[0] = '\0';
+
+							if ( binname && ( binfile != -1 ) )
+								content = CONTENT_BINARY;
+							else
+								content = CONTENT_UNKNOWN;
+
+							if ( binname )
+								free( binname );
+						}
+					}
+#endif
+					if ( -1 != binfile )
+					{
+						if ( datalen < 0 )
+							datalen = strlen( data );
+
+						write( binfile, data, datalen );
+					}
+				}
+
+				if ( ENCODE_QP == decode )
+					free( data ); /* this was allocatd by mdecodeQP() */
+			}
 		}
-		if (charset) {
-		    free(charset);
-		    charset = NULL;
+	}
+	if ( set_append && fclose( fpo ) )
+	{
+		progerr( "Can't close \"mbox\"" );
+	}
+
+	if ( !isinheader || readone )
+	{
+
+#ifdef HAVE_ICONV
+		if (!charset)
+		{
+			if (*charsetsave!=0)
+			{
+				/**
+				 if(set_showprogress){
+				 printf("\nput charset from subject header..\n");
+				 }
+				 **/
+				charset=strsav(charsetsave);
+			}
+			else
+			{
+				/* default charset is US-ASCII */
+				charset=strsav("US-ASCII");
+				/**
+				 if(set_showprogress){
+				 printf("\nfound no charset for body, set ISO-8859-1.\n");
+				 }
+				 **/
+			}
 		}
-		if (charsetsave){
-		  *charsetsave = 0;
+		else
+		{
+			/* if body is us-ascii but subject is not,
+			 try to use subject's charset. */
+			if (strncasecmp(charset,"us-ascii",8)==0)
+			{
+				if (*charsetsave!=0 && strcasecmp(charsetsave,"us-ascii")!=0)
+				{
+					free(charset);
+					charset=strsav(charsetsave);
+				}
+			}
 		}
-		if (msgid) {
-		    free(msgid);
-		    msgid = NULL;
-		}
-		if (namep) {
-		    free(namep);
-		    namep = NULL;
-		}
-		if (emailp) {
-		    free(emailp);
-		    emailp = NULL;
+#endif
+		if ( !hassubject )
+			subject = NOSUBJECT;
+
+		if ( !hasdate )
+			date = NODATE;
+
+		if ( !inreply )
+			inreply = oneunre( subject );
+
+		if ( append_bp && append_bp != bp )
+		{
+			/* close the DIV */
+			append_bp = addbody( append_bp, &append_lp, "</div>\n", BODY_HTMLIZED | bodyflags );
+			bp = append_body( bp, &lp, append_bp );
+			append_bp = append_lp = NULL;
 		}
 
-		bp = NULL;
-		bodyflags = 0;	/* reset state flags */
+		while(rmlastlines( bp ))
+			;
+
+		strcpymax( fromdate, dp ? dp : "", DATESTRLEN );
+		emp = addhash( num, date, namep, emailp, msgid, subject, inreply, fromdate, charset, NULL, NULL, bp );
+		if ( emp )
+		{
+			emp->exp_time = exp_time;
+			emp->is_deleted = is_deleted;
+			if ( insert_in_lists( emp, require_filter, require_filter_len + require_filter_full_len ) )
+				++num_added;
+			if ( set_txtsuffix && set_increment != -1 )
+				write_txt_file( emp, &raw_text_buf );
+			num++;
+		}
+
+		/* @@@ if we didn't add the message, we should consider erasing the attdir
+		 if it's there */
+
+		if ( hasdate )
+			free( date );
+		if ( hassubject )
+			free( subject );
+		if ( inreply )
+		{
+			free( inreply );
+			inreply = NULL;
+		}
+		if ( charset )
+		{
+			free( charset );
+			charset = NULL;
+		}
+		if ( charsetsave )
+		{
+			*charsetsave = 0;
+		}
+
+		if ( msgid )
+		{
+			free( msgid );
+			msgid = NULL;
+		}
+		if ( namep )
+		{
+			free( namep );
+			namep = NULL;
+		}
+		if ( emailp )
+		{
+			free( emailp );
+			emailp = NULL;
+		}
+
+		/* reset the status counters */
+		/* @@ verify we're doing it everywhere */
+		bodyflags = 0; /* reset state flags */
 
 		/* go back to default mode: */
 		content = CONTENT_TEXT;
@@ -2215,718 +2882,99 @@ msgid);
 		Mime_B = FALSE;
 		headp = NULL;
 		multilinenoend = FALSE;
-		if (att_dir) {
-		    free(att_dir);
-		    att_dir = NULL;
+		if ( att_dir )
+		{
+			free( att_dir );
+			att_dir = NULL;
 		}
-		if (set_usemeta && meta_dir) {
-		    free(meta_dir);
-		    meta_dir = NULL;
+		if ( set_usemeta && meta_dir )
+		{
+			free( meta_dir );
+			meta_dir = NULL;
 		}
 		att_counter = 0;
+		while(att_name_list != NULL)
+		{
+			struct hmlist *ptr_next_att = att_name_list->next;
+			free( att_name_list->val );
+			free( att_name_list );
+			att_name_list = ptr_next_att;
+		}
 		att_name_list = NULL;
-		inline_force = FALSE;
-		attachname[0] = '\0';
+		description = NULL;
 
 		/* by default we have none! */
 		hassubject = 0;
 		hasdate = 0;
-
-		is_deleted = 0;
-		exp_time = -1;
-
-                alternativeparser = FALSE; /* there is none anymore */
-
-		if (!(num % 10) && set_showprogress && !readone) {
-		    print_progress(num - startnum, NULL, NULL);
-		}
-#if DEBUG_PARSE
-		printf("LAST: %s", line);
-#endif
-	    }
-	    else {		/* decode MIME complient gibberish */
-		char newbuffer[MAXLINE];
-		char *data;
-		int datalen = -1;	/* -1 means use strlen to get length */
-
-		if (set_linkquotes && !inreply) { /* why only if set_linkquotes? pcm */
-		    char *new_inreply = getreply(line);
-		    if (new_inreply && !*new_inreply) free(new_inreply);
-		    else inreply = new_inreply;
-		}
-    
-		if (Mime_B) {
-		    if (boundp &&
-			!strncmp(line, "--", 2) &&
-			!strncmp(line + 2, boundp->line,
-				 strlen(boundp->line))) {
-			/* right at this point, we have another part coming up */
-#if DEBUG_PARSE
-			printf("hit %s\n", line);
-#endif
-			if (!strncmp(line + 2 + strlen(boundp->line), "--", 2)) {
-			    /* @@@ don't know why we had this line here. Doesn't hurt to take
-			       it out, though */
-#if 0
-			    bp = addbody(bp, &lp, "\n",
-					BODY_HTMLIZED | bodyflags);
-#endif
-			    isinheader = 0;	/* no header, the ending boundary
-						   can't have any describing
-						   headers */
-
-#if DEBUG_PARSE
-			    printf("End boundary %s\n", line);
-#endif
-			    boundp = bound(boundp, NULL);
-			    if (!boundp) {
-				bodyflags &= ~BODY_ATTACHED;
-			    }
-			    if (alternativeparser) {
-#ifdef NOTUSED
-				struct body *next;
-#endif
-				/* we no longer have alternatives */
-				alternativeparser = FALSE;
-				/* reset the alternative variables (I think we can skip
-				   this step without problems */
-				alternative_weight = -1;
-				alternative_bp = NULL;
-				alternative_lastfile_created = NO_FILE;
-				alternative_file[0] =
-				    alternative_lastfile[0] = '\0';
-#if DEBUG_PARSE
-				printf("We DUMP the chosen alternative\n");
-#endif
-				if (bp != origbp)
-				    origbp = append_body(origbp, &origlp, bp);
-				bp = origbp;
-				lp = origlp;
-
-				headp = NULL;
-			    }
-#if DEBUG_PARSE
-			    if (boundp)
-				printf("back %s\n", boundp->line);
-			    else
-				printf("back to NONE\n");
-#endif
-			}
-			else {
-			    if (alternativeparser && !set_save_alts) {
-				/*
-				 * parsing another alternative, so we save the
-				 * precedent values 
-				 */
-				alternative_bp = bp;
-				alternative_lp = lp;
-				alternative_lastfile_created =
-				    file_created;
-				strcpy(alternative_lastfile,
-				       alternative_file);
-				/* and now reset them */
-				headp = bp = lp = NULL;
-				alternative_file[0] = '\0';
-			    }
-			    else {
-				att_counter++;
-				if (alternativeparser && set_save_alts == 1) {
-				    bp = addbody(bp, &lp,
-						 set_alts_text ? set_alts_text
-						 : "<hr />",
-						 BODY_HTMLIZED | bodyflags);
-				}
-			    }
-#if DEBUG_PARSE
-			    printf("mime parsing isinheader set to 1\n");
-#endif
-			    isinheader = 1;	/* back on a kind-of-header */
-			    /* @@@ why are we changing the status of this variable? */
-			    file_created = NO_FILE;	/* not created any file yet */
-			}
-			/* go back to the MIME attachment default mode */
-			content = CONTENT_TEXT;
-			decode = ENCODE_NORMAL;
-			multilinenoend = FALSE;
-
-			if (-1 != binfile) {
-			    close(binfile);
-			    binfile = -1;
-			}
-			continue;
-		    }
-		}
-
-		switch (decode) {
-		case ENCODE_QP:
-		    {
-			char *p2 = mdecodeQP(fp, line, &data, &datalen, fpo);
-			if (p2) {
-			    if (set_txtsuffix) {
-			        PushString(&raw_text_buf, line);
-				line_buf[0] = 0;
-				PushString(&raw_text_buf, p2);
-			    }
-			    free(p2);
-			}
-		    }
-		    break;
-		case ENCODE_BASE64:
-		    base64Decode(line, newbuffer, &datalen);
-		    data = newbuffer;
-		    break;
-		case ENCODE_UUENCODE:
-		    uudecode(NULL, line, newbuffer, &datalen, NULL);
-		    data = newbuffer;
-		    break;
-		case ENCODE_NORMAL:
-		    data = line;
-		    break;
-		default:
-		    /* we have no clue! */
-		    data = NULL;
-		    break;
-		}
-#if DEBUG_PARSE
-		printf("LINE %s\n", data);
-#endif
-		if (data) {
-		    if ((content == CONTENT_TEXT) ||
-			(content == CONTENT_HTML)) {
-			if (decode > ENCODE_MULTILINED) {
-			    /* 
-			     * This can be more than one resulting line, 
-			     * as the decoded the string may look like:
-			     * "#!/bin/sh\r\n\r\nhelp() {\r\n echo 'Usage: difftree"
-			     */
-			    char *p = data;
-			    char *n;
-			    char store;
-
-#if DEBUG_PARSE
-			    printf("decode type %d\n", decode);
-#endif
-
-			    while ((n = strchr(p, '\n'))) {
-				store = n[1];
-				n[1] = 0;
-#if DEBUG_PARSE
-				printf("UNFOLDED %s", p);
-#endif
-				bp = addbody(bp, &lp, p,
-					     (content == CONTENT_HTML ?
-					      BODY_HTMLIZED : 0) |
-					     (multilinenoend ?
-					      BODY_CONTINUE : 0) |
-					     bodyflags);
-				multilinenoend = FALSE;	/* full line pushed */
-				n[1] = store;
-				p = n + 1;
-			    }
-			    if (strlen(p)) {
-				/* 
-				 * This line doesn't really end here, 
-				 * we will get another line soon that 
-				 * should get appended! 
-				 */
-#if DEBUG_PARSE
-				printf("CONTINUE %s\n", p);
-#endif
-				bp = addbody(bp, &lp, p,
-					     (content == CONTENT_HTML ?
-					      BODY_HTMLIZED : 0) |
-					     (multilinenoend ?
-					      BODY_CONTINUE : 0) |
-					     bodyflags);
-
-				/*
-				 * We want the next line to get appended to this!
-				 */
-				multilinenoend = TRUE;
-			    }
-			}
-			else {
-			    bp = addbody(bp, &lp, data,
-					 (content == CONTENT_HTML ?
-					  BODY_HTMLIZED : 0) | bodyflags);
-			}
-#if DEBUG_PARSE
-			printf("ALIVE?\n");
-#endif
-		    }
-		    else if (content == CONTENT_BINARY) {
-
-#ifndef REMOVED_990310
-			/* If there is no file created, we create and init one */
-			if (file_created == MAKE_FILE) {
-			    char *fname;
-			    char *binname;
-			    char *file = NULL;
-			    char buffer[512];
-
-			    file_created = MADE_FILE;	/* we have, or at least we tried */
-
-			    /* create the attachment directory if it doesn't exist */
-			    if (att_dir == NULL) {
-
-				/* first check the DIR_PREFIXER */
-#ifdef JOSE
-                                trio_asprintf(&att_dir,"%s%c" DIR_PREFIXER "%s",
-                                              dir, PATH_SEPARATOR,
-                                              message_name (emp))
-#else
-				trio_asprintf(&att_dir,"%s%c" DIR_PREFIXER "%04d",
-					      dir, PATH_SEPARATOR, num);
-#endif
-				if (set_increment != -1)
-				    check1dir(att_dir);
-				/* If this is a repeated run on the same archive we already
-				 * have HTML'ized, we risk extracting the same attachments
-				 * several times and therefore we need to remove all the 
-				 * attachments currently present before we go ahead!
-				 *(Daniel -- August 6, 1999) */
-				/* jk: removed it for a while, as it's not so necessary
-				   once we can generate the same file names */
-#if DEBUG_PARSE
-				emptydir(att_dir);
-#endif
-				if (set_usemeta && set_increment != -1) {
-				    /* make the meta dir where we'll store the meta info,
-				       such as content-type */
-				    trio_asprintf(&meta_dir, "%s%c" META_DIR,
-						  att_dir, PATH_SEPARATOR);
-				    check1dir(meta_dir);
-				}
-			    }
-
-			    /* If the attachment has a name, we keep it and add the
-			       current value of the counter, to guarantee that we
-			       have a unique name. Otherwise, we use a fixed name +
-			       the counter. We go thru all this trouble so that we
-			       can easily regenerate the same archive, without breaking
-			       any links */
-
-			    if (att_counter > 99)
-				binname = NULL;
-			    else {
-				if (set_filename_base)
-				    create_attachname(attachname, sizeof(attachname));
-				if (attachname[0])
-				    fname = attachname;
-				else
-				    fname = FILE_SUFFIXER;
-				if (!attachname[0] || inlist(att_name_list, fname))
-				  trio_asprintf(&binname, "%s%c%02d-%s",
-						att_dir, PATH_SEPARATOR,
-						att_counter, fname);
-				else
-				  trio_asprintf(&binname, "%s%c%s",
-						att_dir, PATH_SEPARATOR,
-						fname);
-				if (att_name_list == NULL)
-				    att_name_list = att_name_last = (struct hmlist *)malloc(sizeof(struct hmlist));
-				else {
-				  att_name_last->next = (struct hmlist *)malloc(sizeof(struct hmlist));
-				  att_name_last = att_name_last->next;
-				}
-				att_name_last->next = NULL;
-				att_name_last->val = strsav(fname);
-				/* @@ move this one up */
-				/* att_counter++; */
-			    }
-
-			    /* 
-                             * Saving of the attachments is being done 
-                             * inline as they are encountered. The 
-                             * directories must exist first...  
-                             */
-
-#ifdef O_BINARY
-#define OPENBITMASK O_WRONLY | O_CREAT | O_TRUNC | O_BINARY
-#else
-#define OPENBITMASK O_WRONLY | O_CREAT | O_TRUNC
-#endif
-			    if (binname) {
-				binfile = open(binname, OPENBITMASK,
-					       set_filemode);
-
-#if DEBUG_PARSE
-				printf("%4d open attachment %s\n", num, binname);
-#endif
-				if (-1 != binfile) {
-				    chmod(binname, set_filemode);
-				    if (set_showprogress)
-					print_progress(num, lang
-					       [MSG_CREATED_ATTACHMENT_FILE],
-					       binname);
-				    if (set_usemeta) {
-					/* write the mime meta info */
-					FILE *file_ptr;
-					char *meta_file;
-					char *ptr;
-
-					ptr = strrchr(binname, PATH_SEPARATOR);
-					*ptr = '\0';
-					trio_asprintf(&meta_file, "%s%c%s"
-						      META_EXTENSION,
-						      meta_dir,
-						      PATH_SEPARATOR,
-						      ptr + 1);
-					*ptr = PATH_SEPARATOR;
-					file_ptr = fopen(meta_file, "w");
-					set_buffered_ ( &file_ptr );
-					if (file_ptr) {
-					    if (type) {
-						if (charset)
-						    fprintf(file_ptr,
-							    "Content-Type: %s; charset=\"%s\"\n",
-							    type, charset);
-						else
-						    fprintf(file_ptr,
-							    "Content-Type: %s\n",
-							    type);
-					    }
-					    fclose(file_ptr);
-					    chmod(meta_file, set_filemode);
-					    free(meta_file);
-					}
-				    }
-				    if (alternativeparser)
-					/* save the last name, in case we need to supress it */
-					strncpy(alternative_file, binname,
-						sizeof(alternative_file) -
-						1);
-
-				}
-				else {
-				    if (alternativeparser)
-					/* save the last name, in case we need to supress it */
-					alternative_file[0] = '\0';
-				}
-
-				/* point to the filename and skip the separator */
-				file = &binname[strlen(att_dir) + 1];
-
-				/* protection against having a filename bigger than buffer */
-				if (strlen(file) <= 500) {
-				    char *desc;
-				    char *sp;
-				    struct emailsubdir *subdir;
-
-				    if (description && description[0] != '\0'
-                                        && hasblack(description))
-                                            desc = convchars(description, charset);
-				    else if (inline_force ||
-					     inlinecontent(type))
-				        desc =
-					    attachname[0] ? attachname
-					    : "picture";
-				    else
-					desc =
-					    attachname[0] ? attachname
-					    : "stored";
-
-				    if (description)
-					description = NULL;
-
-				    subdir = NULL;
-				    if (set_msgsperfolder || set_folder_by_date) {
-					struct emailinfo e;
-					fill_email_dates(&e, date, fromdate,
-							 NULL, NULL);
-					subdir = msg_subdir(num,
-							    set_use_sender_date
-							    ? e.date
-							    : e.fromdate);
-				    }
-
-				    if (inline_force ||
-					inlinecontent(type)) {
-					/* if we know our browsers can show this type of context
-					   as-is, we make a <img> tag instead of <a href>! */
- 				      if(set_inline_addlink){
- 					char *created_link =
-					  createlink(set_attachmentlink,
-						     &att_dir[strlen(dir)
-							      + 1],
-						     file, num, type);
- 					trio_snprintf(buffer, sizeof(buffer),
-						      "<p><img src=\"%s%s%c%s\" alt=\"%s\" />\n<br />\n(%s %s: <a href=\"%s%s\">%s</a>)</p>\n",
-						      subdir ? subdir->rel_path_to_top : "",
-						      &att_dir[strlen(dir) + 1],
-						      PATH_SEPARATOR, file,
-						      desc, type,
-						      lang[MSG_ATTACHMENT],
-						      subdir ? subdir->rel_path_to_top : "",
-						      created_link, file);
- 					free(created_link);
- 				      }else {
-					trio_snprintf(buffer, sizeof(buffer),
-						 "<img src=\"%s%s%c%s\" alt=\"%s\" />\n",
-						 subdir ? subdir->rel_path_to_top : "",
-						 &att_dir[strlen(dir) + 1],
-						 PATH_SEPARATOR, file,
-						 desc);
-				      }
-				    } else {
-					char *created_link =
-					    createlink(set_attachmentlink,
-						       &att_dir[strlen(dir)
-								+ 1],
-						       file, num, type);
-
-					if ((sp = strchr(desc, '\n')) !=
-					    NULL) *sp = '\0';
-
-					trio_snprintf(buffer, sizeof(buffer),
-						 "<ul>\n<li>%s %s: <a href=\"%s%s\">%s</a></li>\n</ul>\n",
-						 type,
-						 lang[MSG_ATTACHMENT],
-						 subdir ? subdir->rel_path_to_top : "",
-						 created_link, desc);
-
-					free(created_link);
-				    }
-
-				    /* Print attachment comment before attachment */
-				    /* add a DIV to store all this info first */
-				    if (!append_bp)
-				      append_bp = 
-					addbody(append_bp, &append_lp, "<div>\n",
-						BODY_HTMLIZED | bodyflags);
-				    append_bp =
-					addbody(append_bp, &append_lp, buffer,
-						BODY_HTMLIZED | bodyflags);
-				    trio_snprintf(buffer, sizeof(buffer),
-					     "<!-- attachment=\"%.80s\" -->\n",
-					     file);
-				    append_bp =
-					addbody(append_bp, &append_lp, buffer,
-						BODY_HTMLIZED | bodyflags);
-				}
-			    }
-
-			    inline_force = FALSE;
-			    attachname[0] = '\0';
-
-			    if (binname && (binfile != -1))
-				content = CONTENT_BINARY;
-			    else
-				content = CONTENT_UNKNOWN;
-
-			    if (binname)
-				free(binname);
-			}
-		    }
-#endif
-		    if (-1 != binfile) {
-			if (datalen < 0)
-			    datalen = strlen(data);
-
-			write(binfile, data, datalen);
-		    }
-		}
-
-		if (ENCODE_QP == decode)
-		    free(data);	/* this was allocatd by mdecodeQP() */
-	    }
 	}
-    }
-    if(set_append && fclose(fpo)) {
-	progerr("Can't close \"mbox\"");
-    }
+	if ( require_filter )
+		free( require_filter );
 
-    if (!isinheader || readone) {
-
-#ifdef HAVE_ICONV
-      if (!charset){
-	if (*charsetsave!=0){
-	  /**
-	  if(set_showprogress){
-	    printf("\nput charset from subject header..\n");
-	  }
-	  **/
-	  charset=strsav(charsetsave);
-	}else{
-	  /* default charset is US-ASCII */
-	  charset=strsav("US-ASCII");
-	  /**
-	  if(set_showprogress){
-	    printf("\nfound no charset for body, set ISO-8859-1.\n");
-	  }
-	  **/
-	}
-      }else{
-	/* if body is us-ascii but subject is not,
-	   try to use subject's charset. */
-	if (strncasecmp(charset,"us-ascii",8)==0){
-	  if (*charsetsave!=0 && strcasecmp(charsetsave,"us-ascii")!=0){
-	    free(charset);
-	    charset=strsav(charsetsave);
-	  }
-	}
-      }
-#endif
-	if (!hassubject)
-	    subject = NOSUBJECT;
-
-	if (!hasdate)
-	    date = NODATE;
-
-	if (!inreply)
-	    inreply = oneunre(subject);
-
-	if (append_bp && append_bp != bp) {
-	  /* close the DIV */
-	  append_bp = 
-	    addbody(append_bp, &append_lp, "</div>\n",
-		    BODY_HTMLIZED | bodyflags);
-	    bp = append_body(bp, &lp, append_bp);
-	    append_bp = append_lp = NULL;
-	}
-
-	while (rmlastlines(bp));
-
-	strcpymax(fromdate, dp ? dp : "", DATESTRLEN);
-	emp = addhash(num, date, namep, emailp, msgid, subject, inreply,
-		      fromdate, charset, NULL, NULL, bp);
-	if (emp) {
-	    emp->exp_time = exp_time;
-	    emp->is_deleted = is_deleted;
-	    if (insert_in_lists(emp, require_filter,
-				require_filter_len + require_filter_full_len))
-	        ++num_added;
-	    if (set_txtsuffix && set_increment != -1)
-	        write_txt_file(emp, &raw_text_buf);
-	    num++;
-	}
-
-	/* @@@ if we didn't add the message, we should consider erasing the attdir
-	   if it's there */
-
-	if (hasdate)
-	    free(date);
-	if (hassubject)
-	    free(subject);
-	if (inreply) {
-	    free(inreply);
-	    inreply = NULL;
-	}
-	if (charset) {
-	    free(charset);
-	    charset = NULL;
-	}
-	if (charsetsave){
-	  *charsetsave = 0;
-	}
-
-	if (msgid) {
-	    free(msgid);
-	    msgid = NULL;
-	}
-	if (namep) {
-	    free(namep);
-	    namep = NULL;
-	}
-	if (emailp) {
-	    free(emailp);
-	    emailp = NULL;
-	}
-
-	/* reset the status counters */
-	/* @@ verify we're doing it everywhere */
-	bodyflags = 0;		/* reset state flags */
-
-	/* go back to default mode: */
-	content = CONTENT_TEXT;
-	decode = ENCODE_NORMAL;
-	Mime_B = FALSE;
-	headp = NULL;
-	multilinenoend = FALSE;
-	if (att_dir) {
-	    free(att_dir);
-	    att_dir = NULL;
-	}
-	if (set_usemeta && meta_dir) {
-	    free(meta_dir);
-	    meta_dir = NULL;
-	}
-	att_counter = 0;
-	while (att_name_list != NULL) {
-	    struct hmlist *ptr_next_att = att_name_list->next;
-	    free(att_name_list->val);
-	    free(att_name_list);
-	    att_name_list = ptr_next_att;
-	}
-	att_name_list = NULL;
-	description = NULL;
-
-	/* by default we have none! */
-	hassubject = 0;
-	hasdate = 0;
-    }
-    if (require_filter) free(require_filter);
-
-    if (set_showprogress && !readone)
-	print_progress(num, lang[MSG_ARTICLES], NULL);
+	if ( set_showprogress && !readone )
+		print_progress( num, lang[MSG_ARTICLES], NULL );
 #if DEBUG_PARSE
-    printf("\b\b\b\b%4d %s.\n", num, lang[MSG_ARTICLES]);
+	printf("\b\b\b\b%4d %s.\n", num, lang[MSG_ARTICLES]);
 #endif
 
-    /* kpm - this is to prevent the closing of std and hypermail crashing
-     * if the input is from stdin
-     */
-    if (fp != stdin)
-	fclose(fp);
+	/* kpm - this is to prevent the closing of std and hypermail crashing
+	 * if the input is from stdin
+	 */
+	if ( fp != stdin )
+		fclose( fp );
 
 #ifdef FASTREPLYCODE
-    threadlist_by_msgnum = (struct reply **)emalloc((num + 1)*sizeof(struct reply *));
-    {
-	int i;
-	for (i = 0; i <= num; ++i)
-	    threadlist_by_msgnum[i] = NULL;
-    }
-#endif
-    if (num > max_msgnum)
-	max_msgnum = num - 1;
-    crossindex();
-    threadlist = NULL;
-    printedthreadlist = NULL;
-    crossindexthread1(datelist);
-#if DEBUG_THREAD
-    {
-	struct reply *r;
-	r = threadlist;
-	fprintf(stderr, "START of threadlist after crossindexthread1\n");
-	fprintf(stderr, "- msgnum frommsgnum maybereply msgid\n");
-	while (r != NULL) {
-	    if (r->data == NULL) {
-		fprintf(stderr, "- XX %d %d XX\n",
-			r->frommsgnum, r->maybereply);
-	    }
-	    else {
-		fprintf(stderr, "- %d %d %d '%s'\n",
-			r->data->msgnum,
-			r->frommsgnum, r->maybereply, r->data->msgid);
-	    }
-	    r = r->next;
+	threadlist_by_msgnum = (struct reply **) emalloc( ( num + 1 ) * sizeof(struct reply *) );
+	{
+		int i;
+		for( i = 0; i <= num; ++i )
+			threadlist_by_msgnum[i] = NULL;
 	}
-	fprintf(stderr, "END of threadlist after crossindexthread1\n");
-    }
+#endif
+	if ( num > max_msgnum )
+		max_msgnum = num - 1;
+	crossindex( );
+	threadlist = NULL;
+	printedthreadlist = NULL;
+	crossindexthread1( datelist );
+#if DEBUG_THREAD
+	{
+		struct reply *r;
+		r = threadlist;
+		fprintf(stderr, "START of threadlist after crossindexthread1\n");
+		fprintf(stderr, "- msgnum frommsgnum maybereply msgid\n");
+		while (r != NULL)
+		{
+			if (r->data == NULL)
+			{
+				fprintf(stderr, "- XX %d %d XX\n",
+						r->frommsgnum, r->maybereply);
+			}
+			else
+			{
+				fprintf(stderr, "- %d %d %d '%s'\n",
+						r->data->msgnum,
+						r->frommsgnum, r->maybereply, r->data->msgid);
+			}
+			r = r->next;
+		}
+		fprintf(stderr, "END of threadlist after crossindexthread1\n");
+	}
 #endif
 
-    /* can we clean up a bit please... */
+	/* can we clean up a bit please... */
 
-    if (boundp != NULL) {
-	if (boundp->line)
-	    free(boundp->line);
-	free(boundp);
-    }
+	if ( boundp != NULL )
+	{
+		if ( boundp->line )
+			free( boundp->line );
+		free( boundp );
+	}
 
-    if(charsetsave){
-      free(charsetsave);
-    }
-    return num_added;			/* amount of mails read */
+	if ( charsetsave )
+	{
+		free( charsetsave );
+	}
+	return num_added; /* amount of mails read */
 }
 
 static void check_expiry(struct emailinfo *emp)
@@ -3025,7 +3073,6 @@ int parse_old_html(int num, struct emailinfo *ep, int parse_body,
 
     if ((fp = fopen(filename, "r")) != NULL) {
 
-    set_buffered_ ( &fp );
 	while (fgets(line, sizeof(line), fp)) {
 
 	    if (1 == sscanf(line, "<!-- %99[^=]=", command)) {
