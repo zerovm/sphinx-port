@@ -79,20 +79,8 @@ int open_xml_ ( char *XML_file, Input_Obj_Type tMode ) {
 	return fd;
 }
 
-void write_Email_message_to_xml (
-			int xml_fd,
-			unsigned long int docID_CRC32,
-			char * text,
-			size_t size_text,
-			char *from_field,
-			char *subj_field,
-			char *offset_attr,
-			char *sent_tm,
-			char *recv_tm,
-			char *file_name,
-			char *message_id_attr
-			)
-{
+void write_Email_message_to_xml ( int xml_fd, unsigned long int docID_CRC32, char * text, size_t size_text, char *from_field, char *subj_field,
+		char *offset_attr, char *sent_tm, char *recv_tm, char *file_name, char *message_id_attr ) {
 	open_xml_document_( xml_fd, docID_CRC32 );
 	write_XML_Elemet_Size( xml_fd, "CONTENT_FIELD", text, size_text );
 	write_XML_Elemet_( xml_fd, "FROM_FIELD", from_field );
@@ -103,7 +91,7 @@ void write_Email_message_to_xml (
 	write_XML_Elemet_( xml_fd, "FROM", from_field );
 	write_XML_Elemet_( xml_fd, "FILE_NAME", file_name );
 	write_XML_Elemet_( xml_fd, "SUBJECT_ATTR", subj_field );
-	write_XML_Elemet_( xml_fd, "MESSAGE_ID", message_id_attr);
+	write_XML_Elemet_( xml_fd, "MESSAGE_ID", message_id_attr );
 	close_xml_document_( xml_fd );
 	return;
 }
