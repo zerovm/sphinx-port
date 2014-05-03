@@ -17,5 +17,6 @@ int prepare_temp_dir (char *);
 void get_list_from_file ( SingleList_t* );
 int check_dir_exist (char *);
 char * get_file_name_without_ext ( char *);
+int get_single_message_from_offset ( char *, char *, long int );
 
 #endif /* FILEUTIL_H_ */
