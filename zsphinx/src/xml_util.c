@@ -28,10 +28,9 @@ char * str_to_lower_case ( char *str )
 	return buff;
 }
 
-int open_xml_ ( char *XML_file, Input_Obj_Type tMode )
-{
+int open_xml_ ( char *XML_file, Input_Obj_Type tMode ) {
 	char *XML_open =
-"<?xml version=\"1.0\" encoding=\"utf-8\"?> \n\
+			"<?xml version=\"1.0\" encoding=\"utf-8\"?> \n\
 <sphinx:docset>\n\
 <sphinx:schema>\n\
 <sphinx:field name=\"CONTENT_FIELD\" type=\"string\" />\n\
@@ -43,7 +42,7 @@ int open_xml_ ( char *XML_file, Input_Obj_Type tMode )
 \n";
 
 	char *XML_open_mail =
-"<?xml version=\"1.0\" encoding=\"utf-8\"?> \n\
+			"<?xml version=\"1.0\" encoding=\"utf-8\"?> \n\
 <sphinx:docset>\n\
 <sphinx:schema>\n\
 <sphinx:field name=\"CONTENT_FIELD\" type=\"string\" />\n\
@@ -59,7 +58,7 @@ int open_xml_ ( char *XML_file, Input_Obj_Type tMode )
 </sphinx:schema>\n\
 \n";
 	char *choose_head = NULL;
-	if (tMode == zip_obj)
+	if ( tMode == zip_obj )
 		choose_head = XML_open;
 	else if ( tMode == mail_obj )
 		choose_head = XML_open_mail;
@@ -69,14 +68,14 @@ int open_xml_ ( char *XML_file, Input_Obj_Type tMode )
 	char * XML_open_lower = NULL;
 
 	XML_open_lower = str_to_lower_case( choose_head );
-	fd = open ( XML_file, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
-	if (fd <= 0)
+	fd = open( XML_file, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
+	if ( fd <= 0 )
 	{
-		fprintf (stderr, "error open %s file", XML_file);
+		fprintf( stderr, "error open %s file", XML_file );
 		return -1;
 	}
-	bwrite = write ( fd, XML_open_lower, strlen ( XML_open_lower ) );
-	free (XML_open_lower);
+	bwrite = write( fd, XML_open_lower, strlen( XML_open_lower ) );
+	free( XML_open_lower );
 	return fd;
 }
 
