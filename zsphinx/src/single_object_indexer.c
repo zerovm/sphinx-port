@@ -20,6 +20,7 @@
 #include <zlib.h>
 #include <dirent.h>
 #include <libgen.h>
+#include <locale.h>
 
 
 //extractors
@@ -165,15 +166,17 @@ char *get_text_from_file ( char * file_name, size_t *text_size  )
 int filtering_buff ( char *buff, size_t buff_size )
 {
 	size_t i = 0;
-	for ( i = 0; i < buff_size; i++)
+	for ( i = 0; i < buff_size ; i++)
 	{
-		if ( !isalnum( ( char ) buff[i] ) )
+		if ( (buff[i] < 'A' || buff[i] > 'Z' ) && (buff[i] < 'a' || buff[i] > 'z' ) && buff[i] != ':')
+		{
 			buff[i] = ' ';
+		}
 	}
 	return 0;
 }
 
-int add_doc_to_xml (int xml_fd, char *fileName, Input_Obj_Type tMode )
+int add_doc_to_xml ( int xml_fd, char *fileName, Input_Obj_Type tMode )
 {
 	struct stat st;
 	struct tm *t;
@@ -184,31 +187,31 @@ int add_doc_to_xml (int xml_fd, char *fileName, Input_Obj_Type tMode )
 	char *tmpFile = NULL;
 	size_t size_text = 0;
 
-	if ((ret = stat(fileName , &st))!=0)
-    {
-		fprintf(stderr, "stat failure error .%d", ret);
+	if ( ( ret = stat( fileName, &st ) ) != 0 )
+	{
+		fprintf( stderr, "stat failure error .%d", ret );
 		return -1;
-    }
+	}
 
-	fileLenBuff  = (char *) malloc ( CHARSIZE(50) );
-	sprintf ( fileLenBuff, "%zu", st.st_size );
+	fileLenBuff = (char *) malloc( CHARSIZE(50) );
+	sprintf( fileLenBuff, "%zu", st.st_size );
 
-	tmpFile = (char *) malloc ( CHARSIZE( strlen ( fileName ) + 10) );
-	sprintf ( tmpFile, "%s.tmp" , fileName );
+	tmpFile = (char *) malloc( CHARSIZE( strlen ( fileName ) + 10) );
+	sprintf( tmpFile, "%s.tmp", fileName );
 
-	if (do_extract_text ( fileName, tmpFile ) == 1)
+	if ( do_extract_text( fileName, tmpFile ) == 1 )
 	{
 		text = NULL;
 		size_text = 0;
 	}
 	else
 	{
-		text = get_text_from_file( tmpFile, &size_text);
-		filtering_buff ( text, size_text );
+		text = get_text_from_file( tmpFile, &size_text );
+		filtering_buff( text, size_text );
 	}
 
 	if ( tMode == zip_obj )
-		write_doc_toxml ( xml_fd, num_CRC32( fileName ), text, size_text, fileName, fileLenBuff );
+		write_doc_toxml( xml_fd, num_CRC32( fileName ), text, size_text, fileName, fileLenBuff );
 	else if ( tMode == mail_obj )
 	{
 		char *base_name_without_ext = NULL;
@@ -219,14 +222,15 @@ int add_doc_to_xml (int xml_fd, char *fileName, Input_Obj_Type tMode )
 		char *temp_filepath = NULL;
 		char *temp_message_id = NULL;
 		char *temp_full_file_name = NULL;
-		char *do_not_index[] = {"date", "index", "subject", "author", "attachment"};
+		char *use_file = NULL;
+		char *do_not_index[] = { "date", "index", "subject", "author", "attachment" };
 		int do_not_index_count = PCHARSIZE(do_not_index);
 		int i = 0;
 		int skip_indexing = 0;
 		base_name_without_ext = get_file_name_without_ext( fileName );
-		for ( i = 0; i < do_not_index_count; i++ )
+		for( i = 0; i < do_not_index_count; i++ )
 		{
-			if (strcasecmp( base_name_without_ext , do_not_index[i]) == 0)
+			if ( strcasecmp( base_name_without_ext, do_not_index[i] ) == 0 )
 			{
 				skip_indexing = 1;
 				break;
@@ -234,41 +238,82 @@ int add_doc_to_xml (int xml_fd, char *fileName, Input_Obj_Type tMode )
 		}
 		if ( skip_indexing != 0 )
 		{
-			free (fileLenBuff);
-			free (tmpFile);
-			free (text);
+			free( fileLenBuff );
+			free( tmpFile );
+			free( text );
 			return 0;
 		}
 		// BUG in glibc. we need to save fileName
-		temp_filepath = strdup ( fileName );
+		temp_filepath = strdup( fileName );
 		temp_dir_name = dirname( temp_filepath );
-		temp_base_name  = basename ( temp_dir_name );
+		temp_base_name = basename( temp_dir_name );
 		temp_pos = NULL;
-		temp_pos = strstr( temp_base_name, "-");
-		char *offset_email = NULL;
+		temp_pos = strstr( temp_base_name, "-" );
+
+		char *from_field = NULL;
+		char *subj_field = NULL;
+		char *offset_attr = NULL;
+		char *sent_ch = NULL;
+		char *recv_ch = NULL;
+		time_t sent_tm_t;
+		time_t recv_tm_t;
+		char *message_id_attr = NULL;
+
 		if ( temp_pos != NULL ) // if attachment
 		{
 			temp_pos++;
-			temp_file_name = ( char * ) malloc( CHARSIZE( strlen ( TEMP_DIR ) + strlen ( temp_base_name ) + 20) );
-			sprintf ( temp_file_name, "%s/%s.html", TEMP_DIR, temp_pos);
-			temp_message_id = get_message_ID_from_html ( temp_file_name );
+			temp_file_name = (char *) malloc( CHARSIZE( strlen ( TEMP_DIR ) + strlen ( temp_base_name ) + 20) );
+			sprintf( temp_file_name, "%s/%s.html", TEMP_DIR, temp_pos );
+			temp_message_id = get_message_ID_from_html( temp_file_name );
 			temp_full_file_name = (char *) malloc( CHARSIZE( strlen (temp_message_id) + strlen ( fileName ) + 5 ) );
-			sprintf ( temp_full_file_name, "%s/%s", temp_message_id, fileName);
-			offset_email = get_element_from_html(temp_file_name, "offset_email" );
-			free ( temp_file_name );
+			sprintf( temp_full_file_name, "%s/%s", temp_message_id, fileName );
+			use_file = temp_file_name;
 		}
 		else // if message body
 		{
-			temp_full_file_name = get_message_ID_from_html ( fileName );
-			offset_email = get_element_from_html(fileName, "offset_email" );
+			temp_full_file_name = get_message_ID_from_html( fileName );
+			use_file = fileName;
 		}
 
-		write_doc_toxml ( xml_fd, num_CRC32( temp_full_file_name ), text, size_text, fileName, fileLenBuff );
-		free ( temp_full_file_name );
+		from_field = get_element_from_html( use_file, "email" );
+		subj_field = get_element_from_html( use_file, "subject" );
+		offset_attr = get_element_from_html( use_file, "offset_email" );
+		sent_ch = get_element_from_html( use_file, "isosent" );
+		recv_ch = get_element_from_html( use_file, "isoreceived" );
+		message_id_attr = get_element_from_html( use_file, "id" );
+
+		sent_tm_t = iso_to_secs( sent_ch );
+		recv_tm_t = iso_to_secs( recv_ch );
+
+		sprintf( sent_ch, "%ld", sent_tm_t );
+		sprintf( recv_ch, "%ld", recv_tm_t );
+
+		int subjlen = strlen( subj_field );
+		filtering_buff( subj_field, subjlen );
+
+		write_Email_message_to_xml( xml_fd, num_CRC32( temp_full_file_name ), text, size_text, from_field, subj_field, offset_attr, sent_ch, recv_ch,
+				strchr( fileName, '/' ), message_id_attr );
+
+		free( from_field );
+		free( subj_field );
+		free( offset_attr );
+		free( sent_ch );
+		free( recv_ch );
+		free( message_id_attr );
+		if ( temp_file_name )
+			free( temp_file_name );
+		free( temp_full_file_name );
 	}
-	free (fileLenBuff);
-	free (tmpFile);
-	free (text);
+	free( fileLenBuff );
+	free( tmpFile );
+	free( text );
+
+	return 0;
+}
+
+
+int get_message_info_from_html ()
+{
 
 	return 0;
 }
@@ -291,9 +336,11 @@ int docs_to_xml (char * path, Input_Obj_Type tMode )
 #endif
 	get_file_list ( path, pFileList, pFileTypeFilter );
 
+/*
 	printf ( "list of indexed docs\n" );
 	for ( i = 0; i < pFileList->count; i++)
 		printf ( "%s\n", pFileList->list[i] );
+*/
 
 ///////////////////////
 
