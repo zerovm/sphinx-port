@@ -381,6 +381,28 @@ char * get_file_name_without_ext ( char * file_name )
 	return file_name_without_ext;
 }
 
+int get_single_message_from_offset ( char* input_name, char *output_name, long int offset )
+{
+	FILE *fin, *fout;
+	char buff[2048];
+	int next_message = 0;
+
+	fin = fopen( input_name, "r" );
+	fout = fopen( output_name, "w" );
+	if ( !fin || !fout )
+		return -1;
+	fseek( fin, offset, SEEK_CUR );
+	while( fgets( buff, 2048, fin ) )
+	{
+		if ( ( strncasecmp( buff, "From ", 5 ) == 0 ) && next_message++ == 1 )
+			break;
+		fputs( buff, fout );
+	}
+	fclose( fin );
+	fclose( fout );
+	return 0;
+}
+
 
 
 
