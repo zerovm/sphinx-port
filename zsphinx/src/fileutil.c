@@ -388,11 +388,17 @@ int get_single_message_from_offset ( char* input_name, char *output_name, long i
 	int next_message = 0;
 
 	fin = fopen( input_name, "r" );
-	fout = fopen( output_name, "w" );
-	if ( !fin || !fout )
+	if ( !fin )
 		return -1;
+
+	fout = fopen( output_name, "w" );
+	if ( !fout )
+	{
+		fclose( fin );
+		return -1;
+	}
 	fseek( fin, offset, SEEK_CUR );
-	while( fgets( buff, 2048, fin ) )
+	while(fgets( buff, 2048, fin ))
 	{
 		if ( ( strncasecmp( buff, "From ", 5 ) == 0 ) && next_message++ == 1 )
 			break;
@@ -402,10 +408,3 @@ int get_single_message_from_offset ( char* input_name, char *output_name, long i
 	fclose( fout );
 	return 0;
 }
-
-
-
-
-
-
-
