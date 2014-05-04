@@ -180,7 +180,6 @@ int main_mbox(int argc, char **argv)
     char **tlang, *locale_code;
     int cmd_show_variables;
     int print_usage;
-    offset_current_email = 0;
 
     int amount_old = 0;		/* number of old mails */
     int amount_new = 0;		/* number of new mails */

@@ -2252,7 +2252,7 @@ void writearticles(int startnum, int maxnum)
 	}
 	printcomment(fp, "expires", email->exp_time == -1 ? "-1" : secs_to_iso(email->exp_time));
 	char offset_current_email_str [30];
-	sprintf (offset_current_email_str, "%ld",offset_current_email);
+	sprintf (offset_current_email_str, "%ld",email->offset_message);
 	printcomment(fp, "offset_email", offset_current_email_str );
 #ifdef GDBM
 	if (gp) {

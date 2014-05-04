@@ -278,6 +278,7 @@ struct emailinfo {
 			/* 8=filtered (required line missing) */
     int deletion_completed; /* -1 or delete_level that reflects last time */
                             /* that file was rewritten to reflect is_deleted */
+    long int offset_message;
 };
 
 struct header {
@@ -359,8 +360,6 @@ VAR char *mhtmlfooterfile;
 VAR long firstdatenum;
 VAR long lastdatenum;
 VAR int max_msgnum;
-
-long int offset_current_email;
 
 VAR char **msgnum_id_table;
 
