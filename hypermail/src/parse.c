@@ -1320,6 +1320,9 @@ int startnum ) {
 	EncodeType decode = ENCODE_NORMAL;
 	ContentType content = CONTENT_TEXT;
 
+	//
+	long int offset_current_email = 0;
+
 	charsetsave = malloc( 256 );
 	memset( charsetsave, 0, 255 );
 
