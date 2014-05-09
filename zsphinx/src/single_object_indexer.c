@@ -290,6 +290,8 @@ int add_doc_to_xml ( int xml_fd, char *fileName, Input_Obj_Type tMode )
 
 		int subjlen = strlen( subj_field );
 		filtering_buff( subj_field, subjlen );
+		filtering_buff( from_field, strlen( from_field ) );
+
 
 		write_Email_message_to_xml( xml_fd, num_CRC32( temp_full_file_name ), text, size_text, from_field, subj_field, offset_attr, sent_ch, recv_ch,
 				strchr( fileName, '/' ), message_id_attr );
