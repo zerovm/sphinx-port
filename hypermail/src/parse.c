@@ -2209,9 +2209,9 @@ int startnum ) {
 				 */
 
 				strcpymax( fromdate, dp ? dp : "", DATESTRLEN );
-				emp->offset_message = offset_current_email;
 				if ( emp )
 				{
+					emp->offset_message = offset_current_email;
 					emp->exp_time = exp_time;
 					emp->is_deleted = is_deleted;
 					if ( insert_in_lists( emp, require_filter, require_filter_len + require_filter_full_len ) )
