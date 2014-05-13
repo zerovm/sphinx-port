@@ -21,6 +21,10 @@
 //#include <stdlib.h>
 //#include <string.h>
 
+extern "C"
+{
+#include <zrtapi.h>
+}
 
 #define CONF_CHECK(_hash,_key,_msg,_add) \
 	if (!( _hash.Exists ( _key ) )) \
@@ -547,6 +551,7 @@ int main ( int argc, char ** argv )
 
 	tzset();
 
+	zfork();
 	if ( bStdin )
 	{
 		int iPos = 0, iLeft = sizeof(sQuery)-1;
