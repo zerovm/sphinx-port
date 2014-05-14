@@ -86,7 +86,10 @@ int open_xml_ ( char *XML_file, Input_Obj_Type tMode ) {
 	char * XML_open_lower = NULL;
 
 	XML_open_lower = str_to_lower_case( choose_head );
-	fd = open( XML_file, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
+	if ( strstr ( XML_file, "/dev/" ) == NULL )
+		fd = open( XML_file, O_WRONLY | O_CREAT | O_TRUNC, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
+	else
+		fd = open( XML_file, O_WRONLY | O_CREAT, S_IROTH | S_IWOTH | S_IRUSR | S_IWUSR );
 	if ( fd <= 0 )
 	{
 		fprintf( stderr, "error open %s file", XML_file );
