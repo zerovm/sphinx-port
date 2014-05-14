@@ -2105,8 +2105,6 @@ void update_deletions(int num_old)
 ** This writes out the articles, beginning with the number startnum.
 */
 
-
-
 void writearticles(int startnum, int maxnum)
 {
     int num, skip, newfile;
