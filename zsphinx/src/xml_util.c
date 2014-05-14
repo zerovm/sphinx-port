@@ -41,6 +41,7 @@ int open_xml_ ( char *XML_file, Input_Obj_Type tMode ) {
 </sphinx:schema>\n\
 \n";
 
+#ifdef DEBUG_MBOX
 	char *XML_open_mail =
 			"<?xml version=\"1.0\" encoding=\"utf-8\"?> \n\
 <sphinx:docset>\n\
@@ -57,6 +58,23 @@ int open_xml_ ( char *XML_file, Input_Obj_Type tMode ) {
 <sphinx:attr name=\"MESSAGE_ID\" type=\"string\" />\n\
 </sphinx:schema>\n\
 \n";
+#else
+	char *XML_open_mail =
+			"<?xml version=\"1.0\" encoding=\"utf-8\"?> \n\
+<sphinx:docset>\n\
+<sphinx:schema>\n\
+<sphinx:field name=\"CONTENT_FIELD\" type=\"string\" />\n\
+<sphinx:field name=\"FROM_FIELD\" type=\"string\" />\n\
+<sphinx:field name=\"SUBJECT_FIELD\" type=\"string\" />\n\
+<sphinx:attr name=\"OFFSET_MESSAGE\" type=\"int\" />\n\
+<sphinx:attr name=\"SENT\" type=\"timestamp\" />\n\
+<sphinx:attr name=\"RECEIVED\" type=\"timestamp\" />\n\
+<sphinx:attr name=\"FROM\" type=\"string\" />\n\
+<sphinx:attr name=\"SUBJECT_ATTR\" type=\"string\" />\n\
+</sphinx:schema>\n\
+\n";
+#endif
+
 	char *choose_head = NULL;
 	if ( tMode == zip_obj )
 		choose_head = XML_open;
@@ -90,9 +108,13 @@ void write_Email_message_to_xml ( int xml_fd, unsigned long int docID_CRC32, cha
 	write_XML_Element_( xml_fd, "SENT", sent_tm );
 	write_XML_Element_( xml_fd, "RECEIVED", recv_tm );
 	write_XML_Element_( xml_fd, "FROM", from_field );
+#ifdef DEBUG_MBOX
 	write_XML_Element_( xml_fd, "FILE_NAME", file_name );
+#endif
 	write_XML_Element_( xml_fd, "SUBJECT_ATTR", subj_field );
+#ifdef DEBUG_MBOX
 	write_XML_Element_( xml_fd, "MESSAGE_ID", message_id_attr );
+#endif
 	close_xml_document_( xml_fd );
 	return;
 }

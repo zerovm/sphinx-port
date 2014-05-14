@@ -223,7 +223,14 @@ int wmain(int argc, char *argv[]) {
     physLayout = gTrue;
   }
 
-
+	struct stat st;
+	stat( fileName->getCString( ), &st );
+	if ( st.st_size <= 0 )
+	{
+		printf( "Pdf file is emty. Exit without processing\n" );
+		delete fileName;
+		return -1;
+	}
 
   // read config file
   globalParams = new GlobalParams(cfgFileName);

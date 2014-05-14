@@ -168,7 +168,7 @@ int filtering_buff ( char *buff, size_t buff_size )
 	size_t i = 0;
 	for ( i = 0; i < buff_size ; i++)
 	{
-		if ( (buff[i] < 'A' || buff[i] > 'Z' ) && (buff[i] < 'a' || buff[i] > 'z' ) && buff[i] != ':')
+		if ( (buff[i] < 'A' || buff[i] > 'Z' ) && (buff[i] < 'a' || buff[i] > 'z' ) && buff[i] != ':' && (buff[i] < '0' || buff[i] > '9' ) )
 		{
 			buff[i] = ' ';
 		}
@@ -288,8 +288,11 @@ int add_doc_to_xml ( int xml_fd, char *fileName, Input_Obj_Type tMode )
 		sprintf( sent_ch, "%ld", sent_tm_t );
 		sprintf( recv_ch, "%ld", recv_tm_t );
 
-		int subjlen = strlen( subj_field );
-		filtering_buff( subj_field, subjlen );
+		if ( subj_field != NULL )
+			filtering_buff( subj_field, strlen ( subj_field ) );
+		if ( from_field != NULL )
+			filtering_buff( from_field, strlen( from_field ) );
+
 
 		write_Email_message_to_xml( xml_fd, num_CRC32( temp_full_file_name ), text, size_text, from_field, subj_field, offset_attr, sent_ch, recv_ch,
 				strchr( fileName, '/' ), message_id_attr );

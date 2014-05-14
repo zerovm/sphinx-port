@@ -128,6 +128,8 @@ int togdbm(void *gp, struct emailinfo *ep)
 
 #endif
 
+#define SIZE_IO_TEMP_BUFF_ 0x1000
+
 #define FIX_ICONV_FREE
 //#undef FIX_ICONV_FREE
 
@@ -2114,6 +2116,7 @@ void writearticles(int startnum, int maxnum)
     struct body *bp;
     struct reply *rp;
     FILE *fp;
+    char IO_TEMP_BUFF_[SIZE_IO_TEMP_BUFF_];
     char *ptr;
 #ifdef HAVE_ICONV
     char *localsubject=NULL,*localname=NULL;
@@ -2192,6 +2195,7 @@ void writearticles(int startnum, int maxnum)
 	      printf("%s\n", filename);
 	  }
 	}
+	setvbuf( fp, IO_TEMP_BUFF_, _IOFBF, SIZE_IO_TEMP_BUFF_ );
 
 	email_next_in_thread = nextinthread(email->msgnum);
 
@@ -2416,6 +2420,7 @@ void writedates(int amountmsgs, struct emailinfo *email)
 {
     int newfile;
     char *filename;
+    char IO_TEMP_BUFF_[SIZE_IO_TEMP_BUFF_];
     FILE *fp;
     char prev_date_str[DATESTRLEN + 40];
     char *datename = index_name[email && email->subdir != NULL][DATE_INDEX];
@@ -2434,6 +2439,7 @@ void writedates(int amountmsgs, struct emailinfo *email)
 	progerr(errmsg);
     }
 
+    setvbuf( fp, IO_TEMP_BUFF_, _IOFBF, SIZE_IO_TEMP_BUFF_ );
     if (set_showprogress)
 	printf("%s \"%s\"...", lang[MSG_WRITING_DATE_INDEX], filename);
 
@@ -2504,6 +2510,7 @@ void writeattachments(int amountmsgs, struct emailinfo *email)
 {
     int newfile;
     char *filename;
+    char IO_TEMP_BUFF_[SIZE_IO_TEMP_BUFF_];
     FILE *fp;
     char *attname = index_name[email && email->subdir != NULL][ATTACHMENT_INDEX];
     time_t start_date_num = email && email->subdir ? email->subdir->first_email->date : firstdatenum;
@@ -2522,6 +2529,7 @@ void writeattachments(int amountmsgs, struct emailinfo *email)
 	progerr(errmsg);
     }
 
+    setvbuf( fp, IO_TEMP_BUFF_, _IOFBF, SIZE_IO_TEMP_BUFF_ );
     if (set_showprogress)
 	printf("%s \"%s\"...", lang[MSG_WRITING_ATTACHMENT_INDEX], filename);
 
@@ -2587,6 +2595,7 @@ void writethreads(int amountmsgs, struct emailinfo *email)
 {
     int newfile;
     char *filename;
+    char IO_TEMP_BUFF_[SIZE_IO_TEMP_BUFF_];
     FILE *fp;
     char *thrdname = index_name[email && email->subdir != NULL][THREAD_INDEX];
     time_t start_date_num = email && email->subdir ? email->subdir->first_email->date : firstdatenum;
@@ -2613,7 +2622,7 @@ void writethreads(int amountmsgs, struct emailinfo *email)
 	snprintf(errmsg, sizeof(errmsg), "%s \"%s\".", lang[MSG_COULD_NOT_WRITE], filename);
 	progerr(errmsg);
     }
-
+    setvbuf( fp, IO_TEMP_BUFF_, _IOFBF, SIZE_IO_TEMP_BUFF_ );
     if (set_showprogress)
 	printf("%s \"%s\"...", lang[MSG_WRITING_THREAD_INDEX], filename);
 
@@ -2738,6 +2747,7 @@ void writesubjects(int amountmsgs, struct emailinfo *email)
 {
     int newfile;
     char *filename;
+    char IO_TEMP_BUFF_[SIZE_IO_TEMP_BUFF_];
     FILE *fp;
     char *subjname = index_name[email && email->subdir != NULL][SUBJECT_INDEX];
     time_t start_date_num = email && email->subdir ? email->subdir->first_email->date : firstdatenum;
@@ -2755,6 +2765,7 @@ void writesubjects(int amountmsgs, struct emailinfo *email)
 	progerr(errmsg);
     }
 
+	setvbuf( fp, IO_TEMP_BUFF_, _IOFBF, SIZE_IO_TEMP_BUFF_ );
     if (set_showprogress)
 	printf("%s \"%s\"...", lang[MSG_WRITING_SUBJECT_INDEX], filename);
 
@@ -2894,6 +2905,7 @@ void writeauthors(int amountmsgs, struct emailinfo *email)
 {
     int newfile;
     char *filename;
+    char IO_TEMP_BUFF_[SIZE_IO_TEMP_BUFF_];
     FILE *fp;
     char *authname = index_name[email && email->subdir != NULL][AUTHOR_INDEX];
     time_t start_date_num = email && email->subdir ? email->subdir->first_email->date : firstdatenum;
@@ -2910,7 +2922,7 @@ void writeauthors(int amountmsgs, struct emailinfo *email)
 	     snprintf(errmsg, sizeof(errmsg), "%s \"%s\".", lang[MSG_COULD_NOT_WRITE], filename);
 	progerr(errmsg);
     }
-
+	setvbuf( fp, IO_TEMP_BUFF_, _IOFBF, SIZE_IO_TEMP_BUFF_ );
     if (set_showprogress)
 	printf("%s \"%s\"...", lang[MSG_WRITING_AUTHOR_INDEX], filename);
 
@@ -3008,6 +3020,7 @@ void writehaof(int amountmsgs, struct emailinfo *email)
 {
     int newfile;
     char *filename;
+    char IO_TEMP_BUFF_[SIZE_IO_TEMP_BUFF_];
     FILE *fp;
 
     filename = haofname(email);
@@ -3021,7 +3034,7 @@ void writehaof(int amountmsgs, struct emailinfo *email)
 	    snprintf(errmsg, sizeof(errmsg), "%s \"%s\".", lang[MSG_COULD_NOT_WRITE], filename);
 	progerr(errmsg);
     }
-
+	setvbuf( fp, IO_TEMP_BUFF_, _IOFBF, SIZE_IO_TEMP_BUFF_ );
     if (set_showprogress)
 	printf("%s \"%s\"...", lang[MSG_WRITING_HAOF], filename);
 
@@ -3115,6 +3128,7 @@ static void printmonths(FILE *fp, char *summary_filename, int amountmsgs)
 	    for (j = 0; j <= AUTHOR_INDEX; ++j) {
 		char *filename;
 		char buf1[MAXFILELEN];
+		char IO_TEMP_BUFF_[SIZE_IO_TEMP_BUFF_];
 		FILE *fp1;
 		char *prev_text = "";
 		char subject_title[128];
@@ -3127,6 +3141,7 @@ static void printmonths(FILE *fp, char *summary_filename, int amountmsgs)
 	    	    snprintf(errmsg, sizeof(errmsg), "can't open %s", filename);
 		    progerr(errmsg);
 		}
+		setvbuf( fp, IO_TEMP_BUFF_, _IOFBF, SIZE_IO_TEMP_BUFF_ );
 		snprintf(subject_title, sizeof(subject_title), "%s %s", month_str_pub, indextypename[j]);
 		print_index_header(fp1, set_label, set_dir, subject_title, filename);
 		/* 
@@ -3426,7 +3441,7 @@ void write_messageindex(int startnum, int maxnum)
 {
     int num;
     struct emailinfo *email;
-
+    char IO_TEMP_BUFF_[SIZE_IO_TEMP_BUFF_];
     FILE *fp;
     char *filename;
     char *buf;
@@ -3440,7 +3455,7 @@ void write_messageindex(int startnum, int maxnum)
 	filename = messageindex_name();
 	fp = fopen(filename, "w");
 	fprintf(fp, "%.04d %.04d\n", startnum, maxnum - 1);
-
+	setvbuf( fp, IO_TEMP_BUFF_, _IOFBF, SIZE_IO_TEMP_BUFF_ );
     /* write the reference to the message filenames */
     num = startnum;
     while (num <  maxnum) {
