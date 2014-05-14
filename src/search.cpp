@@ -20,11 +20,12 @@
 #include <time.h>
 //#include <stdlib.h>
 //#include <string.h>
-
+#ifdef __native_client__
 extern "C"
 {
 #include <zrtapi.h>
 }
+#endif
 
 #define CONF_CHECK(_hash,_key,_msg,_add) \
 	if (!( _hash.Exists ( _key ) )) \
@@ -551,7 +552,9 @@ int main ( int argc, char ** argv )
 
 	tzset();
 
+#ifdef __native_client__
 	zfork();
+#endif
 	if ( bStdin )
 	{
 		int iPos = 0, iLeft = sizeof(sQuery)-1;
