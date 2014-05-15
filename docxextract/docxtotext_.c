@@ -336,11 +336,9 @@ int do_list_new(uf, list)
         char charCrypt=' ';
         err = unzGetCurrentFileInfo64(uf,&file_info,filename_inzip,sizeof(filename_inzip),NULL,0,NULL,0);
 
-        char *abs_path = NULL;
-  		abs_path = (char *) malloc ( sizeof ( char ) * ( strlen( filename_inzip ) + strlen ( TEMP_DIR ) + 3 ) );
-   		sprintf ( abs_path, "/%s/%s", TEMP_DIR, basename (filename_inzip) );
-   		addToList( abs_path, list );
-  		free (abs_path);
+		if ( filename_inzip != NULL )
+			if ( filename_inzip[strlen( filename_inzip ) - 1] != '/' )
+				addToList( filename_inzip, list );
 
         if (err!=UNZ_OK)
         {
@@ -921,7 +919,7 @@ int docx_to_text (char * filename, char *filename_out)
 	doc_type = getdoctype (filename);
 	dt = doc_type;
 
-	int retval = extractfile( zipFileName);
+	int retval = extractfile( zipFileName, NULL);
 
 	char *docfile = NULL;
 
@@ -969,8 +967,6 @@ int get_file_list_inzip (char *zipfilename, SingleList_t *list)
         return 1;
     }
 
-    int aa = initList( list );
-
     ret_value = do_list_new(uf, list);
 
     unzClose(uf);
@@ -982,10 +978,83 @@ int get_file_list_inzip (char *zipfilename, SingleList_t *list)
     return ret_value;
 }
 
-int extractfile (char *zipfilename)
+int extractfile (char *zipfilename, char *filename_to_extract)
 {
     //const char zipfilename[strlen(filename)];
-    const char *filename_to_extract=NULL;
+    //const char *filename_to_extract=NULL;
+    const char *password=NULL;
+    char filename_try[MAXFILENAME+16] = "";
+    int i;
+    int ret_value=0;
+    int opt_do_list=0;
+    int opt_do_extract=1;
+
+    int opt_do_extract_withoutpath=1;// docx, odt
+    int opt_overwrite=1;
+    int opt_extractdir=0;
+    const char *dirname=NULL;
+    char *ret_path;
+    unzFile uf=NULL;
+
+    opt_do_extract_withoutpath = set_opt_by_filepath (zipfilename);
+
+    if (zipfilename!=NULL)
+    {
+        strncpy(filename_try, zipfilename,MAXFILENAME-1);
+        /* strncpy doesnt append the trailing NULL, of the string is too long. */
+        filename_try[ MAXFILENAME ] = '\0';
+
+#        ifdef USEWIN32IOAPI
+        fill_win32_filefunc64A(&ffunc);
+        uf = unzOpen2_64(zipfilename,&ffunc);
+#        else
+        uf = unzOpen64(zipfilename);
+#        endif
+        if (uf==NULL)
+        {
+            strcat(filename_try,".zip");
+#            ifdef USEWIN32IOAPI
+            uf = unzOpen2_64(filename_try,&ffunc);
+#            else
+            uf = unzOpen64(filename_try);
+#            endif
+        }
+    }
+
+
+    if (uf==NULL)
+    {
+        printf("Cannot open %s or %s.zip\n",zipfilename,zipfilename);
+        return 1;
+    }
+    if (opt_do_list==1)
+        ret_value = do_list(uf);
+    else if (opt_do_extract==1)
+    {
+#ifdef _WIN32
+        if (opt_extractdir && _chdir(dirname))
+#else
+        if (opt_extractdir && chdir(dirname))
+#endif
+        {
+          printf("Error changing into %s, aborting\n", dirname);
+          exit(-1);
+        }
+        if (filename_to_extract == NULL)
+            ret_value = do_extract(uf, opt_do_extract_withoutpath, opt_overwrite, password);
+        else
+            ret_value = do_extract_onefile(uf, filename_to_extract, opt_do_extract_withoutpath, opt_overwrite, password);
+    }
+    unzClose(uf);
+    if (ret_value != 0)
+    {
+    	return ret_value;
+    }
+    return ret_value;
+}
+
+int get_file_from_zip ( char *zipfilename, char *filename_to_extract )
+{
     const char *password=NULL;
     char filename_try[MAXFILENAME+16] = "";
     int i;
@@ -1164,7 +1233,7 @@ int textconv_docx (char * path, char *d_name, char * prefix, int bTextSearchMode
 		LOG_ZVM (ZLOGTIT, "document type", "s", "docx", 1);
 		if (renameretcode != 0)
 			return 0;
-		retextractcode = extractfile (ZIPBASED_TEMP_FILEANME); // unzip incoming file place xml contents on file document.xml
+		retextractcode = extractfile (ZIPBASED_TEMP_FILEANME, NULL); // unzip incoming file place xml contents on file document.xml
 		LOG_ZVM (ZLOGTIT, "unzip return code", "d", retextractcode, 1);
 		if (retextractcode != 0)
 		{
@@ -1178,7 +1247,7 @@ int textconv_docx (char * path, char *d_name, char * prefix, int bTextSearchMode
 		if (renameretcode != 0)
 			return 0;
 		LOG_ZVM (ZLOGTIT, "document type", "s", "odt", 1);
-		retextractcode = extractfile (ZIPBASED_TEMP_FILEANME); // unzip incoming file
+		retextractcode = extractfile (ZIPBASED_TEMP_FILEANME, NULL); // unzip incoming file
 		LOG_ZVM (ZLOGTIT, "unzip return code", "d", retextractcode, 1);
 		if (retextractcode != 0)
 		{
