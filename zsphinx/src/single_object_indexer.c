@@ -176,6 +176,11 @@ int filtering_buff ( char *buff, size_t buff_size )
 	return 0;
 }
 
+int get_one_file_from_zip ( char *zip_name, char *file_in_zip )
+{
+	return extractfile( zip_name, file_in_zip );
+}
+
 int add_doc_to_xml ( int xml_fd, char *fileName, Input_Obj_Type tMode )
 {
 	struct stat st;
@@ -185,21 +190,37 @@ int add_doc_to_xml ( int xml_fd, char *fileName, Input_Obj_Type tMode )
 	char *text = NULL;
 	char *fileLenBuff = NULL;
 	char *tmpFile = NULL;
+	char *file_name_in_fs = NULL;
 	size_t size_text = 0;
 
-	if ( ( ret = stat( fileName, &st ) ) != 0 )
+	if ( tMode == zip_obj )
 	{
-		fprintf( stderr, "stat failure error .%d", ret );
+		if ( get_one_file_from_zip ( OBJECT_DEVICE_NAME, fileName ) != 0 )
+		{
+			return -1;
+		}
+		file_name_in_fs = malloc( CHARSIZE( strlen ( fileName ) + strlen ( TEMP_DIR ) + 2) );
+		sprintf ( file_name_in_fs, "%s/%s", TEMP_DIR, fileName );
+	}
+	else if ( tMode == mail_obj )
+	{
+		file_name_in_fs = fileName;
+	}
+
+	if ( ( ret = stat( file_name_in_fs, &st ) ) != 0 )
+	{
+		fprintf( stderr, "stat failure error %d\n", ret );
 		return -1;
 	}
 
 	fileLenBuff = (char *) malloc( CHARSIZE(50) );
 	sprintf( fileLenBuff, "%zu", st.st_size );
 
-	tmpFile = (char *) malloc( CHARSIZE( strlen ( fileName ) + 10) );
-	sprintf( tmpFile, "%s.tmp", fileName );
+	tmpFile = (char *) malloc( CHARSIZE( strlen ( file_name_in_fs ) + 10) );
+	sprintf( tmpFile, "%s.tmp", file_name_in_fs );
 
-	if ( do_extract_text( fileName, tmpFile ) == 1 )
+
+	if ( do_extract_text( file_name_in_fs, tmpFile ) == 1 )
 	{
 		text = NULL;
 		size_text = 0;
@@ -209,9 +230,12 @@ int add_doc_to_xml ( int xml_fd, char *fileName, Input_Obj_Type tMode )
 		text = get_text_from_file( tmpFile, &size_text );
 		filtering_buff( text, size_text );
 	}
-
 	if ( tMode == zip_obj )
+	{
+		remove( file_name_in_fs );
+		free (file_name_in_fs);
 		write_doc_toxml( xml_fd, num_CRC32( fileName ), text, size_text, fileName, fileLenBuff );
+	}
 	else if ( tMode == mail_obj )
 	{
 		char *base_name_without_ext = NULL;
@@ -337,7 +361,12 @@ int docs_to_xml (char * path, Input_Obj_Type tMode )
 	}
 	else
 #endif
-	get_file_list ( path, pFileList, pFileTypeFilter );
+	if ( tMode == zip_obj )
+		get_file_list_inzip( OBJECT_DEVICE_NAME, pFileList );
+	else if ( tMode == mail_obj )
+		get_file_list( path, pFileList, pFileTypeFilter );
+	else
+		return 0;
 
 /*
 	printf ( "list of indexed docs\n" );
@@ -446,7 +475,7 @@ Input_Obj_Type get_work_mode (int argc, char ** argv)
 
 int prepare_zip ()
 {
- 	return extractfile ( OBJECT_DEVICE_NAME );
+ 	return 0;//extractfile ( OBJECT_DEVICE_NAME, NULL );
 }
 
 int prepare_mbox ()
